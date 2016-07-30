@@ -91,6 +91,8 @@ function player() {
 			current.gainNode = gainNode;
 			current.source = source;
 			current.start = audioContext.currentTime - data.now.currentTime;
+
+			document.getElementById("cover").style.backgroundImage = 'url('+data.now.metadata.img+')';
 		}).catch(function (error) {
 			updateDisplay("Failure", "red");
 			console.error("Failed to play track", error);

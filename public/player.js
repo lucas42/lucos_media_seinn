@@ -2,12 +2,12 @@ var audioContext = new AudioContext();
 var current = null;
 
 function poll(hashcode) {
-	pollTime = new Date().getTime();
+	var pollTime = new Date().getTime();
 	var params = "?";
 	params += "hashcode="+hashcode;
 	params += "&_cb="+pollTime;
 	if (current && current.start) {
-		var timeLapsed = (pollTime - current.start) / 1000;
+		var timeLapsed = audioContext.currentTime - current.start;
 		params += "&update_url="+current.trackURL;
 		params += "&update_time="+timeLapsed;
 		params += "&update_timeset="+pollTime;
@@ -69,7 +69,7 @@ function evaluateData(data) {
 		source.connect(audioContext.destination);
 		source.start(0, data.now.currentTime);
 		current.source = source;
-		current.start = (new Date().getTime()) - (data.now.currentTime*1000);
+		current.start = audioContext.currentTime - data.now.currentTime;
 	}).catch(function (error) {
 		console.error("Failed to play track", error);
 

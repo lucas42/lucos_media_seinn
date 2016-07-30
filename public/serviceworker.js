@@ -5,6 +5,7 @@ var urlsToCache = [
 	'/player.js'
 ];
 const TRACK_CACHE = 'tracks-v1';
+const IMG_CACHE = 'images-v1';
 
 self.addEventListener('install', function(event) {
 	event.waitUntil(
@@ -26,24 +27,8 @@ self.addEventListener('fetch', function(event) {
 				// For poll requests, inspect a clone of the response
 				if (event.request.url.startsWith("https://ceol.l42.eu/poll")) {
 					response.clone().json().then(function (polldata) {
-						caches.open(TRACK_CACHE).then(function(cache) {
-
-							// Cache the next track, so it's there when we need it
-							if (polldata.next) {
-								var nextRequest = new Request(polldata.next.url.replace("ceol srl", "import/black/ceol srl"));
-								fetch(nextRequest).then(function (nextResponse) {
-									if (nextResponse.status == 200) {
-										cache.put(nextRequest, nextResponse);
-									} else {
-										throw "non-200 response";
-									}
-								}).catch(function (error) {
-									fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(polldata.next.url)+"&status=serviceWorkerFailedLookup", {
-										method: "POST",
-									})
-								});
-							}
-						})
+						preLoadTrack(polldata.now);
+						preLoadTrack(polldata.next);
 					});
 				}
 				return response;
@@ -51,3 +36,36 @@ self.addEventListener('fetch', function(event) {
 		})
 	);
 });
+
+// Load resources for tracks into caches so they're quick to load
+function preLoadTrack(trackData) {
+	if (!trackData) return;
+
+	// Attempt to load the track itself into the track cache
+	caches.open(TRACK_CACHE).then(function(cache) {
+		var trackRequest = new Request(trackData.url.replace("ceol srl", "import/black/ceol srl"));
+		fetch(trackRequest).then(function (trackResponse) {
+			if (trackResponse.status == 200) {
+				cache.put(trackRequest, trackResponse);
+			} else {
+				throw "non-200 response";
+			}
+
+		// If the track wasn't reachable, tell the server, which should skip that one out
+		}).catch(function (error) {
+			fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup", {
+				method: "POST",
+			})
+		});
+	});
+
+	// Add the track's image into the image cache.
+	caches.open(IMG_CACHE).then(function(cache) {
+		var imgRequest = new Request(trackData.metadata.img, {mode: 'no-cors'});
+		fetch(imgRequest).then(function (imgResponse) {
+			cache.put(imgRequest, imgResponse);
+		}).catch(function (error) {
+			console.error("can't preload image", error);
+		});
+	});
+}

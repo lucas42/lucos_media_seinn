@@ -49,6 +49,10 @@ function player() {
 			console.error(data);
 			return;
 		}
+		document.getElementById("cover").style.backgroundImage = 'url('+data.now.metadata.img+')';
+		document.getElementById("nexttrack").firstChild.nodeValue = data.next.metadata.title;
+		document.getElementById("nowtitle").firstChild.nodeValue = data.now.metadata.title;
+		document.getElementById("nowartist").firstChild.nodeValue = data.now.metadata.artist;
 
 		// If the track is already playing, don't interrupt, just make any appropriate changes
 		if (current && current.trackURL == trackURL && current.isPlaying == data.isPlaying) {
@@ -65,10 +69,6 @@ function player() {
 			trackURL: trackURL,
 			isPlaying: data.isPlaying,
 		};
-		document.getElementById("cover").style.backgroundImage = 'url('+data.now.metadata.img+')';
-		document.getElementById("nexttrack").firstChild.nodeValue = data.next.metadata.title;
-		document.getElementById("nowtitle").firstChild.nodeValue = data.now.metadata.title;
-		document.getElementById("nowartist").firstChild.nodeValue = data.now.metadata.artist;
 
 		// If nothing should be playing, then don't proceed.
 		if (!data.isPlaying) {
@@ -140,7 +140,6 @@ function player() {
 			}
 			current.gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + fadeTime);
 		}
-		document.getElementById("cover").style.backgroundImage = null;
 
 		// Tell server where the track was, before getting rid of it.
 		if (current.start) fetch("https://ceol.l42.eu/update?"+getUpdateParams(), {method: "POST"});

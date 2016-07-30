@@ -103,6 +103,7 @@ function player() {
 	}
 
 	function trackDone(trackURL, status) {
+		delete current.source;
 		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status), {
 		    method: "POST"
 		}).then(function (){
@@ -146,6 +147,26 @@ function player() {
 		}).catch(function (error) {
 			// If it didn't work, don't do anything for now.
 		});
+	});
+	document.getElementById("cover").addEventListener('click', function () {
+		if (current.source) {
+			fetch("https://ceol.l42.eu/pause", {method: "POST"}).then(function() {
+				updateDisplay("Pausing", "chocolate");
+			}).catch(function (error) {
+				updateDisplay("Connection failed", "red");
+			});
+		} else {
+			fetch("https://ceol.l42.eu/play", {method: "POST"}).then(function() {
+				updateDisplay("Resuming", "chocolate");
+			}).catch(function (error) {
+				updateDisplay("Connection failed", "red");
+			});
+		}
+	});
+
+	// Make sure footer clicks don't propagate into rest of page.
+	document.querySelector("footer").addEventListener('click', function (event) {
+		event.stopPropagation();
 	});
 	poll(null);
 }

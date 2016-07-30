@@ -1,21 +1,65 @@
 var audioContext = new AudioContext();
-fetch('https://ceol.l42.eu/poll').then(function (res) {
-	return res.json();
-}).then(function (data) {
-	console.log(data);
-	var trackurl = data.now.url.replace("ceol srl", "import/black/ceol srl");
-	return fetch(trackurl).catch(function () {
-		console.error('failed to get track');
+var currentSource = null;
+
+function poll(hashcode) {
+	fetch('https://ceol.l42.eu/poll?hashcode='+hashcode+'&_cb='+new Date().getTime()).then(function (res) {
+		return res.json();
+	}).catch(function(error){
+		console.error(error);
+
+		// Wait 5 second before trying again to prevent making things worse
+		setTimeout(function () {
+			poll(hashcode);
+		}, 5000);
+	}).then(function (data) {
+
+		// If there's a hashcode, use the new one and evaluate new data.
+		if (data.hashcode) {
+			poll(data.hashcode);
+			evaluateData(data);
+
+		// Otherwise, assume data hasn't changed
+		} else {
+			poll(hashcode);
+		}
+	})
+}
+
+function evaluateData(data) {
+	var trackurl;
+	if (data.now && data.now.url) {
+		trackurl = data.now.url;
+	} else {
+		console.error(data);
+		return;
+	}
+	fetch(trackurl.replace("ceol srl", "import/black/ceol srl")).then(function (rawtrack) {
+		return rawtrack.arrayBuffer();
+	}).then(function (arrayBuffer) {
+		return audioContext.decodeAudioData(arrayBuffer);
+	}).then(function (buffer) {
+		if (currentSource) {
+			currentSource.stop();
+			currentSource = null;
+		}
+		var source = audioContext.createBufferSource();
+		source.buffer = buffer;
+		source.connect(audioContext.destination);
+		source.start(0);
+		currentSource = source;
+	}).catch(function (error) {
+		console.error("failed to play track", error);
+
+		// Tell server couldn't play
+		var data = new FormData();
+		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackurl)+"&status="+encodeURIComponent(error.message), {
+		    method: "POST"
+		}).then(function (){
+			console.log("Given up, skipped track");
+		}).catch(function (error) {
+			console.error("Can't tell server about track failure", error);
+		});
 	});
-}).then(function (rawtrack) {
-	return rawtrack.arrayBuffer();
-}).then(function (arrayBuffer) {
-	return audioContext.decodeAudioData(arrayBuffer);
-}).then(function (buffer) {
-	var source = audioContext.createBufferSource();
-	source.buffer = buffer;
-	source.connect(audioContext.destination);
-	source.start(0);
-}).catch(function (error) {
-	console.error(error);
-})
+}
+
+poll(null);

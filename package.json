@@ -1,0 +1,29 @@
+{
+  "name": "lucos-seinn",
+  "version": "0.0.0",
+  "description": "Music Player",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:lucas42/lucos-seinn.git"
+  },
+  "keywords": [
+    "lucos",
+    "music",
+    "media",
+    "player",
+    "seinn"
+  ],
+  "author": "lucas42",
+  "bugs": {
+    "url": "https://github.com/lucas42/lucos-seinn/issues"
+  },
+  "homepage": "https://github.com/lucas42/lucos-seinn",
+  "dependencies": {
+    "express": "^4.14.0"
+  }
+}

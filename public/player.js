@@ -62,10 +62,15 @@ function evaluateData(data) {
 			return;
 		}
 		var source = audioContext.createBufferSource();
+		source.trackURL = trackURL;
 		source.addEventListener("ended", trackEndedHandler);
 		source.buffer = buffer;
-		source.connect(audioContext.destination);
+
+		var gainNode = audioContext.createGain();
+		source.connect(gainNode);
+		gainNode.connect(audioContext.destination);
 		source.start(0, data.now.currentTime);
+		current.gainNode = gainNode;
 		current.source = source;
 		current.start = audioContext.currentTime - data.now.currentTime;
 	}).catch(function (error) {
@@ -86,13 +91,20 @@ function trackDone(trackURL, status) {
 	});
 }
 function trackEndedHandler(event) {
-	trackDone(trackURL, event.type);
+	trackDone(event.target.trackURL, event.type);
 }
 function stopExisting() {
 	if (!current) return;
 	if (current.source) {
 		current.source.removeEventListener("ended", trackEndedHandler);
-		current.source.stop();
+
+		// Fade out the current track
+		if (!current.gainNode) {
+			console.error("no gainNode, can't fade out");
+			return;
+		}
+		current.gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime);
+		current.gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 3);
 	}
 	current = null;
 }

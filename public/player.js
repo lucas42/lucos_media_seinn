@@ -62,9 +62,7 @@ function evaluateData(data) {
 			return;
 		}
 		var source = audioContext.createBufferSource();
-		source.addEventListener("ended", function (event) {
-			trackDone(trackURL, event.type);
-		});
+		source.addEventListener("ended", trackEndedHandler);
 		source.buffer = buffer;
 		source.connect(audioContext.destination);
 		source.start(0, data.now.currentTime);
@@ -87,9 +85,13 @@ function trackDone(trackURL, status) {
 		console.error("Can't tell server to advance to next track", error);
 	});
 }
+function trackEndedHandler(event) {
+	trackDone(trackURL, event.type);
+}
 function stopExisting() {
 	if (!current) return;
 	if (current.source) {
+		current.source.removeEventListener("ended", trackEndedHandler);
 		current.source.stop();
 	}
 	current = null;

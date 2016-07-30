@@ -64,19 +64,19 @@ function player() {
 			return;
 		}
 
-		updateDisplay("Fetching music", "orange");
+		updateDisplay("Fetching", "chocolate");
 		fetch(trackURL.replace("ceol srl", "import/black/ceol srl")).then(function (rawtrack) {
-			updateDisplay("Buffering track", "orange");
+			updateDisplay("Buffering", "chocolate");
 			return rawtrack.arrayBuffer();
 		}).then(function (arrayBuffer) {
-			updateDisplay("Decoding track", "orange");
+			updateDisplay("Decoding", "chocolate");
 			return audioContext.decodeAudioData(arrayBuffer);
 		}).then(function (buffer) {
 			if (trackURL != current.trackURL || current.source) {
 				console.log("Another track load has overtaken this one, ignoring");
 				return;
 			}
-			updateDisplay("Preparing playback", "orange");
+			updateDisplay("Preparing", "chocolate");
 			var source = audioContext.createBufferSource();
 			source.trackURL = trackURL;
 			source.addEventListener("ended", trackEndedHandler);
@@ -92,7 +92,7 @@ function player() {
 			current.source = source;
 			current.start = audioContext.currentTime - data.now.currentTime;
 		}).catch(function (error) {
-			updateDisplay("Track failed", "red");
+			updateDisplay("Failure", "red");
 			console.error("Failed to play track", error);
 
 			// Tell server couldn't play
@@ -104,7 +104,7 @@ function player() {
 		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status), {
 		    method: "POST"
 		}).then(function (){
-			updateDisplay("Skipping Track", "orange");
+			updateDisplay("Skipping", "chocolate");
 			console.log("Next track");
 		}).catch(function (error) {
 			updateDisplay("Track Skip failed", "red");
@@ -112,7 +112,7 @@ function player() {
 		});
 	}
 	function trackEndedHandler(event) {
-		updateDisplay("Track Ended", "orange");
+		updateDisplay("Track Ended", "chocolate");
 		trackDone(event.target.trackURL, event.type);
 	}
 	function stopExisting() {
@@ -136,7 +136,7 @@ function player() {
 		statusNode.style.backgroundColor = colour;
 	}
 
-	updateDisplay("Player loaded, getting data", "orange");
+	updateDisplay("Connecting", "chocolate");
 	poll(null);
 }
 document.addEventListener("DOMContentLoaded", player);

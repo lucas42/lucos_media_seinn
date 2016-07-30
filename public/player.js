@@ -150,20 +150,23 @@ function player() {
 
 	updateDisplay("Connecting", "chocolate");
 	document.getElementById("next").addEventListener('click', function () {
-		fetch("https://ceol.l42.eu/next?"+getUpdateParams(), {method: "POST"}).then(function() {
-			updateDisplay("Skipping", "chocolate");
-		}).catch(function (error) {
-			// If it didn't work, don't do anything for now.
+		updateDisplay("Skipping", "chocolate");
+		fetch("https://ceol.l42.eu/next?"+getUpdateParams(), {method: "POST"}).catch(function (error) {
+			updateDisplay("Skip failed", "crimson");
 		});
 	});
 	document.getElementById("cover").addEventListener('click', function () {
 		if (current.source) {
-			fetch("https://ceol.l42.eu/pause?"+getUpdateParams(), {method: "POST"}).then(function() {
-				updateDisplay("Pausing", "chocolate");
-			}).catch(function (error) {
-				updateDisplay("Connection failed", "crimson");
+
+			// Pause is easy, do it immediately and then tell server.
+			updateDisplay("Pausing", "chocolate");
+			stopExisting(fadeTime);
+			fetch("https://ceol.l42.eu/pause?"+getUpdateParams(), {method: "POST"}).catch(function (error) {
+				console.error("Failed to tell server of pause");
 			});
 		} else {
+
+			// Play is slightly harder.  For now, tell server and wait for poll to return the update.
 			fetch("https://ceol.l42.eu/play?"+getUpdateParams(), {method: "POST"}).then(function() {
 				updateDisplay("Resuming", "chocolate");
 			}).catch(function (error) {

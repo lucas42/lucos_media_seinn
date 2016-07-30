@@ -52,7 +52,10 @@ function player() {
 			}
 			return;
 		}
-		stopExisting();
+
+		// If paused, stop audio immediately, otherwise fade out over 3 seconds.
+		var fadeTime = data.isPlaying ? 3 : 0;
+		stopExisting(fadeTime);
 		current = {
 			trackURL: trackURL,
 			isPlaying: data.isPlaying,
@@ -118,7 +121,7 @@ function player() {
 		updateDisplay("Track Ended", "chocolate");
 		trackDone(event.target.trackURL, event.type);
 	}
-	function stopExisting() {
+	function stopExisting(fadeTime) {
 		if (!current) return;
 		if (current.source) {
 			current.source.removeEventListener("ended", trackEndedHandler);
@@ -128,7 +131,7 @@ function player() {
 				console.error("no gainNode, can't fade out");
 				return;
 			}
-			current.gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 3);
+			current.gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + fadeTime);
 		}
 		document.getElementById("cover").style.backgroundImage = null;
 		current = null;

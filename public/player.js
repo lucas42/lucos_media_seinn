@@ -160,7 +160,7 @@ function player() {
 
 			// Pause is easy, do it immediately and then tell server.
 			updateDisplay("Pausing", "chocolate");
-			stopExisting(fadeTime);
+			stopExisting(0);
 			fetch("https://ceol.l42.eu/pause?"+getUpdateParams(), {method: "POST"}).catch(function (error) {
 				console.error("Failed to tell server of pause");
 			});

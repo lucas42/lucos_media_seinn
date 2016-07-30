@@ -1,4 +1,5 @@
 var audioContext = new AudioContext();
+var currentTrackURL = null;
 var currentSource = null;
 
 function poll(hashcode) {
@@ -26,18 +27,23 @@ function poll(hashcode) {
 }
 
 function evaluateData(data) {
-	var trackurl;
+	var trackURL;
 	if (data.now && data.now.url) {
-		trackurl = data.now.url;
+		trackURL = data.now.url;
 	} else {
 		console.error(data);
 		return;
 	}
-	fetch(trackurl.replace("ceol srl", "import/black/ceol srl")).then(function (rawtrack) {
+	currentTrackURL = trackURL;
+	fetch(trackURL.replace("ceol srl", "import/black/ceol srl")).then(function (rawtrack) {
 		return rawtrack.arrayBuffer();
 	}).then(function (arrayBuffer) {
 		return audioContext.decodeAudioData(arrayBuffer);
 	}).then(function (buffer) {
+		if (trackURL != currentTrackURL) {
+			console.log("Another track load has overtaken this one, ignorning");
+			return;
+		}
 		if (currentSource) {
 			currentSource.stop();
 			currentSource = null;
@@ -52,7 +58,7 @@ function evaluateData(data) {
 
 		// Tell server couldn't play
 		var data = new FormData();
-		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackurl)+"&status="+encodeURIComponent(error.message), {
+		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(error.message), {
 		    method: "POST"
 		}).then(function (){
 			console.log("Given up, skipped track");

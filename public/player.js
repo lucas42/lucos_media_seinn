@@ -140,6 +140,13 @@ function player() {
 	}
 
 	updateDisplay("Connecting", "chocolate");
+	document.getElementById("next").addEventListener('click', function () {
+		fetch("https://ceol.l42.eu/next", {method: "POST"}).then(function() {
+			updateDisplay("Skipping", "chocolate");
+		}).catch(function (error) {
+			// If it didn't work, don't do anything for now.
+		});
+	});
 	poll(null);
 }
 document.addEventListener("DOMContentLoaded", player);

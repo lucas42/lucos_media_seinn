@@ -1,14 +1,14 @@
 [Service]
-ExecStart=PORT=3000 /usr/bin/nodejs /web/lucos/lucos_time/index.js
+ExecStart=PORT=3000 /usr/bin/nodejs /web/lucos/lucos_seinn/index.js
 Restart=always
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=lucos-seinn
+SyslogIdentifier=lucos_seinn
 User=lucos
 Group=lucos
 Environment=NODE_ENV=production
 Environment=port=3000
-WorkingDirectory=/web/lucos/lucos-seinn/
+WorkingDirectory=/web/lucos/lucos_seinn/
 
 [Install]
 WantedBy=multi-user.target

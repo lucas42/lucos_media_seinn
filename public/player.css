@@ -1,0 +1,2 @@
+body { background: grey; padding: 0; height: 100%; }
+#status { position: fixed; bottom: 0; margin: 0; padding: 0.5em; color: white; }

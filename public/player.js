@@ -139,6 +139,9 @@ function player() {
 			current.gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + fadeTime);
 		}
 		document.getElementById("cover").style.backgroundImage = null;
+
+		// Tell server where the track was, before getting rid of it.
+		if (current.start) fetch("https://ceol.l42.eu/update?"+getUpdateParams(), {method: "POST"});
 		current = null;
 	}
 

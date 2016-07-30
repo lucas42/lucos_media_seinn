@@ -2,17 +2,22 @@ function player() {
 	var audioContext = new AudioContext();
 	var current = null;
 
-	function poll(hashcode) {
-		var pollTime = new Date().getTime();
-		var params = "?";
-		params += "hashcode="+hashcode;
-		params += "&_cb="+pollTime;
+	// Returns a string of get params to include in requests so that server knows the current state of play
+	function getUpdateParams() {
+		var params = "";
 		if (current && current.start) {
 			var timeLapsed = audioContext.currentTime - current.start;
 			params += "&update_url="+current.trackURL;
 			params += "&update_time="+timeLapsed;
-			params += "&update_timeset="+pollTime;
+			params += "&update_timeset="+new Date().getTime();
 		}
+		return params;
+	}
+	function poll(hashcode) {
+		var params = "?";
+		params += "hashcode="+hashcode;
+		params += "&_cb="+new Date().getTime();
+		params += getUpdateParams();
 		fetch("https://ceol.l42.eu/poll"+params).then(function (res) {
 			return res.json();
 		}).catch(function(error){
@@ -145,7 +150,7 @@ function player() {
 
 	updateDisplay("Connecting", "chocolate");
 	document.getElementById("next").addEventListener('click', function () {
-		fetch("https://ceol.l42.eu/next", {method: "POST"}).then(function() {
+		fetch("https://ceol.l42.eu/next?"+getUpdateParams(), {method: "POST"}).then(function() {
 			updateDisplay("Skipping", "chocolate");
 		}).catch(function (error) {
 			// If it didn't work, don't do anything for now.
@@ -153,13 +158,13 @@ function player() {
 	});
 	document.getElementById("cover").addEventListener('click', function () {
 		if (current.source) {
-			fetch("https://ceol.l42.eu/pause", {method: "POST"}).then(function() {
+			fetch("https://ceol.l42.eu/pause?"+getUpdateParams(), {method: "POST"}).then(function() {
 				updateDisplay("Pausing", "chocolate");
 			}).catch(function (error) {
 				updateDisplay("Connection failed", "crimson");
 			});
 		} else {
-			fetch("https://ceol.l42.eu/play", {method: "POST"}).then(function() {
+			fetch("https://ceol.l42.eu/play?"+getUpdateParams(), {method: "POST"}).then(function() {
 				updateDisplay("Resuming", "chocolate");
 			}).catch(function (error) {
 				updateDisplay("Connection failed", "crimson");

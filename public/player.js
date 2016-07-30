@@ -43,9 +43,18 @@ function evaluateData(data) {
 		console.error(data);
 		return;
 	}
+
+	// If the track is already playing, don't interrupt, just make any appropriate changes
+	if (current && current.trackURL == trackURL && current.isPlaying == data.isPlaying) {
+		if (current.gainNode) {
+			current.gainNode.gain.linearRampToValueAtTime(data.volume, audioContext.currentTime + 0.5);
+		}
+		return;
+	}
 	stopExisting();
 	current = {
-		trackURL: trackURL
+		trackURL: trackURL,
+		isPlaying: data.isPlaying,
 	};
 
 	// If nothing should be playing, then don't proceed.
@@ -67,6 +76,7 @@ function evaluateData(data) {
 		source.buffer = buffer;
 
 		var gainNode = audioContext.createGain();
+		gainNode.gain.linearRampToValueAtTime(data.volume, audioContext.currentTime);
 		source.connect(gainNode);
 		gainNode.connect(audioContext.destination);
 		source.start(0, data.now.currentTime);
@@ -103,7 +113,6 @@ function stopExisting() {
 			console.error("no gainNode, can't fade out");
 			return;
 		}
-		current.gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime);
 		current.gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 3);
 	}
 	current = null;

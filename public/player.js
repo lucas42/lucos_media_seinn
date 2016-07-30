@@ -62,26 +62,31 @@ function evaluateData(data) {
 			return;
 		}
 		var source = audioContext.createBufferSource();
+		source.addEventListener("ended", function (event) {
+			trackDone(trackURL, event.type);
+		});
 		source.buffer = buffer;
 		source.connect(audioContext.destination);
 		source.start(0, data.now.currentTime);
 		current.source = source;
 		current.start = (new Date().getTime()) - (data.now.currentTime*1000);
 	}).catch(function (error) {
-		console.error("failed to play track", error);
+		console.error("Failed to play track", error);
 
 		// Tell server couldn't play
-		var data = new FormData();
-		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(error.message), {
-		    method: "POST"
-		}).then(function (){
-			console.log("Given up, skipped track");
-		}).catch(function (error) {
-			console.error("Can't tell server about track failure", error);
-		});
+		trackDone(trackURL, error.message);
 	});
 }
 
+function trackDone(trackURL, status) {
+	fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status), {
+	    method: "POST"
+	}).then(function (){
+		console.log("Next track");
+	}).catch(function (error) {
+		console.error("Can't tell server to advance to next track", error);
+	});
+}
 function stopExisting() {
 	if (!current) return;
 	if (current.source) {

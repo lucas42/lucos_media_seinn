@@ -67,6 +67,8 @@ function player() {
 		};
 		document.getElementById("cover").style.backgroundImage = 'url('+data.now.metadata.img+')';
 		document.getElementById("nexttrack").firstChild.nodeValue = data.next.metadata.title;
+		document.getElementById("nowtitle").firstChild.nodeValue = data.now.metadata.title;
+		document.getElementById("nowartist").firstChild.nodeValue = data.now.metadata.artist;
 
 		// If nothing should be playing, then don't proceed.
 		if (!data.isPlaying) {

@@ -94,7 +94,7 @@ function player() {
 			current.source = source;
 			current.start = audioContext.currentTime - data.now.currentTime;
 		}).catch(function (error) {
-			updateDisplay("Failure", "red");
+			updateDisplay("Failure", "crimson");
 			console.error("Failed to play track", error);
 
 			// Tell server couldn't play
@@ -110,7 +110,7 @@ function player() {
 			updateDisplay("Skipping", "chocolate");
 			console.log("Next track");
 		}).catch(function (error) {
-			updateDisplay("Track Skip failed", "red");
+			updateDisplay("Track Skip failed", "crimson");
 			console.error("Can't tell server to advance to next track", error);
 		});
 	}
@@ -153,13 +153,13 @@ function player() {
 			fetch("https://ceol.l42.eu/pause", {method: "POST"}).then(function() {
 				updateDisplay("Pausing", "chocolate");
 			}).catch(function (error) {
-				updateDisplay("Connection failed", "red");
+				updateDisplay("Connection failed", "crimson");
 			});
 		} else {
 			fetch("https://ceol.l42.eu/play", {method: "POST"}).then(function() {
 				updateDisplay("Resuming", "chocolate");
 			}).catch(function (error) {
-				updateDisplay("Connection failed", "red");
+				updateDisplay("Connection failed", "crimson");
 			});
 		}
 	});

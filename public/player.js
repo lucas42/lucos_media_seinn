@@ -58,6 +58,7 @@ function player() {
 			isPlaying: data.isPlaying,
 		};
 		document.getElementById("cover").style.backgroundImage = 'url('+data.now.metadata.img+')';
+		document.getElementById("nexttrack").firstChild.nodeValue = data.next.metadata.title;
 
 		// If nothing should be playing, then don't proceed.
 		if (!data.isPlaying) {

@@ -1,3 +1,11 @@
 body { background: grey; margin: 0; padding: 0; height: 100%; }
-#status { position: fixed; bottom: 0; margin: 0 1em; padding: 0.5em; color: white; }
+footer { position: fixed; bottom: 0; width: 100%; background: rgba(170,89,54,0.7); height: 2em; }
+#status { margin: 0 1em; padding: 0.5em 0.5em 1em; color: white; }
 #cover { position: absolute; height: 100%; width: 100%; background-size: cover; background-position: center; }
+#next { 
+	position: fixed;
+	bottom: 0;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	padding: 0.5em;
+}

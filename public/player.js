@@ -57,6 +57,7 @@ function player() {
 			trackURL: trackURL,
 			isPlaying: data.isPlaying,
 		};
+		document.getElementById("cover").style.backgroundImage = 'url('+data.now.metadata.img+')';
 
 		// If nothing should be playing, then don't proceed.
 		if (!data.isPlaying) {
@@ -91,8 +92,6 @@ function player() {
 			current.gainNode = gainNode;
 			current.source = source;
 			current.start = audioContext.currentTime - data.now.currentTime;
-
-			document.getElementById("cover").style.backgroundImage = 'url('+data.now.metadata.img+')';
 		}).catch(function (error) {
 			updateDisplay("Failure", "red");
 			console.error("Failed to play track", error);
@@ -129,6 +128,7 @@ function player() {
 			}
 			current.gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 3);
 		}
+		document.getElementById("cover").style.backgroundImage = null;
 		current = null;
 	}
 

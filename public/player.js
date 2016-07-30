@@ -2,7 +2,17 @@ var audioContext = new AudioContext();
 var current = null;
 
 function poll(hashcode) {
-	fetch('https://ceol.l42.eu/poll?hashcode='+hashcode+'&_cb='+new Date().getTime()).then(function (res) {
+	pollTime = new Date().getTime();
+	var params = "?";
+	params += "hashcode="+hashcode;
+	params += "&_cb="+pollTime;
+	if (current && current.start) {
+		var timeLapsed = (pollTime - current.start) / 1000;
+		params += "&update_url="+current.trackURL;
+		params += "&update_time="+timeLapsed;
+		params += "&update_timeset="+pollTime;
+	}
+	fetch("https://ceol.l42.eu/poll"+params).then(function (res) {
 		return res.json();
 	}).catch(function(error){
 		console.error(error);
@@ -54,9 +64,9 @@ function evaluateData(data) {
 		var source = audioContext.createBufferSource();
 		source.buffer = buffer;
 		source.connect(audioContext.destination);
-		source.start(0);
+		source.start(0, data.now.currentTime);
 		current.source = source;
-		current.start = new Date().getTime();
+		current.start = (new Date().getTime()) - (data.now.currentTime*1000);
 	}).catch(function (error) {
 		console.error("failed to play track", error);
 

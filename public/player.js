@@ -72,23 +72,23 @@ function player() {
 
 		// If nothing should be playing, then don't proceed.
 		if (!data.isPlaying) {
-			updateDisplay("Paused", "indigo");
+			updateDisplay("Paused", "indigo", trackURL);
 			return;
 		}
 
-		updateDisplay("Fetching", "chocolate");
+		updateDisplay("Fetching", "chocolate", trackURL);
 		fetch(trackURL.replace("ceol srl", "import/black/ceol srl")).then(function (rawtrack) {
-			updateDisplay("Buffering", "chocolate");
+			updateDisplay("Buffering", "chocolate", trackURL);
 			return rawtrack.arrayBuffer();
 		}).then(function (arrayBuffer) {
-			updateDisplay("Decoding", "chocolate");
+			updateDisplay("Decoding", "chocolate", trackURL);
 			return audioContext.decodeAudioData(arrayBuffer);
 		}).then(function (buffer) {
 			if (trackURL != current.trackURL || current.source) {
 				console.log("Another track load has overtaken this one, ignoring");
 				return;
 			}
-			updateDisplay("Preparing", "chocolate");
+			updateDisplay("Preparing", "chocolate", trackURL);
 			var source = audioContext.createBufferSource();
 			source.trackURL = trackURL;
 			source.addEventListener("ended", trackEndedHandler);
@@ -99,12 +99,12 @@ function player() {
 			source.connect(gainNode);
 			gainNode.connect(audioContext.destination);
 			source.start(0, data.now.currentTime);
-			updateDisplay("Playing", "green");
+			updateDisplay("Playing", "green", trackURL);
 			current.gainNode = gainNode;
 			current.source = source;
 			current.start = audioContext.currentTime - data.now.currentTime;
 		}).catch(function (error) {
-			updateDisplay("Failure", "crimson");
+			updateDisplay("Failure", "crimson", trackURL);
 			console.error("Failed to play track", error);
 
 			// Tell server couldn't play
@@ -117,15 +117,15 @@ function player() {
 		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status), {
 		    method: "POST"
 		}).then(function (){
-			updateDisplay("Skipping", "chocolate");
+			updateDisplay("Skipping", "chocolate", trackURL);
 			console.log("Next track");
 		}).catch(function (error) {
-			updateDisplay("Track Skip failed", "crimson");
+			updateDisplay("Track Skip failed", "crimson", trackURL);
 			console.error("Can't tell server to advance to next track", error);
 		});
 	}
 	function trackEndedHandler(event) {
-		updateDisplay("Track Ended", "chocolate");
+		updateDisplay("Track Ended", "chocolate", event.target.trackURL);
 		trackDone(event.target.trackURL, event.type);
 	}
 	function stopExisting(fadeTime) {
@@ -146,7 +146,10 @@ function player() {
 		current = null;
 	}
 
-	function updateDisplay(message, colour) {
+	function updateDisplay(message, colour, trackURL) {
+
+		// If the update is about a specific track, only display it if that track is the current one.
+		if (trackURL && current && trackURL != current.trackURL) return;
 		var statusNode = document.getElementById('status')
 		statusNode.firstChild.nodeValue = message;
 		statusNode.style.backgroundColor = colour;

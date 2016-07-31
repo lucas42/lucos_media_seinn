@@ -99,12 +99,6 @@ function player() {
 				return;
 			}
 			playBuffer(trackURL, buffer, data.volume, data.now.currentTime);
-		}).catch(function trackFailure(error) {
-			updateDisplay("Failure", "crimson", trackURL);
-			console.error("Failed to play track", error);
-
-			// Tell server couldn't play
-			trackDone(trackURL, error.message);
 		});
 	}
 
@@ -118,6 +112,12 @@ function player() {
 			}).then(function decodeTrack(arrayBuffer) {
 				updateDisplay("Decoding", "chocolate", trackURL);
 				return audioContext.decodeAudioData(arrayBuffer);
+			}).catch(function trackFailure(error) {
+				updateDisplay("Failure", "crimson", trackURL);
+				console.error("Failed to load track", error);
+
+				// Tell server couldn't play
+				trackDone(trackURL, error.message);
 			});
 		}
 		return buffers[trackURL];
@@ -145,12 +145,12 @@ function player() {
 	}
 
 	function trackDone(trackURL, status) {
-		playNext();
 		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status), {
 		    method: "POST"
 		}).catch(function skipError(error) {
 			console.error("Can't tell server to advance to next track", error);
 		});
+		if (current.trackURL == trackURL) playNext();
 	}
 	function trackEndedHandler(event) {
 		updateDisplay("Track Ended", "chocolate", event.target.trackURL);

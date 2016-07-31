@@ -92,21 +92,7 @@ function player() {
 				console.log("Another track load has overtaken this one, ignoring");
 				return;
 			}
-			updateDisplay("Preparing", "chocolate", trackURL);
-			var source = audioContext.createBufferSource();
-			source.trackURL = trackURL;
-			source.addEventListener("ended", trackEndedHandler);
-			source.buffer = buffer;
-
-			var gainNode = audioContext.createGain();
-			gainNode.gain.linearRampToValueAtTime(data.volume, audioContext.currentTime);
-			source.connect(gainNode);
-			gainNode.connect(audioContext.destination);
-			source.start(0, data.now.currentTime);
-			updateDisplay("Playing", "green", trackURL);
-			current.gainNode = gainNode;
-			current.source = source;
-			current.start = audioContext.currentTime - data.now.currentTime;
+			playBuffer(trackURL, buffer, data.volume, data.now.currentTime);
 		}).catch(function trackFailure(error) {
 			updateDisplay("Failure", "crimson", trackURL);
 			console.error("Failed to play track", error);
@@ -129,6 +115,26 @@ function player() {
 			});
 		}
 		return buffers[trackURL];
+	}
+
+	function playBuffer(trackURL, buffer, volume, startTime) {
+		current.trackURL = trackURL;
+		updateDisplay("Preparing", "chocolate", trackURL);
+		var source = audioContext.createBufferSource();
+		source.trackURL = trackURL;
+		source.addEventListener("ended", trackEndedHandler);
+		source.buffer = buffer;
+
+		var gainNode = audioContext.createGain();
+		gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime);
+		source.connect(gainNode);
+		gainNode.connect(audioContext.destination);
+		source.start(0, startTime);
+		updateDisplay("Playing", "green", trackURL);
+		current.gainNode = gainNode;
+		current.source = source;
+		current.start = audioContext.currentTime - startTime;
+		current.isPlaying = true;
 	}
 
 	function trackDone(trackURL, status) {

@@ -145,7 +145,6 @@ function player() {
 	}
 
 	function trackDone(trackURL, status) {
-		delete current.source;
 		playNext();
 		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status), {
 		    method: "POST"
@@ -208,10 +207,7 @@ function player() {
 
 	updateDisplay("Connecting", "chocolate");
 	document.getElementById("next").addEventListener('click', function skipTrack() {
-		playNext();
-		fetch("https://ceol.l42.eu/next?"+getUpdateParams(), {method: "POST"}).catch(function skipError(error) {
-			console.error("Failed to tell server of next skip", error);
-		});
+		trackDone(current.trackURL, "manual skip");
 	});
 	document.getElementById("cover").addEventListener('click', function playpauseTrack() {
 		if (current.source) {

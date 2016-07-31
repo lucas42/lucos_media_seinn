@@ -18,16 +18,16 @@ function player() {
 		params += "hashcode="+hashcode;
 		params += "&_cb="+new Date().getTime();
 		params += getUpdateParams();
-		fetch("https://ceol.l42.eu/poll"+params).then(function (res) {
+		fetch("https://ceol.l42.eu/poll"+params).then(function decodePoll(res) {
 			return res.json();
-		}).catch(function(error){
+		}).catch(function pollError(error){
 			console.error(error);
 
 			// Wait 5 second before trying again to prevent making things worse
-			setTimeout(function () {
+			setTimeout(function pollRetry() {
 				poll(hashcode);
 			}, 5000);
-		}).then(function (data) {
+		}).then(function handlePoll(data) {
 
 			// If there's a hashcode, use the new one and evaluate new data.
 			if (data.hashcode) {
@@ -54,6 +54,10 @@ function player() {
 		document.getElementById("nowtitle").firstChild.nodeValue = data.now.metadata.title;
 		document.getElementById("nowartist").firstChild.nodeValue = data.now.metadata.artist;
 
+
+		// Preload next track in the background
+		if (data.next && data.next.url) getBuffer(data.next.url);
+
 		// If the track is already playing, don't interrupt, just make any appropriate changes
 		if (current && current.trackURL == trackURL && current.isPlaying == data.isPlaying) {
 			if (current.gainNode) {
@@ -70,20 +74,18 @@ function player() {
 			isPlaying: data.isPlaying,
 		};
 
+		// Preload the current track (even if it's paused)
+		var buffer = getBuffer(trackURL);
+
 		// If nothing should be playing, then don't proceed.
 		if (!data.isPlaying) {
-			updateDisplay("Paused", "indigo", trackURL);
+			buffer.then(function trackPaused(buffer) {
+				updateDisplay("Paused", "indigo", trackURL);
+			});
 			return;
 		}
 
-		updateDisplay("Fetching", "chocolate", trackURL);
-		fetch(trackURL.replace("ceol srl", "import/black/ceol srl")).then(function (rawtrack) {
-			updateDisplay("Buffering", "chocolate", trackURL);
-			return rawtrack.arrayBuffer();
-		}).then(function (arrayBuffer) {
-			updateDisplay("Decoding", "chocolate", trackURL);
-			return audioContext.decodeAudioData(arrayBuffer);
-		}).then(function (buffer) {
+		buffer.then(function createSource(buffer) {
 			if (trackURL != current.trackURL || current.source) {
 				console.log("Another track load has overtaken this one, ignoring");
 				return;
@@ -103,7 +105,7 @@ function player() {
 			current.gainNode = gainNode;
 			current.source = source;
 			current.start = audioContext.currentTime - data.now.currentTime;
-		}).catch(function (error) {
+		}).catch(function trackFailure(error) {
 			updateDisplay("Failure", "crimson", trackURL);
 			console.error("Failed to play track", error);
 
@@ -112,14 +114,29 @@ function player() {
 		});
 	}
 
+	var buffers = {};
+	function getBuffer(trackURL) {
+		if (!(trackURL in buffers)) {
+			updateDisplay("Fetching", "chocolate", trackURL);
+			buffers[trackURL] = fetch(trackURL.replace("ceol srl", "import/black/ceol srl")).then(function bufferTrack(rawtrack) {
+				updateDisplay("Buffering", "chocolate", trackURL);
+				return rawtrack.arrayBuffer();
+			}).then(function decodeTrack(arrayBuffer) {
+				updateDisplay("Decoding", "chocolate", trackURL);
+				return audioContext.decodeAudioData(arrayBuffer);
+			});
+		}
+		return buffers[trackURL];
+	}
+
 	function trackDone(trackURL, status) {
 		delete current.source;
 		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status), {
 		    method: "POST"
-		}).then(function (){
+		}).then(function trackSkipped(){
 			updateDisplay("Skipping", "chocolate", trackURL);
 			console.log("Next track");
-		}).catch(function (error) {
+		}).catch(function skipError(error) {
 			updateDisplay("Track Skip failed", "crimson", trackURL);
 			console.error("Can't tell server to advance to next track", error);
 		});
@@ -148,42 +165,44 @@ function player() {
 
 	function updateDisplay(message, colour, trackURL) {
 
-		// If the update is about a specific track, only display it if that track is the current one.
-		if (trackURL && current && trackURL != current.trackURL) return;
+		// If the update is about a specific track, only display it if that track is the one playing.
+		if (trackURL) {
+			if (!current || trackURL != current.trackURL) return;
+		}
 		var statusNode = document.getElementById('status')
 		statusNode.firstChild.nodeValue = message;
 		statusNode.style.backgroundColor = colour;
 	}
 
 	updateDisplay("Connecting", "chocolate");
-	document.getElementById("next").addEventListener('click', function () {
+	document.getElementById("next").addEventListener('click', function skipTrack() {
 		updateDisplay("Skipping", "chocolate");
-		fetch("https://ceol.l42.eu/next?"+getUpdateParams(), {method: "POST"}).catch(function (error) {
+		fetch("https://ceol.l42.eu/next?"+getUpdateParams(), {method: "POST"}).catch(function skipError(error) {
 			updateDisplay("Skip failed", "crimson");
 		});
 	});
-	document.getElementById("cover").addEventListener('click', function () {
+	document.getElementById("cover").addEventListener('click', function playpauseTrack() {
 		if (current.source) {
 
 			// Pause is easy, do it immediately and then tell server.
 			updateDisplay("Pausing", "chocolate");
 			stopExisting(0);
-			fetch("https://ceol.l42.eu/pause?"+getUpdateParams(), {method: "POST"}).catch(function (error) {
+			fetch("https://ceol.l42.eu/pause?"+getUpdateParams(), {method: "POST"}).catch(function pauseError(error) {
 				console.error("Failed to tell server of pause");
 			});
 		} else {
 
 			// Play is slightly harder.  For now, tell server and wait for poll to return the update.
-			fetch("https://ceol.l42.eu/play?"+getUpdateParams(), {method: "POST"}).then(function() {
+			fetch("https://ceol.l42.eu/play?"+getUpdateParams(), {method: "POST"}).then(function resumeTrack() {
 				updateDisplay("Resuming", "chocolate");
-			}).catch(function (error) {
+			}).catch(function resumeError(error) {
 				updateDisplay("Connection failed", "crimson");
 			});
 		}
 	});
 
 	// Make sure footer clicks don't propagate into rest of page.
-	document.querySelector("footer").addEventListener('click', function (event) {
+	document.querySelector("footer").addEventListener('click', function stopFooterProp(event) {
 		event.stopPropagation();
 	});
 	poll(null);
@@ -192,9 +211,9 @@ document.addEventListener("DOMContentLoaded", player);
 
 
 if ('serviceWorker' in navigator) {
-	navigator.serviceWorker.register('/serviceworker.js').then(function(registration) {
+	navigator.serviceWorker.register('/serviceworker.js').then(function swRegistered(registration) {
 		console.log('ServiceWorker registration successful with scope: ' + registration.scope);
-	}).catch(function(error) {
+	}).catch(function swError(error) {
 		console.error('ServiceWorker registration failed: ' + error);
 	});
 }

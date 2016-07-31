@@ -20,13 +20,6 @@ function player() {
 		params += getUpdateParams();
 		fetch("https://ceol.l42.eu/poll"+params).then(function decodePoll(res) {
 			return res.json();
-		}).catch(function pollError(error){
-			console.error(error);
-
-			// Wait 5 second before trying again to prevent making things worse
-			setTimeout(function pollRetry() {
-				poll(hashcode);
-			}, 5000);
 		}).then(function handlePoll(data) {
 
 			// If there's a hashcode, use the new one and evaluate new data.
@@ -38,7 +31,14 @@ function player() {
 			} else {
 				poll(hashcode);
 			}
-		})
+		}).catch(function pollError(error){
+			console.error(error);
+
+			// Wait 5 second before trying again to prevent making things worse
+			setTimeout(function pollRetry() {
+				poll(hashcode);
+			}, 5000);
+		});
 	}
 
 	function evaluateData(data) {
@@ -46,25 +46,30 @@ function player() {
 		if (data.now && data.now.url) {
 			trackURL = data.now.url;
 		} else {
-			console.error(data);
+			console.error("No now data provided", data);
 			return;
 		}
 		document.getElementById("cover").style.backgroundImage = 'url('+data.now.metadata.img+')';
-		document.getElementById("nexttrack").firstChild.nodeValue = data.next.metadata.title;
 		document.getElementById("next").dataset.buffered = false;
 		document.getElementById("nowtitle").firstChild.nodeValue = data.now.metadata.title;
 		document.getElementById("nowartist").firstChild.nodeValue = data.now.metadata.artist;
 
 		// Preload next track in the background
-		if (data.next && data.next.url) getBuffer(data.next.url).then(function nextBuffered() {
-			document.getElementById("next").dataset.buffered = true;
-		});;
+		if (data.next && data.next.url) {
+			document.getElementById("nexttrack").firstChild.nodeValue = data.next.metadata.title;
+			getBuffer(data.next.url).then(function nextBuffered() {
+				document.getElementById("next").dataset.buffered = true;
+			});
+		} else {
+			document.getElementById("nexttrack").firstChild.nodeValue = 'Unknown';
+		}
 
 		// If the track is already playing, don't interrupt, just make any appropriate changes
 		if (current && current.trackURL == trackURL && current.isPlaying == data.isPlaying) {
 			if (current.gainNode) {
 				current.gainNode.gain.linearRampToValueAtTime(data.volume, audioContext.currentTime + 0.5);
 			}
+			current.latestData = data;
 			return;
 		}
 
@@ -74,6 +79,7 @@ function player() {
 		current = {
 			trackURL: trackURL,
 			isPlaying: data.isPlaying,
+			latestData: data,
 		};
 
 		// Preload the current track (even if it's paused)
@@ -135,17 +141,15 @@ function player() {
 		current.source = source;
 		current.start = audioContext.currentTime - startTime;
 		current.isPlaying = true;
+		current.volume = volume;
 	}
 
 	function trackDone(trackURL, status) {
 		delete current.source;
+		playNext();
 		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status), {
 		    method: "POST"
-		}).then(function trackSkipped(){
-			updateDisplay("Skipping", "chocolate", trackURL);
-			console.log("Next track");
 		}).catch(function skipError(error) {
-			updateDisplay("Track Skip failed", "crimson", trackURL);
 			console.error("Can't tell server to advance to next track", error);
 		});
 	}
@@ -182,11 +186,31 @@ function player() {
 		statusNode.style.backgroundColor = colour;
 	}
 
+	/**
+	 * Function to fake it till you make it
+	 * ie use the data from the next object
+	 * until we get an update from the server
+	 */
+	function playNext() {
+		updateDisplay("Skipping", "chocolate");
+		var data = current.latestData;
+
+		// If we've already exhausted all the next data,
+		// then there's not a lot we can do.
+		if (!data.next) {
+			stopExisting();
+			return;
+		}
+		data.now = data.next;
+		delete data.next;
+		evaluateData(data);
+	}
+
 	updateDisplay("Connecting", "chocolate");
 	document.getElementById("next").addEventListener('click', function skipTrack() {
-		updateDisplay("Skipping", "chocolate");
+		playNext();
 		fetch("https://ceol.l42.eu/next?"+getUpdateParams(), {method: "POST"}).catch(function skipError(error) {
-			updateDisplay("Skip failed", "crimson");
+			console.error("Failed to tell server of next skip", error);
 		});
 	});
 	document.getElementById("cover").addEventListener('click', function playpauseTrack() {

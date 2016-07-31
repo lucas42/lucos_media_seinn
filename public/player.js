@@ -51,12 +51,14 @@ function player() {
 		}
 		document.getElementById("cover").style.backgroundImage = 'url('+data.now.metadata.img+')';
 		document.getElementById("nexttrack").firstChild.nodeValue = data.next.metadata.title;
+		document.getElementById("next").dataset.buffered = false;
 		document.getElementById("nowtitle").firstChild.nodeValue = data.now.metadata.title;
 		document.getElementById("nowartist").firstChild.nodeValue = data.now.metadata.artist;
 
-
 		// Preload next track in the background
-		if (data.next && data.next.url) getBuffer(data.next.url);
+		if (data.next && data.next.url) getBuffer(data.next.url).then(function nextBuffered() {
+			document.getElementById("next").dataset.buffered = true;
+		});;
 
 		// If the track is already playing, don't interrupt, just make any appropriate changes
 		if (current && current.trackURL == trackURL && current.isPlaying == data.isPlaying) {

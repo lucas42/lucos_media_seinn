@@ -15,6 +15,9 @@ footer { position: fixed; bottom: 0; width: 100%; background: rgba(100,100,255,0
 	padding: 0.5em;
 	font-family: Georgia, serif;
 }
+#next[data-buffered='false'] {
+	color: #555;
+}
 #nowtitle, #nowartist {
 	display: block;
     font-weight: bold;

@@ -37,6 +37,12 @@ self.addEventListener('fetch', function(event) {
 	);
 });
 
+self.addEventListener('sync', function (event) {
+	if (event.tag.startsWith("https://")) {
+		event.waitUntil(fetch(event.tag, {method: 'POST'}));
+	}
+});
+
 // Load resources for tracks into caches so they're quick to load
 function preLoadTrack(trackData) {
 	if (!trackData) return;

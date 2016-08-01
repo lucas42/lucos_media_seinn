@@ -145,11 +145,7 @@ function player() {
 	}
 
 	function trackDone(trackURL, status) {
-		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status), {
-		    method: "POST"
-		}).catch(function skipError(error) {
-			console.error("Can't tell server to advance to next track", error);
-		});
+		swHelper.sync("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status));
 		if (current.trackURL == trackURL) playNext();
 	}
 	function trackEndedHandler(event) {
@@ -237,11 +233,30 @@ function player() {
 }
 document.addEventListener("DOMContentLoaded", player);
 
-
-if ('serviceWorker' in navigator) {
-	navigator.serviceWorker.register('/serviceworker.js').then(function swRegistered(registration) {
+var swHelper = (function swHelperInit() {
+	var registration;
+	if ('serviceWorker' in navigator) {
+		registration = navigator.serviceWorker.register('/serviceworker.js');
+	} else {
+		registration = new Promise(function(resolve, reject) {
+			throw "no service worker support";
+		});
+	}
+	registration.then(function swRegistered(registration) {
 		console.log('ServiceWorker registration successful with scope: ' + registration.scope);
 	}).catch(function swError(error) {
 		console.error('ServiceWorker registration failed: ' + error);
 	});
-}
+	function sync(url) {
+		registration.then(function (registration) {
+			registration.sync.register(url);
+
+		// If can't do a background sync, just try a one off POST request
+		}).catch(function failedSync() {
+			fetch(url, {method: "POST"});
+		});
+	}
+	return {
+		sync: sync,
+	};
+})();

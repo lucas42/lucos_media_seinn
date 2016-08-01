@@ -166,7 +166,7 @@ function player() {
 		}
 
 		// Tell server where the track was, before getting rid of it.
-		if (current.start) fetch("https://ceol.l42.eu/update?"+getUpdateParams(), {method: "POST"});
+		if (current.start) swHelper.sync("https://ceol.l42.eu/update?"+getUpdateParams());
 		current = null;
 	}
 

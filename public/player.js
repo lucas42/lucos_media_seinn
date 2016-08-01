@@ -206,23 +206,19 @@ function player() {
 		trackDone(current.trackURL, "manual skip");
 	});
 	document.getElementById("cover").addEventListener('click', function playpauseTrack() {
+		var data = current.latestData;
+		var command;
 		if (current.source) {
-
-			// Pause is easy, do it immediately and then tell server.
 			updateDisplay("Pausing", "chocolate");
-			stopExisting(0);
-			fetch("https://ceol.l42.eu/pause?"+getUpdateParams(), {method: "POST"}).catch(function pauseError(error) {
-				console.error("Failed to tell server of pause");
-			});
+			command = "pause";
+			data.isPlaying = false;
 		} else {
-
-			// Play is slightly harder.  For now, tell server and wait for poll to return the update.
-			fetch("https://ceol.l42.eu/play?"+getUpdateParams(), {method: "POST"}).then(function resumeTrack() {
-				updateDisplay("Resuming", "chocolate");
-			}).catch(function resumeError(error) {
-				updateDisplay("Connection failed", "crimson");
-			});
+			updateDisplay("Unpausing", "chocolate");
+			command = "play";
+			data.isPlaying = true;
 		}
+		swHelper.sync("https://ceol.l42.eu/"+command+"?"+getUpdateParams());
+		evaluateData(data);
 	});
 
 	// Make sure footer clicks don't propagate into rest of page.

@@ -95,7 +95,8 @@ function player() {
 
 		buffer.then(function createSource(buffer) {
 			if (trackURL != current.trackURL || current.source) {
-				console.log("Another track load has overtaken this one, ignoring");
+				
+				//Another track load has overtaken this one so ignore this one
 				return;
 			}
 			playBuffer(trackURL, buffer, data.volume, data.now.currentTime);

@@ -1,11 +1,11 @@
 function player() {
 	var audioContext = new AudioContext();
-	var current = null;
+	var current = {};
 
 	// Returns a string of get params to include in requests so that server knows the current state of play
 	function getUpdateParams() {
 		var params = "";
-		if (current && current.start) {
+		if (current.start) {
 			var timeLapsed = audioContext.currentTime - current.start;
 			params += "&update_url="+current.trackURL;
 			params += "&update_time="+timeLapsed;
@@ -65,7 +65,7 @@ function player() {
 		}
 
 		// If the track is already playing, don't interrupt, just make any appropriate changes
-		if (current && current.trackURL == trackURL && current.isPlaying == data.isPlaying) {
+		if (current.trackURL == trackURL && current.isPlaying == data.isPlaying) {
 			if (current.gainNode) {
 				current.gainNode.gain.linearRampToValueAtTime(data.volume, audioContext.currentTime + 0.5);
 			}
@@ -114,7 +114,6 @@ function player() {
 				return audioContext.decodeAudioData(arrayBuffer);
 			}).catch(function trackFailure(error) {
 				updateDisplay("Failure", "crimson", trackURL);
-				console.error("Failed to load track", error);
 
 				// Tell server couldn't play
 				trackDone(trackURL, error.message);
@@ -153,7 +152,6 @@ function player() {
 		trackDone(event.target.trackURL, event.type);
 	}
 	function stopExisting(fadeTime) {
-		if (!current) return;
 		if (current.source) {
 			current.source.removeEventListener("ended", trackEndedHandler);
 
@@ -167,15 +165,13 @@ function player() {
 
 		// Tell server where the track was, before getting rid of it.
 		if (current.start) swHelper.sync("https://ceol.l42.eu/update?"+getUpdateParams());
-		current = null;
+		current = {};
 	}
 
 	function updateDisplay(message, colour, trackURL) {
 
-		// If the update is about a specific track, only display it if that track is the one playing.
-		if (trackURL) {
-			if (!current || trackURL != current.trackURL) return;
-		}
+		// If the update is about a specific track, only display it if that track is the current one.
+		if (trackURL && trackURL != current.trackURL) return;
 		var statusNode = document.getElementById('status')
 		statusNode.firstChild.nodeValue = message;
 		statusNode.style.backgroundColor = colour;

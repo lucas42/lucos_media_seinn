@@ -217,6 +217,38 @@ function player() {
 		fetch("https://ceol.l42.eu/"+command+"?"+getUpdateParams(), {method: 'POST'});
 		evaluateData(data);
 	});
+	document.getElementById("playlisticon").addEventListener('click', function togglePlaylist(event) {
+		var playlistdiv = document.getElementById("playlist");
+		if (playlistdiv.dataset.visible) {
+			delete playlistdiv.dataset.visible;
+		} else {
+			while (playlistdiv.firstChild) {
+				playlistdiv.removeChild(playlistdiv.firstChild);
+			}
+			playlistdiv.dataset.visible = true;
+			var loadingdiv = document.createElement("div");
+			loadingdiv.id = 'playlistloading'
+			loadingdiv.appendChild(document.createTextNode("Loading Playlist..."));
+			playlistdiv.appendChild(loadingdiv);
+			fetch("https://ceol.l42.eu/poll/playlist?_cb="+new Date().getTime()).then(function (response){
+				return response.json();
+			}).then(function (playlistdata){
+				var listdiv = document.createElement("ol");
+				playlistdata.playlist.forEach(function (trackdata){
+					console.log(trackdata.metadata.title);
+					var listitem = document.createElement("li");
+					listitem.appendChild(document.createTextNode(trackdata.metadata.title));
+					listdiv.appendChild(listitem);
+				})
+				playlistdiv.removeChild(loadingdiv);
+				playlistdiv.appendChild(listdiv);
+			}).catch(function () {
+				console.log("error");
+				loadingdiv.dataset.error = true;
+				loadingdiv.firstChild.nodeValue = "Error loading playlist."
+			});
+		}
+	});
 
 	// Make sure footer clicks don't propagate into rest of page.
 	document.querySelector("footer").addEventListener('click', function stopFooterProp(event) {

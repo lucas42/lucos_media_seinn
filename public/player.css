@@ -32,3 +32,32 @@ footer { position: fixed; bottom: 0; width: 100%; background: rgba(100,100,255,0
 #nowartist {
 	font-style: italic;
 }
+#playlist {
+	display: none;
+	position: fixed;
+	top: 1em;
+	left: 1em;
+	right: 1em;
+	bottom: 3em;
+	background: rgba(255, 255, 255, 0.8);
+	border-radius: 2em;
+	border-style: solid;
+	overflow: scroll;
+}
+#playlist[data-visible='true'] {
+	display: block;
+}
+#playlistloading {
+	text-align: center;
+	margin-top: 1em;
+	font-size: 2em;
+	font-style: italic;
+}
+#playlistloading[data-error='true'] {
+	color: red;
+}
+#playlisticon {
+	float: right;
+	padding: 0 0.3em;
+	font-size: 1.5em;
+}

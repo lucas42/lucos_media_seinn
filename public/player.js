@@ -95,7 +95,7 @@ function player() {
 
 		buffer.then(function createSource(buffer) {
 			if (trackURL != current.trackURL || current.source) {
-				
+
 				//Another track load has overtaken this one so ignore this one
 				return;
 			}
@@ -145,7 +145,7 @@ function player() {
 	}
 
 	function trackDone(trackURL, status) {
-		swHelper.sync("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status));
+		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status), {method: 'POST'});
 		if (current.trackURL == trackURL) playNext();
 	}
 	function trackEndedHandler(event) {
@@ -165,7 +165,7 @@ function player() {
 		}
 
 		// Tell server where the track was, before getting rid of it.
-		if (current.start) swHelper.sync("https://ceol.l42.eu/update?"+getUpdateParams());
+		if (current.start) fetch("https://ceol.l42.eu/update?"+getUpdateParams(), {method: 'POST'});
 		current = {};
 	}
 
@@ -214,7 +214,7 @@ function player() {
 			command = "play";
 			data.isPlaying = true;
 		}
-		swHelper.sync("https://ceol.l42.eu/"+command+"?"+getUpdateParams());
+		fetch("https://ceol.l42.eu/"+command+"?"+getUpdateParams(), {method: 'POST'});
 		evaluateData(data);
 	});
 
@@ -226,7 +226,7 @@ function player() {
 }
 document.addEventListener("DOMContentLoaded", player);
 
-var swHelper = (function swHelperInit() {
+(function swHelperInit() {
 	var registration;
 	if ('serviceWorker' in navigator) {
 		registration = navigator.serviceWorker.register('/serviceworker.js');
@@ -240,16 +240,4 @@ var swHelper = (function swHelperInit() {
 	}).catch(function swError(error) {
 		console.error('ServiceWorker registration failed: ' + error);
 	});
-	function sync(url) {
-		registration.then(function (registration) {
-			registration.sync.register(url);
-
-		// If can't do a background sync, just try a one off POST request
-		}).catch(function failedSync() {
-			fetch(url, {method: "POST"});
-		});
-	}
-	return {
-		sync: sync,
-	};
 })();

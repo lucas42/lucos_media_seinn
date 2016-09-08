@@ -18,64 +18,67 @@ self.addEventListener('install', function swInstalled(event) {
 });
 
 self.addEventListener('fetch', function respondToFetch(event) {
-
-	// HACK: chrome doesn't support ignoreSearch yet http://crbug.com/520784
-	var fakeurl = new URL(event.request.url);
-	fakeurl.search = '';
-	var fakerequest = new Request(fakeurl.href);
 	var url = new URL(event.request.url);
-	var responsePromise = caches.match(fakerequest).then(function serveFromCache(response) {
-		if (response) {
-			if (event.request.url.startsWith("https://ceol.l42.eu/poll")) {
-				return response.clone().json().then(function pollFromCache (data) {
-					var pollResponse = new Promise(function pollPromiser (resolve) {
-						if (data.hashcode != url.searchParams.get("hashcode")) {
-							resolve(response);
-						} else {
-							waitingPolls.push(resolve);
-						}
+	if (event.request.method == "GET") {
+
+		// HACK: chrome doesn't support ignoreSearch yet http://crbug.com/520784
+		var fakeurl = new URL(event.request.url);
+		fakeurl.search = '';
+		var fakerequest = new Request(fakeurl.href);
+		var responsePromise = caches.match(fakerequest).then(function serveFromCache(response) {
+			if (response) {
+				if (event.request.url.startsWith("https://ceol.l42.eu/poll")) {
+					return response.clone().json().then(function pollFromCache (data) {
+						var pollResponse = new Promise(function pollPromiser (resolve) {
+							if (data.hashcode != url.searchParams.get("hashcode")) {
+								resolve(response);
+							} else {
+								waitingPolls.push(resolve);
+							}
+						});
+						pollResponse.then(function pollJSON(response) {
+							return response.clone().json();
+						}).then(function preloadPollData(polldata) {
+							preLoadTrack(polldata.now);
+							preLoadTrack(polldata.next);
+						});
+						return pollResponse;
 					});
-					pollResponse.then(function pollJSON(response) {
-						return response.clone().json();
-					}).then(function preloadPollData(polldata) {
+				}
+				return response;
+			}
+
+			return fetch(event.request).then(function inspectResponse(response) {
+
+				// For poll requests, inspect a clone of the response
+				/*if (event.request.url.startsWith("https://ceol.l42.eu/poll")) {
+					response.clone().json().then(function preLoadTracks(polldata) {
 						preLoadTrack(polldata.now);
 						preLoadTrack(polldata.next);
 					});
-					return pollResponse;
-				});
-			}
-			return response;
-		}
-
-		return fetch(event.request).then(function inspectResponse(response) {
-
-			// For poll requests, inspect a clone of the response
-			/*if (event.request.url.startsWith("https://ceol.l42.eu/poll")) {
-				response.clone().json().then(function preLoadTracks(polldata) {
-					preLoadTrack(polldata.now);
-					preLoadTrack(polldata.next);
-				});
-			}*/
-			return response;
+				}*/
+				return response;
+			});
 		});
-	});
 
-	event.respondWith(responsePromise);
+		event.respondWith(responsePromise);
+	} else if (event.request.method == "POST") {
+		var postPromise = new Promise(function (resolve) {resolve()});
+		if (url.pathname == "/done") {
+			postPromise = trackDone(url.searchParams.get("track"));
+		}
+		var responsePromise = postPromise.then(function () {
+			return self.registration.sync.register(event.request.url);
+		}).then(function (){
+			return new Response();
+		});
+		event.respondWith(responsePromise);
+	}
 });
 
 self.addEventListener('sync', function backgroundSync(event) {
 	if (event.tag.startsWith("https://")) {
-		var url = new URL(event.tag);
-		if (url.pathname == "/done") {
-			event.waitUntil(
-				trackDone(url.searchParams.get("track")).then(function () {
-					return fetch(event.tag, {method: 'POST'});
-				})
-			);
-		} else {
-
-			event.waitUntil(fetch(event.tag, {method: 'POST'}));
-		}
+		event.waitUntil(fetch(event.tag, {method: 'POST'}));
 	}
 });
 
@@ -97,7 +100,7 @@ function preLoadTrack(trackData) {
 
 			// If the track wasn't reachable, tell the server, which should skip that one out
 			}).catch(function trackError(error) {
-				self.sync.register("https://ceol.l42.eu/done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup");
+				self.registration.sync.register("https://ceol.l42.eu/done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup");
 			});
 		});
 	});

@@ -86,12 +86,7 @@ function player() {
 		var buffer = getBuffer(trackURL);
 
 		// If nothing should be playing, then don't proceed.
-		if (!data.isPlaying) {
-			buffer.then(function trackPaused(buffer) {
-				updateDisplay("Paused", "indigo", trackURL);
-			});
-			return;
-		}
+		if (!data.isPlaying) return;
 
 		buffer.then(function createSource(buffer) {
 			if (trackURL != current.trackURL || current.source) {
@@ -106,33 +101,42 @@ function player() {
 	var buffers = {};
 	function getBuffer(trackURL) {
 		if (!(trackURL in buffers)) {
-			updateDisplay("Fetching", "chocolate", trackURL);
 			buffers[trackURL] = fetch(trackURL.replace("ceol srl", "import/black/ceol srl")).then(function bufferTrack(rawtrack) {
-				updateDisplay("Buffering", "chocolate", trackURL);
 				buffers[trackURL].state = "buffering";
+				updateDisplay();
 				return rawtrack.arrayBuffer();
 			}).then(function decodeTrack(arrayBuffer) {
-				updateDisplay("Decoding", "chocolate", trackURL);
 				buffers[trackURL].state = "decoding";
+				updateDisplay();
 				return audioContext.decodeAudioData(arrayBuffer);
 			}).then(function doneDecoding(buffer) {
 				buffers[trackURL].state = "ready";
+				updateDisplay();
 				return buffer;
 			}).catch(function trackFailure(error) {
-				updateDisplay("Failure", "crimson", trackURL);
 				buffers[trackURL].state = "failed";
+				updateDisplay();
 
 				// Tell server couldn't play
 				trackDone(trackURL, error.message);
 			});
 			buffers[trackURL].state = "fetching";
+			updateDisplay();
 		}
 		return buffers[trackURL];
+	}
+	function getState(trackURL) {
+		if (!trackURL) return "preparing";
+		var bufferpromise = buffers[trackURL];
+		if (!bufferpromise) return "unloaded";
+		if (bufferpromise.state == "ready" && current.trackURL == trackURL) {
+			return current.isPlaying ? "playing" : "paused";
+		}
+		return bufferpromise.state;
 	}
 
 	function playBuffer(trackURL, buffer, volume, startTime) {
 		current.trackURL = trackURL;
-		updateDisplay("Preparing", "chocolate", trackURL);
 		var source = audioContext.createBufferSource();
 		source.trackURL = trackURL;
 		source.addEventListener("ended", trackEndedHandler);
@@ -143,12 +147,12 @@ function player() {
 		source.connect(gainNode);
 		gainNode.connect(audioContext.destination);
 		source.start(0, startTime);
-		updateDisplay("Playing", "green", trackURL);
 		current.gainNode = gainNode;
 		current.source = source;
 		current.start = audioContext.currentTime - startTime;
 		current.isPlaying = true;
 		current.volume = volume;
+		updateDisplay();
 	}
 
 	function trackDone(trackURL, status) {
@@ -156,7 +160,8 @@ function player() {
 		if (current.trackURL == trackURL) playNext();
 	}
 	function trackEndedHandler(event) {
-		updateDisplay("Track Ended", "chocolate", event.target.trackURL);
+		buffers[event.target.trackURL].state = "finished";
+		updateDisplay();
 		trackDone(event.target.trackURL, event.type);
 	}
 	function stopExisting(fadeTime) {
@@ -176,13 +181,11 @@ function player() {
 		current = {};
 	}
 
-	function updateDisplay(message, colour, trackURL) {
-
-		// If the update is about a specific track, only display it if that track is the current one.
-		if (trackURL && trackURL != current.trackURL) return;
-		var statusNode = document.getElementById('status')
-		statusNode.firstChild.nodeValue = message;
-		statusNode.style.backgroundColor = colour;
+	function updateDisplay(message) {
+		var statusNode = document.getElementById('status');
+		var state = message ? message : getState(current.trackURL);
+		statusNode.firstChild.nodeValue = state;
+		statusNode.dataset.state = state;
 	}
 
 	/**
@@ -191,7 +194,7 @@ function player() {
 	 * until we get an update from the server
 	 */
 	function playNext() {
-		updateDisplay("Skipping", "chocolate");
+		updateDisplay("skipping");
 		var data = current.latestData;
 
 		// If we've already exhausted all the next data,
@@ -205,7 +208,7 @@ function player() {
 		evaluateData(data);
 	}
 
-	updateDisplay("Connecting", "chocolate");
+	updateDisplay("connecting");
 	document.getElementById("next").addEventListener('click', function skipTrack() {
 		trackDone(current.trackURL, "manual skip");
 	});
@@ -213,11 +216,11 @@ function player() {
 		var data = current.latestData;
 		var command;
 		if (current.source) {
-			updateDisplay("Pausing", "chocolate");
+			updateDisplay("pausing");
 			command = "pause";
 			data.isPlaying = false;
 		} else {
-			updateDisplay("Unpausing", "chocolate");
+			updateDisplay("unpausing");
 			command = "play";
 			data.isPlaying = true;
 		}
@@ -243,8 +246,7 @@ function player() {
 				if (!playlistdata.playlist.length) throw "No tracks in playlist";
 				var listdiv = document.createElement("ol");
 				playlistdata.playlist.forEach(function (trackdata){
-					var state, bufferpromise = buffers[trackdata.url];
-					state = bufferpromise ? bufferpromise.state : "unloaded";
+					var state = getState(trackdata.url);
 					var listitem = document.createElement("li");
 					var statenode = document.createElement("span");
 					statenode.appendChild(document.createTextNode(state));

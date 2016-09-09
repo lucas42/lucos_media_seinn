@@ -43,6 +43,7 @@ footer { position: fixed; bottom: 0; width: 100%; background: rgba(100,100,255,0
 	border-radius: 2em;
 	border-style: solid;
 	overflow: scroll;
+	overflow-scrolling: touch;
 }
 #playlist[data-visible='true'] {
 	display: block;
@@ -57,9 +58,12 @@ footer { position: fixed; bottom: 0; width: 100%; background: rgba(100,100,255,0
 	color: red;
 }
 #playlisticon {
-	float: right;
 	padding: 0 0.3em;
 	font-size: 1.5em;
+	position: fixed;
+	right: 0;
+	z-index: 10;
+	cursor: pointer;
 }
 #playlist .state {
 	width: 90px;

@@ -239,6 +239,9 @@ function player() {
 				if (!playlistdata.playlist.length) throw "No tracks in playlist";
 				if (!playlistdiv.dataset.visible) return;
 				var listdiv = document.createElement("ol");
+				if (current.latestData && current.latestData.now.url) {
+					playlistdata.playlist.unshift(current.latestData.now);
+				}
 				playlistdata.playlist.forEach(function (trackdata){
 					var state = getState(trackdata.url);
 					var listitem = document.createElement("li");

@@ -240,6 +240,7 @@ function player() {
 			fetch("https://ceol.l42.eu/poll/playlist?_cb="+new Date().getTime()).then(function (response){
 				return response.json();
 			}).then(function (playlistdata){
+				if (!playlistdata.playlist.length) throw "No tracks in playlist";
 				var listdiv = document.createElement("ol");
 				playlistdata.playlist.forEach(function (trackdata){
 					var state, bufferpromise = buffers[trackdata.url];

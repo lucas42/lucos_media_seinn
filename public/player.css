@@ -61,3 +61,24 @@ footer { position: fixed; bottom: 0; width: 100%; background: rgba(100,100,255,0
 	padding: 0 0.3em;
 	font-size: 1.5em;
 }
+#playlist .state {
+	width: 90px;
+	display: inline-block;
+	font-size: 0.7em;
+	color: white;
+	text-transform: capitalize;
+	margin: 0 1em;
+	text-align: center;
+}
+.state[data-state='fetching'], .state[data-state='buffering'], .state[data-state='decoding'], .state[data-state='preparing'] {
+	background: chocolate;
+}
+.state[data-state='unloaded'] {
+	background: grey;
+}
+.state[data-state='failed'] {
+	background: red;
+}
+.state[data-state='ready'] {
+	background: green;
+}

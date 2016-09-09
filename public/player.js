@@ -109,16 +109,23 @@ function player() {
 			updateDisplay("Fetching", "chocolate", trackURL);
 			buffers[trackURL] = fetch(trackURL.replace("ceol srl", "import/black/ceol srl")).then(function bufferTrack(rawtrack) {
 				updateDisplay("Buffering", "chocolate", trackURL);
+				buffers[trackURL].state = "buffering";
 				return rawtrack.arrayBuffer();
 			}).then(function decodeTrack(arrayBuffer) {
 				updateDisplay("Decoding", "chocolate", trackURL);
+				buffers[trackURL].state = "decoding";
 				return audioContext.decodeAudioData(arrayBuffer);
+			}).then(function doneDecoding(buffer) {
+				buffers[trackURL].state = "ready";
+				return buffer;
 			}).catch(function trackFailure(error) {
 				updateDisplay("Failure", "crimson", trackURL);
+				buffers[trackURL].state = "failed";
 
 				// Tell server couldn't play
 				trackDone(trackURL, error.message);
 			});
+			buffers[trackURL].state = "fetching";
 		}
 		return buffers[trackURL];
 	}
@@ -235,15 +242,25 @@ function player() {
 			}).then(function (playlistdata){
 				var listdiv = document.createElement("ol");
 				playlistdata.playlist.forEach(function (trackdata){
-					console.log(trackdata.metadata.title);
+					var state, bufferpromise = buffers[trackdata.url];
+					state = bufferpromise ? bufferpromise.state : "unloaded";
 					var listitem = document.createElement("li");
-					listitem.appendChild(document.createTextNode(trackdata.metadata.title));
+					var statenode = document.createElement("span");
+					statenode.appendChild(document.createTextNode(state));
+					statenode.className = 'state';
+					statenode.dataset.state = state;
+					listitem.appendChild(statenode);
+					var title = "";
+					if (trackdata.metadata.title) title += trackdata.metadata.title;
+					else title += trackdata.url;
+					if (trackdata.metadata.artist) title += " - " + trackdata.metadata.artist;
+
+					listitem.appendChild(document.createTextNode(title));
 					listdiv.appendChild(listitem);
 				})
 				playlistdiv.removeChild(loadingdiv);
 				playlistdiv.appendChild(listdiv);
 			}).catch(function () {
-				console.log("error");
 				loadingdiv.dataset.error = true;
 				loadingdiv.firstChild.nodeValue = "Error loading playlist."
 			});

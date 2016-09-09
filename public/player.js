@@ -186,6 +186,7 @@ function player() {
 		var state = message ? message : getState(current.trackURL);
 		statusNode.firstChild.nodeValue = state;
 		statusNode.dataset.state = state;
+		playlistViewer.refresh();
 	}
 
 	/**
@@ -208,25 +209,6 @@ function player() {
 		evaluateData(data);
 	}
 
-	updateDisplay("connecting");
-	document.getElementById("next").addEventListener('click', function skipTrack() {
-		trackDone(current.trackURL, "manual skip");
-	});
-	document.getElementById("cover").addEventListener('click', function playpauseTrack() {
-		var data = current.latestData;
-		var command;
-		if (current.source) {
-			updateDisplay("pausing");
-			command = "pause";
-			data.isPlaying = false;
-		} else {
-			updateDisplay("unpausing");
-			command = "play";
-			data.isPlaying = true;
-		}
-		fetch("https://ceol.l42.eu/"+command+"?"+getUpdateParams(), {method: 'POST'});
-		evaluateData(data);
-	});
 
 	var playlistViewer = (function playlistViewer() {
 		var playlistdiv = document.getElementById("playlist");
@@ -283,9 +265,29 @@ function player() {
 			});
 		}
 		return {
-			refresh: refreshPlaylist(),
+			refresh: refreshPlaylist,
 		}
 	})();
+
+	updateDisplay("connecting");
+	document.getElementById("next").addEventListener('click', function skipTrack() {
+		trackDone(current.trackURL, "manual skip");
+	});
+	document.getElementById("cover").addEventListener('click', function playpauseTrack() {
+		var data = current.latestData;
+		var command;
+		if (current.source) {
+			updateDisplay("pausing");
+			command = "pause";
+			data.isPlaying = false;
+		} else {
+			updateDisplay("unpausing");
+			command = "play";
+			data.isPlaying = true;
+		}
+		fetch("https://ceol.l42.eu/"+command+"?"+getUpdateParams(), {method: 'POST'});
+		evaluateData(data);
+	});
 
 	// Make sure footer clicks don't propagate into rest of page.
 	document.querySelector("footer").addEventListener('click', function stopFooterProp(event) {

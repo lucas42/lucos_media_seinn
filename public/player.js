@@ -227,23 +227,35 @@ function player() {
 		fetch("https://ceol.l42.eu/"+command+"?"+getUpdateParams(), {method: 'POST'});
 		evaluateData(data);
 	});
-	document.getElementById("playlisticon").addEventListener('click', function togglePlaylist(event) {
+
+	var playlistViewer = (function playlistViewer() {
 		var playlistdiv = document.getElementById("playlist");
-		if (playlistdiv.dataset.visible) {
-			delete playlistdiv.dataset.visible;
-		} else {
+		document.getElementById("playlisticon").addEventListener('click', function togglePlaylist(event) {
+			if (playlistdiv.dataset.visible) {
+				delete playlistdiv.dataset.visible;
+			} else {
+				playlistdiv.dataset.visible = true;
+				var loadingdiv = document.createElement("div");
+				loadingdiv.id = 'playlistloading'
+				loadingdiv.appendChild(document.createTextNode("Loading Playlist..."));
+				setPlaylistDiv(loadingdiv);
+				refreshPlaylist();
+			}
+		});
+
+		function setPlaylistDiv(node) {
 			while (playlistdiv.firstChild) {
 				playlistdiv.removeChild(playlistdiv.firstChild);
 			}
-			playlistdiv.dataset.visible = true;
-			var loadingdiv = document.createElement("div");
-			loadingdiv.id = 'playlistloading'
-			loadingdiv.appendChild(document.createTextNode("Loading Playlist..."));
-			playlistdiv.appendChild(loadingdiv);
+			playlistdiv.appendChild(node);
+		}
+		function refreshPlaylist() {
+			if (!playlistdiv.dataset.visible) return;
 			fetch("https://ceol.l42.eu/poll/playlist?_cb="+new Date().getTime()).then(function (response){
 				return response.json();
 			}).then(function (playlistdata){
 				if (!playlistdata.playlist.length) throw "No tracks in playlist";
+				if (!playlistdiv.dataset.visible) return;
 				var listdiv = document.createElement("ol");
 				playlistdata.playlist.forEach(function (trackdata){
 					var state = getState(trackdata.url);
@@ -260,15 +272,20 @@ function player() {
 
 					listitem.appendChild(document.createTextNode(title));
 					listdiv.appendChild(listitem);
-				})
-				playlistdiv.removeChild(loadingdiv);
-				playlistdiv.appendChild(listdiv);
-			}).catch(function () {
+				});
+				setPlaylistDiv(listdiv);
+			}).catch(function (error) {
+				if (!playlistdiv.dataset.visible) return;
+				var loadingdiv = document.getElementById("playlistloading");
+				if (!loadingdiv) return;
 				loadingdiv.dataset.error = true;
-				loadingdiv.firstChild.nodeValue = "Error loading playlist."
+				loadingdiv.firstChild.nodeValue = "Error loading playlist.  " + error;
 			});
 		}
-	});
+		return {
+			refresh: refreshPlaylist(),
+		}
+	})();
 
 	// Make sure footer clicks don't propagate into rest of page.
 	document.querySelector("footer").addEventListener('click', function stopFooterProp(event) {

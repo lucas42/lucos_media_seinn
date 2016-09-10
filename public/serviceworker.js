@@ -34,7 +34,8 @@ self.addEventListener('fetch', function respondToFetch(event) {
 							if (data.hashcode != url.searchParams.get("hashcode")) {
 								resolve(response);
 							} else {
-								waitingPolls.push(resolve);
+								if (!waitingPolls[url.pathname]) waitingPolls[url.pathname] = [];
+								waitingPolls[url.pathname].push(resolve);
 							}
 						});
 						if (url.pathname == "/poll/playlist") {
@@ -143,9 +144,8 @@ function preLoadTrack(trackData) {
 	}).catch(function () {console.error(arguments);});
 }
 
-function poll(url, sendResponseFunction, handleDataFunction, additionalParamFunction) {
+function poll(url, handleDataFunction, additionalParamFunction) {
 	if (!url) throw "no URL given to poll";
-	if (sendResponseFunction && typeof sendResponseFunction != "function") throw "sendResponseFunction must be a function";
 	if (handleDataFunction && typeof handleDataFunction != 'function') throw "handleDataFunction must be a function";
 	if (additionalParamFunction && typeof additionalParamFunction != 'function') throw "additionalParamFunction must be a function";
 	caches.open(POLL_CACHE).then(function fetchImage(cache) {
@@ -166,7 +166,7 @@ function poll(url, sendResponseFunction, handleDataFunction, additionalParamFunc
 						hashcode = data.hashcode;
 						cache.put(request, response.clone());
 						if (handleDataFunction) handleDataFunction(data);
-						if (sendResponseFunction) sendResponseFunction(response);
+						statusChanged(request.pathname, response);
 					}
 					actuallyPoll(hashcode);
 				});
@@ -222,16 +222,18 @@ function trackDone(url) {
 			cache.put(statusRequest, statusResponse.clone()),
 			cache.put(playlistRequest, playlistResponse.clone())
 		]).then(function () {
-			statusChanged(statusResponse.clone());
+			statusChanged('/poll', statusResponse.clone());
+			statusChanged('/poll/playlist', playlistResponse.clone());
 			return "successful";
 		});
 	});
 }
 
 // Resolve any requests waiting for the new status response
-function statusChanged(response) {
+function statusChanged(path, response) {
 	var resolve;
-	while (resolve = waitingPolls.shift()) {
+	if (!path in waitingPolls) return;
+	while (resolve = waitingPolls[path].shift()) {
 		resolve(response);
 	}
 }
@@ -284,5 +286,5 @@ var tracksCached = (function () {
 	};
 })();
 
-poll("https://ceol.l42.eu/poll/playlist", null, preloadPlaylist);
-poll("https://ceol.l42.eu/poll", statusChanged, preloadNowNext);
+poll("https://ceol.l42.eu/poll/playlist", preloadPlaylist);
+poll("https://ceol.l42.eu/poll", preloadNowNext);

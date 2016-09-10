@@ -105,15 +105,11 @@ function preLoadTrack(trackData) {
 	caches.open(TRACK_CACHE).then(function preFetchTrack(cache) {
 		var trackRequest = new Request(trackData.url.replace("ceol srl", "import/black/ceol srl"));
 		cache.match(trackRequest).then(function (fromCache) {
-			if (fromCache) {
-				tracksCached.add(trackRequest.url);
-				return;
-			}
-			if (trackRequest.url in fetchingTracks) return;
+			if (fromCache || trackRequest.url in fetchingTracks) return;
 			fetchingTracks[trackRequest.url] = fetch(trackRequest).then(function cacheTrack(trackResponse) {
 				if (trackResponse.status == 200) {
 					return cache.put(trackRequest, trackResponse).then(function () {
-						tracksCached.add(trackRequest.url);
+						tracksCached.refresh();
 						delete fetchingTracks[trackRequest.url];
 					});
 				} else {
@@ -138,8 +134,7 @@ function preLoadTrack(trackData) {
 			if (fromCache || imgRequest.url in fetchingImages) return;
 
 			// Ideally just do cache.add(imgRequest), but that has poor error handling
-			fetchingImages[imgRequest.url] = imgRequest;
-			fetch(imgRequest).then(function (response) {
+			fetchingImages[imgRequest.url] = fetch(imgRequest).then(function (response) {
 				cache.put(imgRequest, response).then(function () {
 					delete fetchingImages[imgRequest.url];
 				});
@@ -260,24 +255,28 @@ function refreshResources() {
 
 // Synchronously check which tracks are cached
 var tracksCached = (function () {
-	var tracks = [];
+	var tracks = {};
 	var trackCache = caches.open(TRACK_CACHE);
 	function isCached(trackURL) {
-		return tracks.includes(trackURL);
+		return trackURL in tracks;
 	}
 	function add(trackURL) {
-		tracks.push(trackURL);
+		//tracks.push(trackURL);
 		//console.log(tracks);
+		refresh();
 	}
 
 	// This doesn't seem to work :(
 	function refresh() {
 		caches.open(TRACK_CACHE).then(function (cache) {
-			cache.keys().then(function (keys) {
-				console.log(keys); 
+			cache.keys().then(function (requests) {
+				requests.forEach(function (request) {
+					tracks[request.url] = true;
+				})
 			});
 		});
 	}
+	refresh();
 	return {
 		isCached: isCached,
 		refresh: refresh,

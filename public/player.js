@@ -311,6 +311,7 @@ document.addEventListener("DOMContentLoaded", player);
 	}
 	registration.then(function swRegistered(registration) {
 		console.log('ServiceWorker registration successful with scope: ' + registration.scope);
+		registration.update();
 	}).catch(function swError(error) {
 		console.error('ServiceWorker registration failed: ' + error);
 	});

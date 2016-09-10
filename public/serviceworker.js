@@ -10,11 +10,7 @@ const POLL_CACHE = 'polls-v1';
 var waitingPolls = [];
 
 self.addEventListener('install', function swInstalled(event) {
-	event.waitUntil(
-		caches.open(RESOURCE_CACHE).then(function addUrlsToCache(cache) {
-			return cache.addAll(urlsToCache);
-		})
-	);
+	event.waitUntil(refreshResources());
 });
 
 self.addEventListener('fetch', function respondToFetch(event) {
@@ -62,6 +58,9 @@ self.addEventListener('fetch', function respondToFetch(event) {
 		});
 
 		event.respondWith(responsePromise);
+
+		// As well as getting the main page from the cache, check the network for updates
+		if (url.pathname == "/") refreshResources();
 	} else if (event.request.method == "POST") {
 		var postPromise = new Promise(function (resolve) {resolve()});
 		if (url.pathname == "/done") {
@@ -212,16 +211,19 @@ function statusChanged(response) {
 }
 
 function preloadNowNext(polldata) {
-	console.log('preloadNowNext');
 	preLoadTrack(polldata.now);
 	preLoadTrack(polldata.next);
 }
 
 function preloadPlaylist(data) {
-	console.log('preloadPlaylist');
 	if (!data.playlist) return;
 	data.playlist.forEach(function (track) {
 		preLoadTrack(track);
+	});
+}
+function refreshResources() {
+	return caches.open(RESOURCE_CACHE).then(function addUrlsToCache(cache) {
+		return cache.addAll(urlsToCache);
 	});
 }
 

@@ -9,6 +9,10 @@ const IMG_CACHE = 'images-v1';
 const POLL_CACHE = 'polls-v1';
 var waitingPolls = [];
 
+// To prevent the same track being downloaded multiple times
+var fetchingTracks = {};
+var registration = self.registration;
+
 self.addEventListener('install', function swInstalled(event) {
 	event.waitUntil(refreshResources());
 });
@@ -78,7 +82,7 @@ self.addEventListener('fetch', function respondToFetch(event) {
 			postPromise = trackDone(url.searchParams.get("track"));
 		}
 		var responsePromise = postPromise.then(function () {
-			return self.registration.sync.register(event.request.url);
+			return registration.sync.register(event.request.url);
 		}).then(function (){
 			return new Response();
 		});
@@ -99,20 +103,30 @@ function preLoadTrack(trackData) {
 	// Attempt to load the track itself into the track cache
 	caches.open(TRACK_CACHE).then(function preFetchTrack(cache) {
 		var trackRequest = new Request(trackData.url.replace("ceol srl", "import/black/ceol srl"));
-		cache.match(trackRequest).catch(function fetchTrack() {
-			return fetch(trackRequest).then(function cacheTrack(trackResponse) {
+		cache.match(trackRequest).then(function (fromCache) {
+			if (fromCache) {
+				tracksCached.add(trackRequest.url);
+				return;
+			}
+			if (trackRequest.url in fetchingTracks) return;
+			fetchingTracks[trackRequest.url] = fetch(trackRequest).then(function cacheTrack(trackResponse) {
 				if (trackResponse.status == 200) {
-					return cache.put(trackRequest, trackResponse);
+					return cache.put(trackRequest, trackResponse).then(function () {
+						tracksCached.add(trackRequest.url);
+						delete fetchingTracks[trackRequest.url];
+					});
 				} else {
 					throw "non-200 response";
 				}
 
 			// If the track wasn't reachable, tell the server, which should skip that one out
 			}).catch(function trackError(error) {
-				self.registration.sync.register("https://ceol.l42.eu/done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup");
+				delete fetchingTracks[trackRequest.url];
+
+				// Skipping currently not supported by music manager for tracks other than now or next.
+				registration.sync.register("https://ceol.l42.eu/done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup");
+				//trackDone(trackData.url);
 			});
-		}).then(function () {
-			tracksCached.add(trackRequest.url);
 		});
 	});
 

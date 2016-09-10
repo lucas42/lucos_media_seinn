@@ -9,8 +9,9 @@ const IMG_CACHE = 'images-v1';
 const POLL_CACHE = 'polls-v1';
 var waitingPolls = [];
 
-// To prevent the same track being downloaded multiple times
+// To prevent the same thing being downloaded multiple times
 var fetchingTracks = {};
+var fetchingImages = {};
 var registration = self.registration;
 
 self.addEventListener('install', function swInstalled(event) {
@@ -133,14 +134,18 @@ function preLoadTrack(trackData) {
 	// Add the track's image into the image cache.
 	caches.open(IMG_CACHE).then(function preFetchImage(cache) {
 		var imgRequest = new Request(trackData.metadata.img, {mode: 'no-cors'});
-		cache.match(imgRequest).catch(function fetchImage() {
-			fetch(imgRequest).then(function cacheImage(imgResponse) {
-				cache.put(imgRequest, imgResponse);
-			}).catch(function imageError(error) {
-				console.error("can't preload image", error);
+		cache.match(imgRequest).then(function (fromCache) {
+			if (fromCache || imgRequest.url in fetchingImages) return;
+
+			// Ideally just do cache.add(imgRequest), but that has poor error handling
+			fetchingImages[imgRequest.url] = imgRequest;
+			fetch(imgRequest).then(function (response) {
+				cache.put(imgRequest, response).then(function () {
+					delete fetchingImages[imgRequest.url];
+				});
 			});
-		});
-	});
+		})
+	}).catch(function () {console.error(arguments);});
 }
 
 function poll(url, sendResponseFunction, handleDataFunction, additionalParamFunction) {

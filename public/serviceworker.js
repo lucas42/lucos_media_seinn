@@ -86,7 +86,7 @@ self.addEventListener('fetch', function respondToFetch(event) {
 		var responsePromise = postPromise.then(function () {
 			return registration.sync.register(event.request.url);
 		}).then(function (){
-			return new Response();
+			return new Response(new Blob(), {status: 202, statusText: "Accepted by Service Worker"});
 		});
 		event.respondWith(responsePromise);
 	}
@@ -232,7 +232,7 @@ function trackDone(url) {
 // Resolve any requests waiting for the new status response
 function statusChanged(path, response) {
 	var resolve;
-	if (!path in waitingPolls) return;
+	if (!waitingPolls[path]) return;
 	while (resolve = waitingPolls[path].shift()) {
 		resolve(response);
 	}

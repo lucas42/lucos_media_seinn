@@ -32,6 +32,17 @@ self.addEventListener('fetch', function respondToFetch(event) {
 								waitingPolls.push(resolve);
 							}
 						});
+						if (url.pathname == "/poll/playlist") {
+							pollResponse = pollResponse.then(function playlistJSON(response){
+								return response.clone().json();
+							}).then(function (playlistData) {
+								if (playlistData.playlist) playlistData.playlist.forEach(function (track) {
+									var trackUrl = new URL(track.url.replace("ceol srl", "import/black/ceol srl"));
+									if (tracksCached.isCached(trackUrl.href)) track.cached = true;
+								});
+								return new Response(new Blob([JSON.stringify(playlistData)]));
+							});
+						}
 						pollResponse.then(function pollJSON(response) {
 							return response.clone().json();
 						}).then(function preloadPollData(polldata) {
@@ -88,11 +99,10 @@ function preLoadTrack(trackData) {
 	// Attempt to load the track itself into the track cache
 	caches.open(TRACK_CACHE).then(function preFetchTrack(cache) {
 		var trackRequest = new Request(trackData.url.replace("ceol srl", "import/black/ceol srl"));
-
 		cache.match(trackRequest).catch(function fetchTrack() {
-			fetch(trackRequest).then(function cacheTrack(trackResponse) {
+			return fetch(trackRequest).then(function cacheTrack(trackResponse) {
 				if (trackResponse.status == 200) {
-					cache.put(trackRequest, trackResponse);
+					return cache.put(trackRequest, trackResponse);
 				} else {
 					throw "non-200 response";
 				}
@@ -101,6 +111,8 @@ function preLoadTrack(trackData) {
 			}).catch(function trackError(error) {
 				self.registration.sync.register("https://ceol.l42.eu/done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup");
 			});
+		}).then(function () {
+			tracksCached.add(trackRequest.url);
 		});
 	});
 
@@ -226,6 +238,33 @@ function refreshResources() {
 		return cache.addAll(urlsToCache);
 	});
 }
+
+// Synchronously check which tracks are cached
+var tracksCached = (function () {
+	var tracks = [];
+	var trackCache = caches.open(TRACK_CACHE);
+	function isCached(trackURL) {
+		return tracks.includes(trackURL);
+	}
+	function add(trackURL) {
+		tracks.push(trackURL);
+		//console.log(tracks);
+	}
+
+	// This doesn't seem to work :(
+	function refresh() {
+		caches.open(TRACK_CACHE).then(function (cache) {
+			cache.keys().then(function (keys) {
+				console.log(keys); 
+			});
+		});
+	}
+	return {
+		isCached: isCached,
+		refresh: refresh,
+		add: add,
+	};
+})();
 
 poll("https://ceol.l42.eu/poll/playlist", null, preloadPlaylist);
 poll("https://ceol.l42.eu/poll", statusChanged, preloadNowNext);

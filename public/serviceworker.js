@@ -253,9 +253,10 @@ function refreshResources() {
 	});
 }
 function forceResolvePoll(url) {
+	var url = new URL(url);
 	var request = new Request(url);
 	caches.match(request).then(function respond(response) {
-		statusChanged(request.pathname, response);
+		statusChanged(url.pathname, response);
 	});
 }
 

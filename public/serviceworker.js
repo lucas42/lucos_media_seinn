@@ -254,6 +254,12 @@ function refreshResources() {
 		return cache.addAll(urlsToCache);
 	});
 }
+function forceResolvePoll(url) {
+	var request = new Request(url);
+	caches.match(request).then(function respond(response) {
+		statusChanged(request.pathname, response);
+	});
+}
 
 // Synchronously check which tracks are cached
 var tracksCached = (function () {
@@ -262,19 +268,17 @@ var tracksCached = (function () {
 	function isCached(trackURL) {
 		return trackURL in tracks;
 	}
-	function add(trackURL) {
-		//tracks.push(trackURL);
-		//console.log(tracks);
-		refresh();
-	}
 
-	// This doesn't seem to work :(
 	function refresh() {
 		caches.open(TRACK_CACHE).then(function (cache) {
 			cache.keys().then(function (requests) {
+				var changed = false;
 				requests.forEach(function (request) {
+					if isCached(request.url) return;
 					tracks[request.url] = true;
-				})
+					changed = true;
+				});
+				if (changed) forceResolvePoll("https://ceol.l42.eu/poll/playlist");
 			});
 		});
 	}
@@ -282,7 +286,6 @@ var tracksCached = (function () {
 	return {
 		isCached: isCached,
 		refresh: refresh,
-		add: add,
 	};
 })();
 

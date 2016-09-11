@@ -42,13 +42,13 @@ footer { position: fixed; bottom: 0; width: 100%; background-color: rgba(100,100
 #playlist[data-visible='true'] {
 	display: block;
 }
-#playlistloading {
+#playlistloading, #playlisterror {
 	text-align: center;
 	margin-top: 1em;
 	font-size: 2em;
 	font-style: italic;
 }
-#playlistloading[data-error='true'] {
+#playlisterror {
 	color: red;
 }
 #playlisticon {

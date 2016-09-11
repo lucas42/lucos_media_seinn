@@ -144,42 +144,40 @@ function preLoadTrack(trackData) {
 	}).catch(function () {console.error(arguments);});
 }
 
-function poll(url, handleDataFunction, additionalParamFunction) {
+function poll(url, handleDataFunction, additionalParamFunction, cache) {
 	if (!url) throw "no URL given to poll";
 	if (handleDataFunction && typeof handleDataFunction != 'function') throw "handleDataFunction must be a function";
 	if (additionalParamFunction && typeof additionalParamFunction != 'function') throw "additionalParamFunction must be a function";
-	caches.open(POLL_CACHE).then(function fetchImage(cache) {
-		function actuallyPoll(hashcode) {
-			var params = "?";
-			params += "hashcode="+hashcode;
-			params += "&_cb="+new Date().getTime();
-			if (additionalParamFunction) params += additionalParamFunction();
-			var response;
-			fetch(url+params).then(function decodePoll(response) {
-				return response.clone().json().then(function handlePoll(data) {
+	function actuallyPoll(hashcode) {
+		var params = "?";
+		params += "hashcode="+hashcode;
+		params += "&_cb="+new Date().getTime();
+		if (additionalParamFunction) params += additionalParamFunction();
+		var response;
+		fetch(url+params).then(function decodePoll(response) {
+			return response.clone().json().then(function handlePoll(data) {
 
-					// Create a request object which ignores all the params to cache against
-					var request = new Request(url);
+				// Create a request object which ignores all the params to cache against
+				var request = new Request(url);
 
-					// If there's a hashcode, use the new one and evaluate new data.
-					if (data.hashcode) {
-						hashcode = data.hashcode;
-						cache.put(request, response.clone());
-						if (handleDataFunction) handleDataFunction(data);
-						statusChanged(request.pathname, response);
-					}
-					actuallyPoll(hashcode);
-				});
-			}).catch(function pollError(error){
-
-				// Wait 5 second before trying again to prevent making things worse
-				setTimeout(function pollRetry() {
-					actuallyPoll(hashcode);
-				}, 5000);
+				// If there's a hashcode, use the new one and evaluate new data.
+				if (data.hashcode) {
+					hashcode = data.hashcode;
+					if (cache) cache.put(request, response.clone());
+					if (handleDataFunction) handleDataFunction(data);
+					statusChanged(request.pathname, response);
+				}
+				actuallyPoll(hashcode);
 			});
-		}
-		actuallyPoll(null);
-	});
+		}).catch(function pollError(error){
+
+			// Wait 5 second before trying again to prevent making things worse
+			setTimeout(function pollRetry() {
+				actuallyPoll(hashcode);
+			}, 5000);
+		});
+	}
+	actuallyPoll(null);
 }
 function trackDone(url) {
 	var statusData, playlistData;
@@ -274,7 +272,7 @@ var tracksCached = (function () {
 			cache.keys().then(function (requests) {
 				var changed = false;
 				requests.forEach(function (request) {
-					if isCached(request.url) return;
+					if (isCached(request.url)) return;
 					tracks[request.url] = true;
 					changed = true;
 				});
@@ -289,5 +287,7 @@ var tracksCached = (function () {
 	};
 })();
 
-poll("https://ceol.l42.eu/poll/playlist", preloadPlaylist);
-poll("https://ceol.l42.eu/poll", preloadNowNext);
+caches.open(POLL_CACHE).then(function (cache) {
+	poll("https://ceol.l42.eu/poll/playlist", preloadPlaylist, null, cache);
+	poll("https://ceol.l42.eu/poll", preloadNowNext, null, cache);
+});

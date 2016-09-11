@@ -13,32 +13,41 @@ function player() {
 		}
 		return params;
 	}
-	function poll(hashcode) {
-		var params = "?";
-		params += "hashcode="+hashcode;
-		params += "&_cb="+new Date().getTime();
-		params += getUpdateParams();
-		fetch("https://ceol.l42.eu/poll"+params).then(function decodePoll(res) {
-			return res.json();
-		}).then(function handlePoll(data) {
 
-			// If there's a hashcode, use the new one and evaluate new data.
-			if (data.hashcode) {
-				poll(data.hashcode);
-				evaluateData(data);
+	function poll(url, handleDataFunction, additionalParamFunction, cache) {
+		if (!url) throw "no URL given to poll";
+		if (handleDataFunction && typeof handleDataFunction != 'function') throw "handleDataFunction must be a function";
+		if (additionalParamFunction && typeof additionalParamFunction != 'function') throw "additionalParamFunction must be a function";
+		function actuallyPoll(hashcode) {
+			var params = "?";
+			params += "hashcode="+hashcode;
+			params += "&_cb="+new Date().getTime();
+			if (additionalParamFunction) params += additionalParamFunction();
+			var response;
+			fetch(url+params).then(function decodePoll(response) {
+				return response.clone().json().then(function handlePoll(data) {
 
-			// Otherwise, assume data hasn't changed
-			} else {
-				poll(hashcode);
-			}
-		}).catch(function pollError(error){
-			console.error(error);
+					// Create a request object which ignores all the params to cache against
+					var request = new Request(url);
 
-			// Wait 5 second before trying again to prevent making things worse
-			setTimeout(function pollRetry() {
-				poll(hashcode);
-			}, 5000);
-		});
+					// If there's a hashcode, use the new one and evaluate new data.
+					if (data.hashcode) {
+						hashcode = data.hashcode;
+						if (cache) cache.put(request, response.clone());
+						if (handleDataFunction) handleDataFunction(data);
+						statusChanged(request.pathname, response);
+					}
+					actuallyPoll(hashcode);
+				});
+			}).catch(function pollError(error){
+
+				// Wait 5 second before trying again to prevent making things worse
+				setTimeout(function pollRetry() {
+					actuallyPoll(hashcode);
+				}, 5000);
+			});
+		}
+		actuallyPoll(null);
 	}
 
 	function evaluateData(data) {
@@ -212,16 +221,13 @@ function player() {
 
 	var playlistViewer = (function playlistViewer() {
 		var playlistdiv = document.getElementById("playlist");
+		var playlistdata = null;
 		document.getElementById("playlisticon").addEventListener('click', function togglePlaylist(event) {
 			if (playlistdiv.dataset.visible) {
 				delete playlistdiv.dataset.visible;
 			} else {
 				playlistdiv.dataset.visible = true;
-				var loadingdiv = document.createElement("div");
-				loadingdiv.id = 'playlistloading'
-				loadingdiv.appendChild(document.createTextNode("Loading Playlist..."));
-				setPlaylistDiv(loadingdiv);
-				refreshPlaylist();
+				renderPlaylist();
 			}
 		});
 
@@ -231,47 +237,51 @@ function player() {
 			}
 			playlistdiv.appendChild(node);
 		}
-		function refreshPlaylist() {
+		function renderPlaylist() {
 			if (!playlistdiv.dataset.visible) return;
-			fetch("https://ceol.l42.eu/poll/playlist?_cb="+new Date().getTime()).then(function (response){
-				return response.json();
-			}).then(function (playlistdata){
+			try {
+				if (!playlistdata) throw "Playlist not ready";
 				if (!playlistdata.playlist.length) throw "No tracks in playlist";
-				if (!playlistdiv.dataset.visible) return;
 				var listdiv = document.createElement("ol");
 				if (current.latestData && current.latestData.now.url) {
-					playlistdata.playlist.unshift(current.latestData.now);
+					renderPlaylistTrack(current.latestData.now);
 				}
-				playlistdata.playlist.forEach(function (trackdata){
-					var state = getState(trackdata.url);
-					var listitem = document.createElement("li");
-					var statenode = document.createElement("span");
-					if (state == "unloaded" && trackdata.cached) {
-						state = "downloaded";
-					}
-					statenode.appendChild(document.createTextNode(state));
-					statenode.className = 'state';
-					statenode.dataset.state = state;
-					listitem.appendChild(statenode);
-					var title = "";
-					if (trackdata.metadata.title) title += trackdata.metadata.title;
-					else title += trackdata.url;
-					if (trackdata.metadata.artist) title += " - " + trackdata.metadata.artist;
-
-					listitem.appendChild(document.createTextNode(title));
-					listdiv.appendChild(listitem);
-				});
+				playlistdata.playlist.forEach(renderPlaylistTrack);
 				setPlaylistDiv(listdiv);
-			}).catch(function (error) {
-				if (!playlistdiv.dataset.visible) return;
-				var loadingdiv = document.getElementById("playlistloading");
-				if (!loadingdiv) return;
-				loadingdiv.dataset.error = true;
-				loadingdiv.firstChild.nodeValue = "Error loading playlist.  " + error;
-			});
+			} catch (error) {
+				var playlisterror = document.createElement("div");
+				playlisterror.id = 'playlisterror';
+				playlisterror.dataset.error = true;
+				playlisterror.appendChild(document.createTextNode("Error loading playlist.  " + error));
+				setPlaylistDiv(playlisterror);
+			}
+			function renderPlaylistTrack(trackdata){
+				var state = getState(trackdata.url);
+				var listitem = document.createElement("li");
+				var statenode = document.createElement("span");
+				if (state == "unloaded" && trackdata.cached) {
+					state = "downloaded";
+				}
+				statenode.appendChild(document.createTextNode(state));
+				statenode.className = 'state';
+				statenode.dataset.state = state;
+				listitem.appendChild(statenode);
+				var title = "";
+				if (trackdata.metadata.title) title += trackdata.metadata.title;
+				else title += trackdata.url;
+				if (trackdata.metadata.artist) title += " - " + trackdata.metadata.artist;
+
+				listitem.appendChild(document.createTextNode(title));
+				listdiv.appendChild(listitem);
+			}
 		}
+		function playlistUpdate(newplaylistdata) {
+			playlistdata = newplaylistdata;
+			renderPlaylist();
+		}
+		poll("https://ceol.l42.eu/poll/playlist", playlistUpdate);
 		return {
-			refresh: refreshPlaylist,
+			refresh: renderPlaylist,
 		}
 	})();
 
@@ -299,7 +309,7 @@ function player() {
 	document.querySelector("footer").addEventListener('click', function stopFooterProp(event) {
 		event.stopPropagation();
 	});
-	poll(null);
+	poll("https://ceol.l42.eu/poll", evaluateData, getUpdateParams);
 }
 document.addEventListener("DOMContentLoaded", player);
 

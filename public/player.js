@@ -259,8 +259,12 @@ function player() {
 				var state = getState(trackdata.url);
 				var listitem = document.createElement("li");
 				var statenode = document.createElement("span");
-				if (state == "unloaded" && trackdata.cached) {
-					state = "downloaded";
+				if (state == "unloaded") {
+					if (trackdata.cached) {
+						state = "downloaded";
+					} else if (trackdata.caching) {
+						state = "caching";
+					}
 				}
 				statenode.appendChild(document.createTextNode(state));
 				statenode.className = 'state';

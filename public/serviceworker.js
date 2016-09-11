@@ -45,6 +45,7 @@ self.addEventListener('fetch', function respondToFetch(event) {
 								if (playlistData.playlist) playlistData.playlist.forEach(function (track) {
 									var trackUrl = new URL(track.url.replace("ceol srl", "import/black/ceol srl"));
 									if (tracksCached.isCached(trackUrl.href)) track.cached = true;
+									if (trackUrl.href in fetchingTracks) track.caching = true;
 								});
 								return new Response(new Blob([JSON.stringify(playlistData)]));
 							});
@@ -110,8 +111,8 @@ function preLoadTrack(trackData) {
 			fetchingTracks[trackRequest.url] = fetch(trackRequest).then(function cacheTrack(trackResponse) {
 				if (trackResponse.status == 200) {
 					return cache.put(trackRequest, trackResponse).then(function () {
-						tracksCached.refresh();
 						delete fetchingTracks[trackRequest.url];
+						tracksCached.refresh();
 					});
 				} else {
 					throw "non-200 response";
@@ -125,6 +126,7 @@ function preLoadTrack(trackData) {
 				registration.sync.register("https://ceol.l42.eu/done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup");
 				//trackDone(trackData.url);
 			});
+			tracksCached.refresh();
 		});
 	});
 
@@ -271,13 +273,11 @@ var tracksCached = (function () {
 	function refresh() {
 		caches.open(TRACK_CACHE).then(function (cache) {
 			cache.keys().then(function (requests) {
-				var changed = false;
 				requests.forEach(function (request) {
 					if (isCached(request.url)) return;
 					tracks[request.url] = true;
-					changed = true;
 				});
-				if (changed) forceResolvePoll("https://ceol.l42.eu/poll/playlist");
+				forceResolvePoll("https://ceol.l42.eu/poll/playlist");
 			});
 		});
 	}

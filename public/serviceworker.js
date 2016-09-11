@@ -7,11 +7,12 @@ var urlsToCache = [
 const TRACK_CACHE = 'tracks-v1';
 const IMG_CACHE = 'images-v1';
 const POLL_CACHE = 'polls-v1';
-var waitingPolls = [];
+var waitingPolls = {};
 
 // To prevent the same thing being downloaded multiple times
 var fetchingTracks = {};
 var fetchingImages = {};
+var erroringTracks = {};
 var registration = self.registration;
 
 self.addEventListener('install', function swInstalled(event) {
@@ -46,6 +47,7 @@ self.addEventListener('fetch', function respondToFetch(event) {
 									var trackUrl = new URL(track.url.replace("ceol srl", "import/black/ceol srl"));
 									if (tracksCached.isCached(trackUrl.href)) track.cached = true;
 									if (trackUrl.href in fetchingTracks) track.caching = true;
+									if (trackUrl.href in erroringTracks) track.erroring = true;
 								});
 								return new Response(new Blob([JSON.stringify(playlistData)]));
 							});
@@ -125,6 +127,9 @@ function preLoadTrack(trackData) {
 				// Skipping currently not supported by music manager for tracks other than now or next.
 				registration.sync.register("https://ceol.l42.eu/done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup");
 				//trackDone(trackData.url);
+
+				erroringTracks[trackRequest.url] = error;
+				tracksCached.refresh();
 			});
 			tracksCached.refresh();
 		});

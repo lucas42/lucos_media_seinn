@@ -84,7 +84,7 @@ footer { position: fixed; bottom: 0; width: 100%; background-color: rgba(100,100
 	background-color: grey;
 }
 .state[data-state='failed'] {
-	background-color: red;
+	background-color: darkred;
 }
 .state[data-state='paused'], .state[data-state='ready'] {
 	background-color: indigo;

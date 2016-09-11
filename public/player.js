@@ -264,6 +264,8 @@ function player() {
 						state = "downloaded";
 					} else if (trackdata.caching) {
 						state = "caching";
+					} else if (trackdata.erroring) {
+						state = "failed";
 					}
 				}
 				statenode.appendChild(document.createTextNode(state));

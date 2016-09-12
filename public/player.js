@@ -1,4 +1,6 @@
+window.performance.mark('run_js');
 function player() {
+	window.performance.mark('dom_loaded');
 	var audioContext = new AudioContext();
 	var current = {};
 
@@ -110,19 +112,24 @@ function player() {
 	var buffers = {};
 	function getBuffer(trackURL) {
 		if (!(trackURL in buffers)) {
+			window.performance.mark('buffers_fetching');
 			buffers[trackURL] = fetch(trackURL.replace("ceol srl", "import/black/ceol srl")).then(function bufferTrack(rawtrack) {
+				window.performance.mark('buffers_buffering');
 				buffers[trackURL].state = "buffering";
 				updateDisplay();
 				return rawtrack.arrayBuffer();
 			}).then(function decodeTrack(arrayBuffer) {
+				window.performance.mark('buffers_decoding');
 				buffers[trackURL].state = "decoding";
 				updateDisplay();
 				return audioContext.decodeAudioData(arrayBuffer);
 			}).then(function doneDecoding(buffer) {
+				window.performance.mark('buffers_ready');
 				buffers[trackURL].state = "ready";
 				updateDisplay();
 				return buffer;
 			}).catch(function trackFailure(error) {
+				window.performance.mark('buffers_failed');
 				buffers[trackURL].state = "failed";
 				updateDisplay();
 
@@ -218,6 +225,7 @@ function player() {
 		evaluateData(data);
 	}
 
+	window.performance.mark('start_eventhandlers');
 
 	var playlistViewer = (function playlistViewer() {
 		var playlistdiv = document.getElementById("playlist");
@@ -226,8 +234,11 @@ function player() {
 			if (playlistdiv.dataset.visible) {
 				delete playlistdiv.dataset.visible;
 			} else {
+				window.performance.mark('start_playlist_display');
 				playlistdiv.dataset.visible = true;
 				renderPlaylist();
+				window.performance.mark('end_playlist_display');
+				window.performance.measure('measure_playlist_display', 'start_playlist_display', 'end_playlist_display');
 			}
 		});
 
@@ -239,6 +250,7 @@ function player() {
 		}
 		function renderPlaylist() {
 			if (!playlistdiv.dataset.visible) return;
+			window.performance.mark('start_playlist_render');
 			try {
 				if (!playlistdata) throw "Playlist not ready";
 				if (!playlistdata.playlist.length) throw "No tracks in playlist";
@@ -255,6 +267,8 @@ function player() {
 				playlisterror.appendChild(document.createTextNode("Error loading playlist.  " + error));
 				setPlaylistDiv(playlisterror);
 			}
+			window.performance.mark('end_playlist_render');
+			window.performance.measure('measure_playlist_render', 'start_playlist_render', 'end_playlist_render');
 			function renderPlaylistTrack(trackdata){
 				var state = getState(trackdata.url);
 				var listitem = document.createElement("li");
@@ -315,6 +329,8 @@ function player() {
 	document.querySelector("footer").addEventListener('click', function stopFooterProp(event) {
 		event.stopPropagation();
 	});
+	window.performance.mark('end_eventhandlers');
+	window.performance.measure('measure_eventhandlers', 'start_eventhandlers', 'end_eventhandlers');
 	poll("https://ceol.l42.eu/poll", evaluateData, getUpdateParams);
 }
 document.addEventListener("DOMContentLoaded", player);

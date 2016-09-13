@@ -148,7 +148,7 @@ function preLoadTrack(trackData) {
 				});
 			});
 		})
-	}).catch(function () {console.error(arguments);});
+	});
 }
 
 function poll(url, handleDataFunction, additionalParamFunction, cache) {
@@ -165,14 +165,15 @@ function poll(url, handleDataFunction, additionalParamFunction, cache) {
 			return response.clone().json().then(function handlePoll(data) {
 
 				// Create a request object which ignores all the params to cache against
-				var request = new Request(url);
+				var baseurl = new URL(url);
+				var request = new Request(baseurl);
 
 				// If there's a hashcode, use the new one and evaluate new data.
 				if (data.hashcode) {
 					hashcode = data.hashcode;
 					if (cache) cache.put(request, response.clone());
 					if (handleDataFunction) handleDataFunction(data);
-					statusChanged(request.pathname, response);
+					statusChanged(baseurl.pathname, response);
 				}
 				actuallyPoll(hashcode);
 			});

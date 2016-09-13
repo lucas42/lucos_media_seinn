@@ -97,7 +97,10 @@ function player() {
 		var buffer = getBuffer(trackURL);
 
 		// If nothing should be playing, then don't proceed.
-		if (!data.isPlaying) return;
+		if (!data.isPlaying) {
+			updateDisplay();
+			return;
+		}
 
 		buffer.then(function createSource(buffer) {
 			if (trackURL != current.trackURL || current.source) {

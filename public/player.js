@@ -295,6 +295,17 @@ function player() {
 				if (trackdata.metadata.artist) title += " - " + trackdata.metadata.artist;
 
 				listitem.appendChild(document.createTextNode(title));
+
+				var closenode = document.createElement("span");
+				closenode.setAttribute("class", "remove");
+				closenode.setAttribute("title", "Remove From Playlist");
+				closenode.appendChild(document.createTextNode("✘"));
+				closenode.addEventListener("click", function removeTrack() {
+					trackDone(trackdata.url, "manual skip");
+					listitem.setAttribute("class", "skipped");
+				})
+				listitem.appendChild(closenode);
+
 				listdiv.appendChild(listitem);
 			}
 		}

@@ -77,6 +77,14 @@ footer { position: fixed; bottom: 0; width: 100%; background-color: rgba(100,100
 	color: white;
 	text-transform: capitalize;
 }
+#playlist .remove {
+	cursor: pointer;
+	color: red;
+	margin: 0 1em;
+}
+#playlist li.skipped {
+	text-decoration: line-through;
+}
 .state[data-state$='ing'] {
 	background-color: chocolate;
 }

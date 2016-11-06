@@ -54,6 +54,13 @@ function player() {
 
 	function evaluateData(data) {
 		var trackURL;
+		if (!data.tracks.length) {
+			stopExisting(0);
+			console.error("No tracks provided", data);
+			return;
+		}
+		data.now = data.tracks[0];
+		if (data.tracks.length > 1) data.next = data.tracks[1];
 		if (data.now && data.now.url) {
 			trackURL = data.now.url;
 		} else {
@@ -81,6 +88,7 @@ function player() {
 				current.gainNode.gain.linearRampToValueAtTime(data.volume, audioContext.currentTime + 0.5);
 			}
 			current.latestData = data;
+			playlistViewer.refresh();
 			return;
 		}
 
@@ -99,6 +107,7 @@ function player() {
 		// If nothing should be playing, then don't proceed.
 		if (!data.isPlaying) {
 			updateDisplay();
+			playlistViewer.refresh();
 			return;
 		}
 
@@ -110,6 +119,7 @@ function player() {
 			}
 			playBuffer(trackURL, buffer, data.volume, data.now.currentTime);
 		});
+		playlistViewer.refresh();
 	}
 
 	var buffers = {};
@@ -175,8 +185,19 @@ function player() {
 	}
 
 	function trackDone(trackURL, status) {
+
+		// If it's the current track, then update the status
+		if (current.trackURL == trackURL) updateDisplay("skipping");
+
+		var data = current.latestData;
+		
+		// Keep all tracks which aren't the done one
+		data.tracks = data.tracks.filter(function (track) {
+			return (track.url != trackURL);
+		});
+		evaluateData(data);
+
 		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status), {method: 'POST'});
-		if (current.trackURL == trackURL) playNext();
 	}
 	function trackEndedHandler(event) {
 		buffers[event.target.trackURL].state = "finished";
@@ -208,31 +229,10 @@ function player() {
 		playlistViewer.refresh();
 	}
 
-	/**
-	 * Function to fake it till you make it
-	 * ie use the data from the next object
-	 * until we get an update from the server
-	 */
-	function playNext() {
-		updateDisplay("skipping");
-		var data = current.latestData;
-
-		// If we've already exhausted all the next data,
-		// then there's not a lot we can do.
-		if (!data.next) {
-			stopExisting();
-			return;
-		}
-		data.now = data.next;
-		delete data.next;
-		evaluateData(data);
-	}
-
 	window.performance.mark('start_eventhandlers');
 
 	var playlistViewer = (function playlistViewer() {
 		var playlistdiv = document.getElementById("playlist");
-		var playlistdata = null;
 		document.getElementById("playlisticon").addEventListener('click', function togglePlaylist(event) {
 			if (playlistdiv.dataset.visible) {
 				delete playlistdiv.dataset.visible;
@@ -255,13 +255,10 @@ function player() {
 			if (!playlistdiv.dataset.visible) return;
 			window.performance.mark('start_playlist_render');
 			try {
-				if (!playlistdata) throw "Playlist not ready";
-				if (!playlistdata.playlist.length) throw "No tracks in playlist";
+				if (!current.latestData) throw "Playlist data not ready";
+				if (!current.latestData.tracks.length) throw "No tracks in playlist";
 				var listdiv = document.createElement("ol");
-				if (current.latestData && current.latestData.now.url) {
-					renderPlaylistTrack(current.latestData.now);
-				}
-				playlistdata.playlist.forEach(renderPlaylistTrack);
+				current.latestData.tracks.forEach(renderPlaylistTrack);
 				setPlaylistDiv(listdiv);
 			} catch (error) {
 				var playlisterror = document.createElement("div");
@@ -309,11 +306,6 @@ function player() {
 				listdiv.appendChild(listitem);
 			}
 		}
-		function playlistUpdate(newplaylistdata) {
-			playlistdata = newplaylistdata;
-			renderPlaylist();
-		}
-		poll("https://ceol.l42.eu/poll/playlist", playlistUpdate);
 		return {
 			refresh: renderPlaylist,
 		}
@@ -345,7 +337,7 @@ function player() {
 	});
 	window.performance.mark('end_eventhandlers');
 	window.performance.measure('measure_eventhandlers', 'start_eventhandlers', 'end_eventhandlers');
-	poll("https://ceol.l42.eu/poll", evaluateData, getUpdateParams);
+	poll("https://ceol.l42.eu/poll/summary", evaluateData, getUpdateParams);
 }
 document.addEventListener("DOMContentLoaded", player);
 

@@ -39,42 +39,24 @@ self.addEventListener('fetch', function respondToFetch(event) {
 								waitingPolls[url.pathname].push(resolve);
 							}
 						});
-						if (url.pathname == "/poll/playlist") {
-							pollResponse = pollResponse.then(function playlistJSON(response){
+						if (url.pathname == "/poll/summary") {
+							pollResponse = pollResponse.then(function summaryJSON(response){
 								return response.clone().json();
-							}).then(function (playlistData) {
-								if (playlistData.playlist) playlistData.playlist.forEach(function (track) {
+							}).then(function (data) {
+								if (data.tracks) data.tracks.forEach(function (track) {
 									var trackUrl = new URL(track.url.replace("ceol srl", "import/black/ceol srl"));
 									if (tracksCached.isCached(trackUrl.href)) track.cached = true;
 									if (trackUrl.href in fetchingTracks) track.caching = true;
 									if (trackUrl.href in erroringTracks) track.erroring = true;
 								});
-								return new Response(new Blob([JSON.stringify(playlistData)]));
+								return new Response(new Blob([JSON.stringify(data)]));
 							});
 						}
-						pollResponse.then(function pollJSON(response) {
-							return response.clone().json();
-						}).then(function preloadPollData(polldata) {
-							preLoadTrack(polldata.now);
-							preLoadTrack(polldata.next);
-						});
 						return pollResponse;
 					});
 				}
 				return response;
 			}
-
-			return fetch(event.request).then(function inspectResponse(response) {
-
-				// For poll requests, inspect a clone of the response
-				/*if (event.request.url.startsWith("https://ceol.l42.eu/poll")) {
-					response.clone().json().then(function preLoadTracks(polldata) {
-						preLoadTrack(polldata.now);
-						preLoadTrack(polldata.next);
-					});
-				}*/
-				return response;
-			});
 		});
 
 		event.respondWith(responsePromise);
@@ -187,49 +169,25 @@ function poll(url, handleDataFunction, additionalParamFunction, cache) {
 	}
 	actuallyPoll(null);
 }
-function trackDone(url) {
-	var statusData, playlistData;
-	var statusRequest = new Request('https://ceol.l42.eu/poll');
-	var playlistRequest = new Request('https://ceol.l42.eu/poll/playlist');
-	return caches.match(statusRequest).then(function decodeCachedStatus(response) {
-		return response.json();
-	}).then(function handleCachedStatus(data) {
-		if (data.now.url == url) {
-			data.now = data.next;
-			delete data.next;
-		}
-		if (data.next && data.next.url == url) {
-			delete data.next;
-		}
-		statusData = data;
-		return caches.match(playlistRequest);
-	}).then(function decodeCachedPlaylist(response) {
-		return response.json();
-	}).then(function handleCachedPlaylist(data) {
-		data.playlist = data.playlist.filter(function (track) {
-			if (track.url == url) return false;
-			if (statusData.now && track.url == statusData.now.url) return false;
-			return true;
-		});
 
-		// Fill missing status data from playlist
-		if (!statusData.now && data.playlist.length) {
-			statusData.now = data.playlist.shift();
-		}
-		if (!statusData.next && data.playlist.length) {
-			statusData.next = data.playlist[0];
-		}
-		playlistData = data;
+// Removes the done track from the cached summary poll
+function trackDone(url) {
+	var summaryData;
+	var summaryRequest = new Request('https://ceol.l42.eu/poll/summary');
+	return caches.match(summaryRequest).then(function decodeCachedSummary(response) {
+		return response.json();
+	}).then(function handleCachedSummary(data) {
+
+		// Keep all tracks which aren't the done one
+		data.tracks = data.tracks.filter(function (track) {
+			return (track.url != url);
+		});
+		summaryData = data;
 		return caches.open(POLL_CACHE);
 	}).then(function (cache) {
-		var statusResponse = new Response(new Blob([JSON.stringify(statusData)]));
-		var playlistResponse = new Response(new Blob([JSON.stringify(playlistData)]));
-		return Promise.all([
-			cache.put(statusRequest, statusResponse.clone()),
-			cache.put(playlistRequest, playlistResponse.clone())
-		]).then(function () {
-			statusChanged('/poll', statusResponse.clone());
-			statusChanged('/poll/playlist', playlistResponse.clone());
+		var summaryResponse = new Response(new Blob([JSON.stringify(summaryData)]));
+		return cache.put(summaryRequest, summaryResponse.clone()).then(function () {
+			statusChanged('/poll/summary', summaryResponse.clone());
 			return "successful";
 		});
 	});
@@ -244,14 +202,9 @@ function statusChanged(path, response) {
 	}
 }
 
-function preloadNowNext(polldata) {
-	preLoadTrack(polldata.now);
-	preLoadTrack(polldata.next);
-}
-
-function preloadPlaylist(data) {
-	if (!data.playlist) return;
-	data.playlist.forEach(function (track) {
+function preloadAllTracks(data) {
+	if (!data.tracks) return;
+	data.tracks.forEach(function (track) {
 		preLoadTrack(track);
 	});
 }
@@ -283,7 +236,7 @@ var tracksCached = (function () {
 					if (isCached(request.url)) return;
 					tracks[request.url] = true;
 				});
-				forceResolvePoll("https://ceol.l42.eu/poll/playlist");
+				forceResolvePoll("https://ceol.l42.eu/poll/summary");
 			});
 		});
 	}
@@ -295,6 +248,5 @@ var tracksCached = (function () {
 })();
 
 caches.open(POLL_CACHE).then(function (cache) {
-	poll("https://ceol.l42.eu/poll/playlist", preloadPlaylist, null, cache);
-	poll("https://ceol.l42.eu/poll", preloadNowNext, null, cache);
+	poll("https://ceol.l42.eu/poll/summary", preloadAllTracks, null, cache);
 });

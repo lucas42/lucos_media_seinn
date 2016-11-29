@@ -99,11 +99,11 @@ function preLoadTrack(trackData) {
 			if (fromCache || trackRequest.url in fetchingTracks) return;
 			fetchingTracks[trackRequest.url] = fetch(trackRequest).then(function cacheTrack(trackResponse) {
 				if (trackResponse.status == 200) {
-					return cache.put(trackRequest, trackResponse).then(function () {
+					return cache.put(trackRequest, trackResponse).catch(function (error) {
+						console.error("Failed to cache track:", error.message);
+					}).then(function () {
 						delete fetchingTracks[trackRequest.url];
 						tracksCached.refresh();
-					}).catch(function (error) {
-						console.error("Failed to cache track", error);
 					});
 				} else {
 					throw "non-200 response";
@@ -112,11 +112,8 @@ function preLoadTrack(trackData) {
 			// If the track wasn't reachable, tell the server, which should skip that one out
 			}).catch(function trackError(error) {
 				delete fetchingTracks[trackRequest.url];
-
-				// Skipping currently not supported by music manager for tracks other than now or next.
+				trackDone(trackRequest.url);
 				registration.sync.register("https://ceol.l42.eu/done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup");
-				//trackDone(trackData.url);
-
 				erroringTracks[trackRequest.url] = error;
 				tracksCached.refresh();
 			});
@@ -132,10 +129,10 @@ function preLoadTrack(trackData) {
 
 			// Ideally just do cache.add(imgRequest), but that has poor error handling
 			fetchingImages[imgRequest.url] = fetch(imgRequest).then(function (response) {
-				cache.put(imgRequest, response).then(function () {
+				cache.put(imgRequest, response).catch(function (error) {
+					console.error("Failed to cache image:", error.message);
+				}).then(function () {
 					delete fetchingImages[imgRequest.url];
-				}).catch(function (error) {
-					console.error("Failed to cache image", error);
 				});
 			});
 		})
@@ -163,7 +160,11 @@ function poll(url, handleDataFunction, additionalParamFunction, cache) {
 				if (data.hashcode) {
 					hashcode = data.hashcode;
 					if (cache) cache.put(request, response.clone()).catch(function (error) {
-						console.error("Failed to cache poll", error);
+						cache.delete(request).then(function () {
+							console.error("Failed to cache poll.  Deleted stale copy from cache.", error.message);
+						}).catch(function (error) {
+							console.error("Can't replace or delete cached poll.  Data Stuck.", error.message);
+						});
 					});
 					if (handleDataFunction) handleDataFunction(data);
 					statusChanged(baseurl.pathname, response);
@@ -186,6 +187,7 @@ function trackDone(url) {
 	var summaryData;
 	var summaryRequest = new Request('https://ceol.l42.eu/poll/summary');
 	return caches.match(summaryRequest).then(function decodeCachedSummary(response) {
+		if (!response) throw "No summary in cache";
 		return response.json();
 	}).then(function handleCachedSummary(data) {
 
@@ -197,12 +199,17 @@ function trackDone(url) {
 		return caches.open(POLL_CACHE);
 	}).then(function (cache) {
 		var summaryResponse = new Response(new Blob([JSON.stringify(summaryData)]));
-		return cache.put(summaryRequest, summaryResponse.clone()).then(function () {
+		return cache.put(summaryRequest, summaryResponse.clone()).catch(function (error) {
+			cache.delete(summaryRequest).then(function () {
+				console.error("Failed to cache changes.  Deleted poll from cache.", error.message);
+			}).catch(function (error) {
+				console.error("Can't alter or delete cached poll.  Data Stuck.", error.message);
+			});
+		}).then(function () {
 			statusChanged('/poll/summary', summaryResponse.clone());
-			return "successful";
-		}).catch(function (error) {
-			console.error("Failed to cache changes", error);
 		});
+	}).catch(function (error) {
+		console.warn("Didn't update cached summary:", error);
 	});
 }
 
@@ -225,14 +232,18 @@ function refreshResources() {
 	return caches.open(RESOURCE_CACHE).then(function addUrlsToCache(cache) {
 		return cache.addAll(urlsToCache);
 	}).catch(function (error) {
-		console.error("Failed to cache resources", error);
+		console.error("Failed to cache resources:", error.message);
 	});
 }
 function forceResolvePoll(url) {
 	var url = new URL(url);
 	var request = new Request(url);
 	caches.match(request).then(function respond(response) {
-		statusChanged(url.pathname, response);
+		if (response) {
+			statusChanged(url.pathname, response);
+		} else {
+			console.warn("No poll in cache, can't force resolve")
+		}
 	});
 }
 

@@ -190,6 +190,10 @@ function player() {
 		if (current.trackURL == trackURL) updateDisplay("skipping");
 
 		var data = current.latestData;
+		if (!data) {
+			console.warn("No current data found.  Can't skip track");
+			return;
+		}
 		
 		// Keep all tracks which aren't the done one
 		data.tracks = data.tracks.filter(function (track) {

@@ -57,6 +57,7 @@ self.addEventListener('fetch', function respondToFetch(event) {
 				}
 				return response;
 			}
+			return fetch(event.request);
 		});
 
 		event.respondWith(responsePromise);
@@ -66,7 +67,11 @@ self.addEventListener('fetch', function respondToFetch(event) {
 	} else if (event.request.method == "POST") {
 		var postPromise = new Promise(function (resolve) {resolve()});
 		if (url.pathname == "/done") {
-			postPromise = trackDone(url.searchParams.get("track"));
+			try {
+				postPromise = trackDone(url.searchParams.get("track"));
+			} catch (error) {
+				console.error('Track not marked as done', error);
+			}
 		}
 		var responsePromise = postPromise.then(function () {
 			return registration.sync.register(event.request.url);
@@ -97,6 +102,8 @@ function preLoadTrack(trackData) {
 					return cache.put(trackRequest, trackResponse).then(function () {
 						delete fetchingTracks[trackRequest.url];
 						tracksCached.refresh();
+					}).catch(function (error) {
+						console.error("Failed to cache track", error);
 					});
 				} else {
 					throw "non-200 response";
@@ -127,6 +134,8 @@ function preLoadTrack(trackData) {
 			fetchingImages[imgRequest.url] = fetch(imgRequest).then(function (response) {
 				cache.put(imgRequest, response).then(function () {
 					delete fetchingImages[imgRequest.url];
+				}).catch(function (error) {
+					console.error("Failed to cache image", error);
 				});
 			});
 		})
@@ -153,7 +162,9 @@ function poll(url, handleDataFunction, additionalParamFunction, cache) {
 				// If there's a hashcode, use the new one and evaluate new data.
 				if (data.hashcode) {
 					hashcode = data.hashcode;
-					if (cache) cache.put(request, response.clone());
+					if (cache) cache.put(request, response.clone()).catch(function (error) {
+						console.error("Failed to cache poll", error);
+					});
 					if (handleDataFunction) handleDataFunction(data);
 					statusChanged(baseurl.pathname, response);
 				}
@@ -189,6 +200,8 @@ function trackDone(url) {
 		return cache.put(summaryRequest, summaryResponse.clone()).then(function () {
 			statusChanged('/poll/summary', summaryResponse.clone());
 			return "successful";
+		}).catch(function (error) {
+			console.error("Failed to cache changes", error);
 		});
 	});
 }
@@ -211,6 +224,8 @@ function preloadAllTracks(data) {
 function refreshResources() {
 	return caches.open(RESOURCE_CACHE).then(function addUrlsToCache(cache) {
 		return cache.addAll(urlsToCache);
+	}).catch(function (error) {
+		console.error("Failed to cache resources", error);
 	});
 }
 function forceResolvePoll(url) {
@@ -246,7 +261,8 @@ var tracksCached = (function () {
 		refresh: refresh,
 	};
 })();
-
-caches.open(POLL_CACHE).then(function (cache) {
+caches.open(POLL_CACHE).catch(function (error) {
+	console.error('Failed to open caches', error);
+}).then(function (cache) {
 	poll("https://ceol.l42.eu/poll/summary", preloadAllTracks, null, cache);
 });

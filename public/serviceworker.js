@@ -65,13 +65,19 @@ self.addEventListener('fetch', function respondToFetch(event) {
 		// As well as getting the main page from the cache, check the network for updates
 		if (url.pathname == "/") refreshResources();
 	} else if (event.request.method == "POST") {
-		var postPromise = new Promise(function (resolve) {resolve()});
-		if (url.pathname == "/done") {
-			try {
-				postPromise = trackDone(url.searchParams.get("track"));
-			} catch (error) {
-				console.error('Track not marked as done', error);
-			}
+		var postPromise;
+		switch (url.pathname) {
+			case "/done":
+				postPromise = modifySummary.trackDone(url.searchParams.get("track"));
+				break;
+			case "/play":
+				postPromise = modifySummary.play();
+				break;
+			case "/pause":
+				postPromise = modifySummary.pause();
+				break;
+			default:
+				postPromise = new Promise(function (resolve) {resolve()});
 		}
 		var responsePromise = postPromise.then(function () {
 			return registration.sync.register(event.request.url);
@@ -112,7 +118,7 @@ function preLoadTrack(trackData) {
 			// If the track wasn't reachable, tell the server, which should skip that one out
 			}).catch(function trackError(error) {
 				delete fetchingTracks[trackRequest.url];
-				trackDone(trackRequest.url);
+				modifySummary.trackDone(trackRequest.url);
 				registration.sync.register("https://ceol.l42.eu/done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup");
 				erroringTracks[trackRequest.url] = error;
 				tracksCached.refresh();
@@ -182,24 +188,24 @@ function poll(url, handleDataFunction, additionalParamFunction, cache) {
 	actuallyPoll(null);
 }
 
-// Removes the done track from the cached summary poll
-function trackDone(url) {
-	var summaryData;
+var modifySummary = (function () {
 	var summaryRequest = new Request('https://ceol.l42.eu/poll/summary');
-	return caches.match(summaryRequest).then(function decodeCachedSummary(response) {
-		if (!response) throw "No summary in cache";
-		return response.json();
-	}).then(function handleCachedSummary(data) {
+	var cachePromise = caches.open(POLL_CACHE);
 
-		// Keep all tracks which aren't the done one
-		data.tracks = data.tracks.filter(function (track) {
-			return (track.url != url);
+	// Get the summary response from the cache and JSON decode it
+	function getCachedSummary() {
+		return caches.match(summaryRequest).then(function decodeCachedSummary(response) {
+			if (!response) throw "No summary in cache";
+			return response.json();
 		});
-		summaryData = data;
-		return caches.open(POLL_CACHE);
-	}).then(function (cache) {
-		var summaryResponse = new Response(new Blob([JSON.stringify(summaryData)]));
-		return cache.put(summaryRequest, summaryResponse.clone()).catch(function (error) {
+	}
+
+	function putCachedSummary(newData) {
+		var json = JSON.stringify(newData)
+		var summaryResponse = new Response(new Blob([json]));
+		return cachePromise.then(function (cache) {
+			return cache.put(summaryRequest, summaryResponse.clone())
+		}).catch(function (error) {
 			cache.delete(summaryRequest).then(function () {
 				console.error("Failed to cache changes.  Deleted poll from cache.", error.message);
 			}).catch(function (error) {
@@ -208,10 +214,38 @@ function trackDone(url) {
 		}).then(function () {
 			statusChanged('/poll/summary', summaryResponse.clone());
 		});
-	}).catch(function (error) {
-		console.warn("Didn't update cached summary:", error);
-	});
-}
+	}
+
+	// Removes the done track from the cached summary poll
+	function trackDone(url) {
+		return getCachedSummary().then(function handleCachedSummary(data) {
+
+			// Keep all tracks which aren't the done one
+			data.tracks = data.tracks.filter(function (track) {
+				return (track.url != url);
+			});
+			return putCachedSummary(data);
+		});
+	}
+
+	function play() {
+		return getCachedSummary().then(function handleCachedSummary(data) {
+			data.isPlaying = true;
+			return putCachedSummary(data);
+		});
+	}
+	function pause() {
+		return getCachedSummary().then(function handleCachedSummary(data) {
+			data.isPlaying = false;
+			return putCachedSummary(data);
+		});
+	}
+	return {
+		trackDone: trackDone,
+		play: play,
+		pause: pause,
+	}
+})();
 
 // Resolve any requests waiting for the new status response
 function statusChanged(path, response) {

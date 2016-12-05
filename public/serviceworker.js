@@ -78,6 +78,9 @@ self.addEventListener('fetch', function respondToFetch(event) {
 			case "/pause":
 				postPromise = modifySummary.pause();
 				break;
+			case "/update":
+				postPromise = modifySummary.update(url.searchParams.get("update_url"),url.searchParams.get("update_time"));
+				break;
 			default:
 				postPromise = new Promise(function (resolve) {resolve()});
 		}
@@ -242,10 +245,23 @@ var modifySummary = (function () {
 			return putCachedSummary(data);
 		});
 	}
+	function update(url, time) {
+		return getCachedSummary().then(function handleCachedSummary(data) {
+
+			// Update the time for the track specified
+			data.tracks.forEach(function (track) {
+				if (track.url == url) {
+					track.currentTime = time;
+				}
+			});
+			return putCachedSummary(data);
+		});
+	}
 	return {
 		trackDone: trackDone,
 		play: play,
 		pause: pause,
+		update: update,
 	}
 })();
 

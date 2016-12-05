@@ -62,8 +62,10 @@ self.addEventListener('fetch', function respondToFetch(event) {
 
 		event.respondWith(responsePromise);
 
-		// As well as getting the main page from the cache, check the network for updates
-		if (url.pathname == "/") refreshResources();
+		// When the main page is requested, try updating the resources from the network asynchronously.
+		if (url.pathname == "/") {
+			responsePromise.then(refreshResources);
+		}
 	} else if (event.request.method == "POST") {
 		var postPromise;
 		switch (url.pathname) {

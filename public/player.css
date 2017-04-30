@@ -103,3 +103,6 @@ footer { position: fixed; bottom: 0; width: 100%; background-color: rgba(100,100
 .state[data-state='downloaded'] {
 	background-color: dodgerblue;
 }
+.state[data-state='disk quota full'] {
+	background-color: deeppink;
+}

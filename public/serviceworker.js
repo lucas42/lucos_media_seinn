@@ -31,7 +31,7 @@ self.addEventListener('fetch', function respondToFetch(event) {
 			if (response) {
 				if (event.request.url.startsWith("https://ceol.l42.eu/poll")) {
 					return response.clone().json().then(function pollFromCache (data) {
-						var pollResponse = new Promise(function pollPromiser (resolve) {
+						return new Promise(function pollPromiser (resolve) {
 							if (data.hashcode != url.searchParams.get("hashcode")) {
 								resolve(response);
 							} else {
@@ -39,25 +39,25 @@ self.addEventListener('fetch', function respondToFetch(event) {
 								waitingPolls[url.pathname].push(resolve);
 							}
 						});
-						if (url.pathname == "/poll/summary") {
-							pollResponse = pollResponse.then(function summaryJSON(response){
-								return response.clone().json();
-							}).then(function (data) {
-								if (data.tracks) data.tracks.forEach(function (track) {
-									var trackUrl = new URL(track.url.replace("ceol srl", "import/black/ceol srl"));
-									if (tracksCached.isCached(trackUrl.href)) track.cached = true;
-									if (trackUrl.href in fetchingTracks) track.caching = true;
-									if (trackUrl.href in erroringTracks) track.erroring = true;
-								});
-								return new Response(new Blob([JSON.stringify(data)]));
-							});
-						}
-						return pollResponse;
 					});
 				}
 				return response;
 			}
 			return fetch(event.request);
+		}).then(function postResponseHandler(response) {
+			if (url.pathname == "/poll/summary") {
+				return response.clone().json()
+				.then(function (data) {
+					if (data.tracks) data.tracks.forEach(function (track) {
+						var trackUrl = new URL(track.url.replace("ceol srl", "import/black/ceol srl"));
+						if (tracksCached.isCached(trackUrl.href)) track.cached = true;
+						if (trackUrl.href in fetchingTracks) track.caching = true;
+						if (trackUrl.href in erroringTracks) track.erroring = erroringTracks[trackUrl.href];
+					});
+					return new Response(new Blob([JSON.stringify(data)]));
+				});
+			}
+			return response;
 		});
 
 		event.respondWith(responsePromise);
@@ -114,6 +114,7 @@ function preLoadTrack(trackData) {
 				if (trackResponse.status == 200) {
 					return cache.put(trackRequest, trackResponse).catch(function (error) {
 						console.error("Failed to cache track:", error.message);
+						erroringTracks[trackRequest.url] = error.message;
 					}).then(function () {
 						delete fetchingTracks[trackRequest.url];
 						tracksCached.refresh();
@@ -127,7 +128,7 @@ function preLoadTrack(trackData) {
 				delete fetchingTracks[trackRequest.url];
 				modifySummary.trackDone(trackRequest.url);
 				registration.sync.register("https://ceol.l42.eu/done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup");
-				erroringTracks[trackRequest.url] = error;
+				erroringTracks[trackRequest.url] = error.message;
 				tracksCached.refresh();
 			});
 			tracksCached.refresh();

@@ -283,7 +283,11 @@ function player() {
 					} else if (trackdata.caching) {
 						state = "caching";
 					} else if (trackdata.erroring) {
-						state = "failed";
+						if (trackdata.erroring.match(/quota/i)) {
+							state = "disk quota full";
+						} else {
+							state = "failed";
+						}
 					}
 				}
 				statenode.appendChild(document.createTextNode(state));

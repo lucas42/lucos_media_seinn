@@ -117,7 +117,6 @@ function preLoadTrack(trackData) {
 						erroringTracks[trackRequest.url] = error.message;
 					}).then(function () {
 						delete fetchingTracks[trackRequest.url];
-						tracksCached.refresh();
 					});
 				} else {
 					throw "non-200 response";
@@ -129,9 +128,7 @@ function preLoadTrack(trackData) {
 				modifySummary.trackDone(trackRequest.url);
 				registration.sync.register("https://ceol.l42.eu/done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup");
 				erroringTracks[trackRequest.url] = error.message;
-				tracksCached.refresh();
-			});
-			tracksCached.refresh();
+			}).then(tracksCached.refresh);
 		});
 	});
 
@@ -283,9 +280,12 @@ function statusChanged(path, response) {
 
 function preloadAllTracks(data) {
 	if (!data.tracks) return;
+	var tracks = {};
 	data.tracks.forEach(function (track) {
 		preLoadTrack(track);
+		tracks[track.url] = true;
 	});
+	tracksCached.tidyCache(tracks);
 }
 function refreshResources() {
 	return caches.open(RESOURCE_CACHE).then(function addUrlsToCache(cache) {
@@ -314,21 +314,38 @@ var tracksCached = (function () {
 		return trackURL in tracks;
 	}
 
-	function refresh() {
-		caches.open(TRACK_CACHE).then(function (cache) {
-			cache.keys().then(function (requests) {
-				requests.forEach(function (request) {
-					if (isCached(request.url)) return;
-					tracks[request.url] = true;
+	// Deletes all tracks from the cache whose URL isn't in the object upcomingtracks
+	function tidyCache(upcomingtracks) {
+		cacheIterate(function deleteTrack(trackurl, cache) {
+			var equivtrackurl = trackurl.replace("import/black/", "").replace(/%20/g, ' ');
+			if (!(equivtrackurl in upcomingtracks)) cache.delete(new Request(trackurl));
+		}).then(refresh);
+	}
+
+	function cacheIterate(trackFunction) {
+		return caches.open(TRACK_CACHE).then(function (cache) {
+			return cache.keys().then(function (requests) {
+				return requests.map(function (request) {
+					return trackFunction(request.url, cache);
 				});
-				forceResolvePoll("https://ceol.l42.eu/poll/summary");
 			});
+		});
+	}
+
+	function refresh() {
+		var tracksNowInCache = {};
+		cacheIterate(function setIsCached(trackurl) {
+			tracksNowInCache[trackurl] = true;
+		}).then(function resolve() {
+			tracks = tracksNowInCache;
+			forceResolvePoll("https://ceol.l42.eu/poll/summary");
 		});
 	}
 	refresh();
 	return {
 		isCached: isCached,
 		refresh: refresh,
+		tidyCache: tidyCache,
 	};
 })();
 caches.open(POLL_CACHE).catch(function (error) {

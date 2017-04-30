@@ -84,7 +84,9 @@ self.addEventListener('fetch', function respondToFetch(event) {
 			default:
 				postPromise = new Promise(function (resolve) {resolve()});
 		}
-		var responsePromise = postPromise.then(function () {
+		var responsePromise = postPromise.catch(function (error) {
+			console.warn("Cached summary not modified", error.message);
+		}).then(function () {
 			return registration.sync.register(event.request.url);
 		}).then(function (){
 			return new Response(new Blob(), {status: 202, statusText: "Accepted by Service Worker"});
@@ -210,12 +212,16 @@ var modifySummary = (function () {
 		var summaryResponse = new Response(new Blob([json]));
 		return cachePromise.then(function (cache) {
 			return cache.put(summaryRequest, summaryResponse.clone())
-		}).catch(function (error) {
-			cache.delete(summaryRequest).then(function () {
-				console.error("Failed to cache changes.  Deleted poll from cache.", error.message);
-			}).catch(function (error) {
-				console.error("Can't alter or delete cached poll.  Data Stuck.", error.message);
+			.catch(function (error) {
+				cache.delete(summaryRequest).then(function () {
+					console.error("Failed to cache changes.  Deleted poll from cache.", error.message);
+				}).catch(function (error) {
+					console.error("Can't alter or delete cached poll.  Data Stuck.", error.message);
+				});
+
 			});
+		}).catch(function (error) {
+			console.error("Can't access poll cache", error.message);
 		}).then(function () {
 			statusChanged('/poll/summary', summaryResponse.clone());
 		});

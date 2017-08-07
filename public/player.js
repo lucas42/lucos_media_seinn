@@ -3,6 +3,7 @@ function player() {
 	window.performance.mark('dom_loaded');
 	var audioContext = new AudioContext();
 	var current = {};
+	const dataOrigin = "https://ceol.l42.eu/";
 
 	// Returns a string of get params to include in requests so that server knows the current state of play
 	function getUpdateParams() {
@@ -201,7 +202,7 @@ function player() {
 		});
 		evaluateData(data);
 
-		fetch("https://ceol.l42.eu/done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status), {method: 'POST'});
+		fetch(dataOrigin+"done?track="+encodeURIComponent(trackURL)+"&status="+encodeURIComponent(status), {method: 'POST'});
 	}
 	function trackEndedHandler(event) {
 		buffers[event.target.trackURL].state = "finished";
@@ -221,7 +222,7 @@ function player() {
 		}
 
 		// Tell server where the track was, before getting rid of it.
-		if (current.start) fetch("https://ceol.l42.eu/update?"+getUpdateParams(), {method: 'POST'});
+		if (current.start) fetch(dataOrigin+"update?"+getUpdateParams(), {method: 'POST'});
 		current = {};
 	}
 
@@ -335,7 +336,7 @@ function player() {
 			command = "play";
 			data.isPlaying = true;
 		}
-		fetch("https://ceol.l42.eu/"+command+"?"+getUpdateParams(), {method: 'POST'});
+		fetch(dataOrigin+command+"?"+getUpdateParams(), {method: 'POST'});
 		evaluateData(data);
 	});
 
@@ -345,7 +346,7 @@ function player() {
 	});
 	window.performance.mark('end_eventhandlers');
 	window.performance.measure('measure_eventhandlers', 'start_eventhandlers', 'end_eventhandlers');
-	poll("https://ceol.l42.eu/poll/summary", evaluateData, getUpdateParams);
+	poll(dataOrigin+"poll/summary", evaluateData, getUpdateParams);
 }
 document.addEventListener("DOMContentLoaded", player);
 

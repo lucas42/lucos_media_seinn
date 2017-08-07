@@ -1,3 +1,4 @@
+const dataOrigin = "https://ceol.l42.eu/";
 const RESOURCE_CACHE = 'resources-v1';
 var urlsToCache = [
 	'/',
@@ -29,7 +30,7 @@ self.addEventListener('fetch', function respondToFetch(event) {
 		var fakerequest = new Request(fakeurl.href);
 		var responsePromise = caches.match(fakerequest).then(function serveFromCache(response) {
 			if (response) {
-				if (event.request.url.startsWith("https://ceol.l42.eu/poll")) {
+				if (event.request.url.startsWith(dataOrigin+"poll")) {
 					return response.clone().json().then(function pollFromCache (data) {
 						return new Promise(function pollPromiser (resolve) {
 							if (data.hashcode != url.searchParams.get("hashcode")) {
@@ -126,7 +127,7 @@ function preLoadTrack(trackData) {
 			}).catch(function trackError(error) {
 				delete fetchingTracks[trackRequest.url];
 				modifySummary.trackDone(trackRequest.url);
-				registration.sync.register("https://ceol.l42.eu/done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup");
+				registration.sync.register(dataOrigin+"done?track="+encodeURIComponent(trackData.url)+"&status=serviceWorkerFailedLookup");
 				erroringTracks[trackRequest.url] = error.message;
 			}).then(tracksCached.refresh);
 		});
@@ -194,7 +195,7 @@ function poll(url, handleDataFunction, additionalParamFunction, cache) {
 }
 
 var modifySummary = (function () {
-	var summaryRequest = new Request('https://ceol.l42.eu/poll/summary');
+	var summaryRequest = new Request(dataOrigin+'poll/summary');
 	var cachePromise = caches.open(POLL_CACHE);
 
 	// Get the summary response from the cache and JSON decode it
@@ -338,7 +339,7 @@ var tracksCached = (function () {
 			tracksNowInCache[trackurl] = true;
 		}).then(function resolve() {
 			tracks = tracksNowInCache;
-			forceResolvePoll("https://ceol.l42.eu/poll/summary");
+			forceResolvePoll(dataOrigin+"poll/summary");
 		});
 	}
 	refresh();
@@ -351,5 +352,5 @@ var tracksCached = (function () {
 caches.open(POLL_CACHE).catch(function (error) {
 	console.error('Failed to open caches', error);
 }).then(function (cache) {
-	poll("https://ceol.l42.eu/poll/summary", preloadAllTracks, null, cache);
+	poll(dataOrigin+"poll/summary", preloadAllTracks, null, cache);
 });

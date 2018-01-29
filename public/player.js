@@ -322,7 +322,13 @@ function player() {
 
 	updateDisplay("connecting");
 	document.getElementById("next").addEventListener('click', function skipTrack() {
-		trackDone(current.trackURL, "manual skip");
+		if (current.trackURL) {
+			trackDone(current.trackURL, "manual skip");
+		} else {
+
+			// If there isn't a current track, call "/next", which should prompt the media manager to queue up some more tracks
+			fetch(dataOrigin+"next", {method: 'POST'});
+		}
 	});
 	document.getElementById("cover").addEventListener('click', function playpauseTrack() {
 		var data = current.latestData;

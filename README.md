@@ -17,5 +17,8 @@ A media player for the lucos media system.
 # To run
 npm start
 
+# Media Manager
+Use environment variable MEDIA_MANAGER to set baseurl of media manager.  Defaults to "https://ceol.l42.eu/".
+
 # Etymology of name
 *[lucOS](https://github.com/lucas42/lucos)* is a collection of systems designed to work together.  *Seinn* is the Irish word for play, in the musical sense.

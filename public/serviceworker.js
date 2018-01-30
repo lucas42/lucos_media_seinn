@@ -1,4 +1,3 @@
-const dataOrigin = "https://ceol.l42.eu/";
 const RESOURCE_CACHE = 'resources-v1';
 var urlsToCache = [
 	'/',

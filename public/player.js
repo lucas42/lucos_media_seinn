@@ -3,7 +3,6 @@ function player() {
 	window.performance.mark('dom_loaded');
 	var audioContext = new AudioContext();
 	var current = {};
-	const dataOrigin = "https://ceol.l42.eu/";
 
 	// Returns a string of get params to include in requests so that server knows the current state of play
 	function getUpdateParams() {

@@ -24,6 +24,6 @@
   },
   "homepage": "https://github.com/lucas42/lucos-seinn",
   "dependencies": {
-    "express": "^4.14.0"
+    "express": "^4.16.3"
   }
 }

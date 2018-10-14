@@ -82,36 +82,28 @@ function player() {
 			document.getElementById("nexttrack").firstChild.nodeValue = 'Unknown';
 		}
 
-		// If the track is already playing, don't interrupt, just make any appropriate changes
-		if (current.trackURL == trackURL && current.isPlaying == data.isPlaying) {
-			if (current.gainNode) {
-				current.gainNode.gain.linearRampToValueAtTime(data.volume, audioContext.currentTime + 0.5);
-			}
-			current.latestData = data;
-			playlistViewer.refresh();
-			return;
-		}
-
-		// If paused, stop audio immediately, otherwise fade out over 3 seconds.
-		var fadeTime = data.isPlaying ? 3 : 0;
-		stopExisting(fadeTime);
-		current = {
-			trackURL: trackURL,
-			isPlaying: data.isPlaying,
-			latestData: data,
-		};
-
-		if (('cast' in window) && (castSession = window.cast.framework.CastContext.getInstance().getCurrentSession())) {
+		if (('cast' in window) 
+			&& (castSession = window.cast.framework.CastContext.getInstance().getCurrentSession())
+			) {
 			var targetTrack = trackURL.replace("ceol srl", "import/black/ceol srl");
 			var remotePlayer = new cast.framework.RemotePlayer();
 			var remotePlayerController = new cast.framework.RemotePlayerController(remotePlayer);
-			if (remotePlayer.mediaInfo.contentId === targetTrack) {
+			if (remotePlayer.mediaInfo && remotePlayer.mediaInfo.contentId === targetTrack) {
 				if (data.isPlaying !== remotePlayer.isPaused) return;
 				remotePlayerController.playOrPause();
 				current.castStatus = remotePlayer.isPaused ? "paused" : "playing";
+				current.isPlaying = data.isPlaying;
 				updateDisplay();
 				return;
 			}
+
+			// Stop any local sound playing, now we've switched to chromecast
+			stopExisting(0);
+			current = {
+				trackURL: trackURL,
+				isPlaying: data.isPlaying,
+				latestData: data,
+			};
 			var mediaInfo = new chrome.cast.media.MediaInfo(targetTrack, "audio");
 			mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
 			mediaInfo.metadata.metadataType = chrome.cast.media.MetadataType.MUSIC_TRACK;
@@ -137,6 +129,25 @@ function player() {
 			return;
 		}
 
+		// If the track is already playing, don't interrupt, just make any appropriate changes
+		if (current.trackURL == trackURL && current.isPlaying == data.isPlaying) {
+			if (current.gainNode) {
+				current.gainNode.gain.linearRampToValueAtTime(data.volume, audioContext.currentTime + 0.5);
+			}
+			current.latestData = data;
+			playlistViewer.refresh();
+			return;
+		}
+
+		// If paused, stop audio immediately, otherwise fade out over 3 seconds.
+		var fadeTime = data.isPlaying ? 3 : 0;
+		stopExisting(fadeTime);
+		current = {
+			trackURL: trackURL,
+			isPlaying: data.isPlaying,
+			latestData: data,
+		};
+
 		// Preload the current track (even if it's paused)
 		var buffer = getBuffer(trackURL);
 
@@ -148,7 +159,7 @@ function player() {
 		}
 
 		buffer.then(function createSource(buffer) {
-			if (trackURL != current.trackURL || current.source) {
+			if (trackURL != current.trackURL || current.source || current.castStatus) {
 
 				//Another track load has overtaken this one so ignore this one
 				return;
@@ -392,17 +403,25 @@ function player() {
 	window.performance.mark('end_eventhandlers');
 	window.performance.measure('measure_eventhandlers', 'start_eventhandlers', 'end_eventhandlers');
 	poll(dataOrigin+"poll/summary", evaluateData, getUpdateParams);
+	window['__onGCastApiAvailable'] = function(isAvailable) {
+		if (isAvailable) {
+			cast.framework.CastContext.getInstance().setOptions({
+				receiverApplicationId:
+				chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID
+			});
+			var remotePlayer = new cast.framework.RemotePlayer();
+			var remotePlayerController = new cast.framework.RemotePlayerController(remotePlayer);
+			remotePlayerController.addEventListener(
+			    cast.framework.RemotePlayerEventType.IS_CONNECTED_CHANGED,
+			    function () {
+					if (current.latestData) evaluateData(current.latestData);
+			    }
+			);
+
+		}
+	};
 }
 document.addEventListener("DOMContentLoaded", player);
-
-window['__onGCastApiAvailable'] = function(isAvailable) {
-	if (isAvailable) {
-		cast.framework.CastContext.getInstance().setOptions({
-			receiverApplicationId:
-			chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID
-		});
-	}
-};
 
 (function swHelperInit() {
 	var registration;

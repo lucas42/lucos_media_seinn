@@ -59,6 +59,16 @@ footer { position: fixed; bottom: 0; width: 100%; background-color: rgba(100,100
 	z-index: 10;
 	cursor: pointer;
 }
+google-cast-launcher {
+	position: fixed;
+	right: 2.3em;
+	bottom: 0.25em;
+	height: 1.75em;
+	width: 2em;
+	--disconnected-color: indigo;
+	--connected-color: lime;
+	cursor: pointer;
+}
 .state {
 	text-align: center;
 	color: white; 
@@ -105,4 +115,7 @@ footer { position: fixed; bottom: 0; width: 100%; background-color: rgba(100,100
 }
 .state[data-state='disk quota full'] {
 	background-color: deeppink;
+}
+.state[data-state='casting'] {
+	background-color: darkmagenta;
 }

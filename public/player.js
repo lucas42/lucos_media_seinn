@@ -101,6 +101,42 @@ function player() {
 			latestData: data,
 		};
 
+		if (('cast' in window) && (castSession = window.cast.framework.CastContext.getInstance().getCurrentSession())) {
+			var targetTrack = trackURL.replace("ceol srl", "import/black/ceol srl");
+			var remotePlayer = new cast.framework.RemotePlayer();
+			var remotePlayerController = new cast.framework.RemotePlayerController(remotePlayer);
+			if (remotePlayer.mediaInfo.contentId === targetTrack) {
+				if (data.isPlaying !== remotePlayer.isPaused) return;
+				remotePlayerController.playOrPause();
+				current.castStatus = remotePlayer.isPaused ? "paused" : "playing";
+				updateDisplay();
+				return;
+			}
+			var mediaInfo = new chrome.cast.media.MediaInfo(targetTrack, "audio");
+			mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
+			mediaInfo.metadata.metadataType = chrome.cast.media.MetadataType.MUSIC_TRACK;
+			mediaInfo.metadata.title = data.now.metadata.title;
+			mediaInfo.metadata.artist = data.now.metadata.artist;
+			mediaInfo.metadata.images = [
+				{url: data.now.metadata.img}
+			];
+			mediaInfo.autoplay = data.isPlaying;
+			mediaInfo.currentTime = data.now.currentTime;
+			var request = new chrome.cast.media.LoadRequest(mediaInfo);
+			castSession.loadMedia(request).then(
+				function() {
+					current.castStatus = "playing";
+					updateDisplay();
+				},
+				function(errorCode) {
+					current.castStatus = "error";
+					console.error('Error code: ' + errorCode, mediaInfo, request, castSession);
+				}
+			);
+			playlistViewer.refresh();
+			return;
+		}
+
 		// Preload the current track (even if it's paused)
 		var buffer = getBuffer(trackURL);
 
@@ -156,9 +192,13 @@ function player() {
 	}
 	function getState(trackURL) {
 		if (!trackURL) return "preparing";
+		if (current.trackURL === trackURL && current.castStatus) {
+			if (current.castStatus === "paused") return "paused";
+			return "casting";
+		}
 		var bufferpromise = buffers[trackURL];
 		if (!bufferpromise) return "unloaded";
-		if (bufferpromise.state == "ready" && current.trackURL == trackURL) {
+		if (current.trackURL === trackURL && bufferpromise.state == "ready") {
 			return current.isPlaying ? "playing" : "paused";
 		}
 		return bufferpromise.state;
@@ -332,7 +372,7 @@ function player() {
 	document.getElementById("cover").addEventListener('click', function playpauseTrack() {
 		var data = current.latestData;
 		var command;
-		if (current.source) {
+		if (current.source || current.castStatus === "playing") {
 			updateDisplay("pausing");
 			command = "pause";
 			data.isPlaying = false;
@@ -354,6 +394,15 @@ function player() {
 	poll(dataOrigin+"poll/summary", evaluateData, getUpdateParams);
 }
 document.addEventListener("DOMContentLoaded", player);
+
+window['__onGCastApiAvailable'] = function(isAvailable) {
+	if (isAvailable) {
+		cast.framework.CastContext.getInstance().setOptions({
+			receiverApplicationId:
+			chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID
+		});
+	}
+};
 
 (function swHelperInit() {
 	var registration;

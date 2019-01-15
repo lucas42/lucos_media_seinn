@@ -130,7 +130,7 @@ function player() {
 		}
 
 		// If the track is already playing, don't interrupt, just make any appropriate changes
-		if (current.trackURL == trackURL && current.isPlaying == data.isPlaying) {
+		if (current.trackURL == trackURL && current.isPlaying == data.isPlaying && current.state === audioContext.state) {
 			if (current.gainNode) {
 				current.gainNode.gain.linearRampToValueAtTime(data.volume, audioContext.currentTime + 0.5);
 			}
@@ -146,6 +146,7 @@ function player() {
 			trackURL: trackURL,
 			isPlaying: data.isPlaying,
 			latestData: data,
+			state: audioContext.state,
 		};
 
 		// Preload the current track (even if it's paused)
@@ -210,13 +211,14 @@ function player() {
 		var bufferpromise = buffers[trackURL];
 		if (!bufferpromise) return "unloaded";
 		if (current.trackURL === trackURL && bufferpromise.state == "ready") {
-			return current.isPlaying ? "playing" : "paused";
+			if (audioContext.state === "suspended") return "disabled";
+			if (!current.isPlaying) return "paused";
+			return "playing";
 		}
 		return bufferpromise.state;
 	}
 
 	function playBuffer(trackURL, buffer, volume, startTime) {
-		current.trackURL = trackURL;
 		var source = audioContext.createBufferSource();
 		source.trackURL = trackURL;
 		source.addEventListener("ended", trackEndedHandler);
@@ -227,11 +229,13 @@ function player() {
 		source.connect(gainNode);
 		gainNode.connect(audioContext.destination);
 		source.start(0, startTime);
+		current.trackURL = trackURL;
 		current.gainNode = gainNode;
 		current.source = source;
 		current.start = audioContext.currentTime - startTime;
 		current.isPlaying = true;
 		current.volume = volume;
+		current.state = audioContext.state;
 		updateDisplay();
 	}
 
@@ -282,6 +286,16 @@ function player() {
 		statusNode.firstChild.nodeValue = state;
 		statusNode.dataset.state = state;
 		playlistViewer.refresh();
+	}
+
+	/**
+	 * Some browsers require a trusted event to enable audio
+	 * This should only need to be done once as we're using the same audioContext object throughout
+	 **/
+	function enableAudio() {
+		updateDisplay("enabling");
+		audioContext.resume()
+			.then(() => evaluateData(current.latestData));
 	}
 
 	window.performance.mark('start_eventhandlers');
@@ -383,6 +397,10 @@ function player() {
 	document.getElementById("cover").addEventListener('click', function playpauseTrack() {
 		var data = current.latestData;
 		var command;
+		if (audioContext.state === "suspended") {
+			enableAudio();
+			return;
+		}
 		if (current.source || current.castStatus === "playing") {
 			updateDisplay("pausing");
 			command = "pause";

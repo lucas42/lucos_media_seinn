@@ -101,6 +101,9 @@ google-cast-launcher {
 .state[data-state='unloaded'] {
 	background-color: grey;
 }
+.state[data-state='disabled'] {
+	background-color: #555;
+}
 .state[data-state='failed'] {
 	background-color: darkred;
 }

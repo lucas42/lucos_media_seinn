@@ -15,8 +15,10 @@ A media player for the lucos media system.
 * Web Audio API
 
 ## Running
-`docker run -d -p 3001:8080 --name seinn lucas42/lucos_seinn`
+`nice -19 docker-compose up -d --no-build`
 
+## Building
+The build is configured to run in Dockerhub when a commit is pushed to the master branch in github.
 
 ## Media Manager
 Use environment variable MEDIA_MANAGER to set baseurl of media manager.  Defaults to "https://ceol.l42.eu/".

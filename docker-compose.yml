@@ -1,0 +1,8 @@
+version: '3'
+services:
+    seinn:
+      build: .
+      container_name: seinn
+      ports: 
+        - "3001:8080"
+      image: lucas42/lucos_seinn

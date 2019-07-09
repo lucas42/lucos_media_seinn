@@ -16,7 +16,8 @@ app.get('/:file.js', function(req, res, next){
 		res.send(dataOriginLine+contents);
 	});
 });
-app.use(express.static(__dirname + '/public'));
+
+app.use(express.static(__dirname + '/public', {extensions: ['json']}));
 
 app.listen(port, function () {
   console.log('App listening on port ' + port);

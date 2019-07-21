@@ -1,5 +1,8 @@
 {
 	"system": "lucos_seinn",
 	"checks": {},
-	"metrics": {}
+	"metrics": {},
+	"ci": {
+		"circle": "gh/lucas42/lucos_seinn"
+	}
 }

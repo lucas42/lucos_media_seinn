@@ -49,7 +49,7 @@ self.addEventListener('fetch', function respondToFetch(event) {
 				return response.clone().json()
 				.then(function (data) {
 					if (data.tracks) data.tracks.forEach(function (track) {
-						var trackUrl = new URL(track.url.replace("ceol srl", "import/black/ceol srl"));
+						var trackUrl = new URL(track.url);
 						if (tracksCached.isCached(trackUrl.href)) track.cached = true;
 						if (trackUrl.href in fetchingTracks) track.caching = true;
 						if (trackUrl.href in erroringTracks) track.erroring = erroringTracks[trackUrl.href];
@@ -107,7 +107,7 @@ function preLoadTrack(trackData) {
 
 	// Attempt to load the track itself into the track cache
 	caches.open(TRACK_CACHE).then(function preFetchTrack(cache) {
-		var trackRequest = new Request(trackData.url.replace("ceol srl", "import/black/ceol srl"));
+		var trackRequest = new Request(trackData.url);
 		cache.match(trackRequest).then(function (fromCache) {
 			if (fromCache || trackRequest.url in fetchingTracks) return;
 			fetchingTracks[trackRequest.url] = fetch(trackRequest).then(function cacheTrack(trackResponse) {

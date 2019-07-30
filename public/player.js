@@ -85,10 +85,9 @@ function player() {
 		if (('cast' in window) 
 			&& (castSession = window.cast.framework.CastContext.getInstance().getCurrentSession())
 			) {
-			var targetTrack = trackURL.replace("ceol srl", "import/black/ceol srl");
 			var remotePlayer = new cast.framework.RemotePlayer();
 			var remotePlayerController = new cast.framework.RemotePlayerController(remotePlayer);
-			if (remotePlayer.mediaInfo && remotePlayer.mediaInfo.contentId === targetTrack) {
+			if (remotePlayer.mediaInfo && remotePlayer.mediaInfo.contentId === trackURL) {
 				if (data.isPlaying !== remotePlayer.isPaused) return;
 				remotePlayerController.playOrPause();
 				current.castStatus = remotePlayer.isPaused ? "paused" : "playing";
@@ -104,7 +103,7 @@ function player() {
 				isPlaying: data.isPlaying,
 				latestData: data,
 			};
-			var mediaInfo = new chrome.cast.media.MediaInfo(targetTrack, "audio");
+			var mediaInfo = new chrome.cast.media.MediaInfo(trackURL, "audio");
 			mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
 			mediaInfo.metadata.metadataType = chrome.cast.media.MetadataType.MUSIC_TRACK;
 			mediaInfo.metadata.title = data.now.metadata.title;
@@ -174,7 +173,7 @@ function player() {
 	function getBuffer(trackURL) {
 		if (!(trackURL in buffers)) {
 			window.performance.mark('buffers_fetching');
-			buffers[trackURL] = fetch(trackURL.replace("ceol srl", "import/black/ceol srl")).then(function bufferTrack(rawtrack) {
+			buffers[trackURL] = fetch(trackURL).then(function bufferTrack(rawtrack) {
 				window.performance.mark('buffers_buffering');
 				buffers[trackURL].state = "buffering";
 				updateDisplay();

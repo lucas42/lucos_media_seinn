@@ -134,7 +134,7 @@ function preLoadTrack(trackData) {
 
 	// Add the track's image into the image cache.
 	caches.open(IMG_CACHE).then(function preFetchImage(cache) {
-		var imgRequest = new Request(trackData.metadata.img, {mode: 'no-cors'});
+		var imgRequest = new Request(trackData.metadata.img);
 		cache.match(imgRequest).then(function (fromCache) {
 			if (fromCache || imgRequest.url in fetchingImages) return;
 

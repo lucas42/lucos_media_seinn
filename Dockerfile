@@ -6,7 +6,7 @@ COPY package* ./
 RUN npm install
 
 COPY index.js ./
-COPY public ./
+COPY public public
 
 ENV NODE_ENV production
 ENV PORT 3001

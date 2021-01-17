@@ -44,7 +44,14 @@ function setupCastReceiver() {
 	// But instead, we track the current media and hope there's no race conditions
 	var currentMedia;
 	playerManager.addEventListener(cast.framework.events.EventType.MEDIA_STATUS, event => {
-		if ('media' in event.mediaStatus) currentMedia = event.mediaStatus.media;
+		if (!('media' in event.mediaStatus)) return;
+		currentMedia = event.mediaStatus.media;
+	});
+	playerManager.addEventListener(cast.framework.events.EventType.REQUEST_QUEUE_UPDATE, event => {
+		// TODO: look at event.requestData.jump to decide how many tracks to skip
+		// For now, I've only ever seen a value of 1
+		playerManager.pause();
+		fetch(dataOrigin+"next", {method: 'POST'});
 	});
 	playerManager.addEventListener(cast.framework.events.EventType.MEDIA_FINISHED, event => {
 
@@ -63,7 +70,7 @@ function setupCastReceiver() {
 
 		loadData = new cast.framework.messages.LoadRequestData();
 		loadData.currentTime = now.currentTime;
-		loadData.autoplay = true;
+		loadData.autoplay = data.isPlaying;
 		loadData.media = new cast.framework.messages.MediaInformation();
 		loadData.media.contentId = now.url;
 		loadData.media.metadata = new cast.framework.messages.MusicTrackMediaMetadata();
@@ -76,6 +83,13 @@ function setupCastReceiver() {
 				{url: now.metadata.img}
 			];
 		playerManager.load(loadData)
+			.then(() => {
+				if (data.isPlaying) {
+					playerManager.play();
+				} else {
+					playerManager.pause();
+				}
+			})
 			.catch(err => console.error("Can't load track", err));
 	});
 }

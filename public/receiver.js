@@ -36,8 +36,16 @@ function poll(url, handleDataFunction, additionalParamFunction, cache) {
 }
 
 function setupCastReceiver() {
-	document.body.appendChild(document.createElement('cast-media-player'));
+
+	// Don't even bother trying to create a cast recevier with the relevant libraries
+	if (!('cast' in window)) return;
 	const receiverContext = cast.framework.CastReceiverContext.getInstance();
+	const capabilities = receiverContext.getDeviceCapabilities();
+
+	// If capabalities is null, then the device isn't set up for receiving casts;
+	if (capabilities == null) return;
+
+	document.body.appendChild(document.createElement('cast-media-player'));
 	const playerManager = receiverContext.getPlayerManager();
 
 	// Ideally MEDIA_FINISHED would provide info about the track which has finished

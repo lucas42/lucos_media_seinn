@@ -424,7 +424,7 @@ function player() {
 		if (isAvailable) {
 			cast.framework.CastContext.getInstance().setOptions({
 				receiverApplicationId:
-				chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID
+				"34252B55"
 			});
 			var remotePlayer = new cast.framework.RemotePlayer();
 			var remotePlayerController = new cast.framework.RemotePlayerController(remotePlayer);

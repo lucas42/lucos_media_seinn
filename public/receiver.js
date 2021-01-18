@@ -74,7 +74,14 @@ function setupCastReceiver() {
 		const now = data.tracks[0];
 		if (!now) return console.error("No currently playing track", data);
 		const mediaInfo = playerManager.getMediaInformation();
-		if (mediaInfo && now.url == mediaInfo.contentId) return;
+		if (mediaInfo && now.url == mediaInfo.contentId) {
+			if (playerManager.getPlayerState() == cast.framework.messages.PlayerState.PLAYING) {
+				if (!data.isPlaying) playerManager.pause();
+			} else {
+				if (data.isPlaying) playerManager.play();
+			}
+			return;
+		}
 
 		loadData = new cast.framework.messages.LoadRequestData();
 		loadData.currentTime = now.currentTime;

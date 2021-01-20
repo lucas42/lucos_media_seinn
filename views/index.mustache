@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html> 
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+	<head> 
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<title>LucOs Media Player</title>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width" />
+	<link href="/v3.css" rel="stylesheet">
+	<link rel="icon" type="image/jpg" href="/logo.jpg" />
+</head> 
+<body>
+	<div id="nonjs">
+		<div class="now">
+			<div class="info"><span class="title">{{now.title}}</span><span class="artist ">{{now.artist}}</span><img class="img" src="{{now.thumb}}" /></div>
+		</div>
+		<ul class='controls'>
+			{{#isPlaying}}
+			<li>
+				<form method="post" action="/v3/pause" id='playpause'>
+					<input type='hidden'/>
+					<input type='submit' value="Pause"/>
+				</form>
+			</li>
+			{{/isPlaying}}
+			{{^isPlaying}}
+			<li>
+				<form method="post" action="/v3/play" id='playpause'>
+					<input type='hidden'/>
+					<input type='submit' value="Play"/>
+				</form>
+			</li>
+			{{/isPlaying}}
+			<li>
+				<form method="post" action="/v3/next" id='next'>
+					<input type='hidden'/>
+					<input type='submit' value="Skip to the Next Track"/>
+				</form>
+			</li>
+		</ul>
+	</div>
+	<script type="text/javascript" src="/v3.js"></script>
+</body>
+</html>

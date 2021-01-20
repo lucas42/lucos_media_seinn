@@ -14,15 +14,15 @@ router.get('/', async (req, res) => {
 
 router.post('/play', async (req,res) => {
 	await fetch(mediaManager+"play", {method: 'POST'});
-	res.redirect('/v3');
+	res.redirect(`${req.protocol}://${req.headers.host}/v3`);
 });
 router.post('/pause', async (req,res) => {
 	await fetch(mediaManager+"pause", {method: 'POST'});
-	res.redirect('/v3');
+	res.redirect(`${req.protocol}://${req.headers.host}/v3`);
 });
 router.post('/next', async (req,res) => {
 	await fetch(mediaManager+"next", {method: 'POST'});
-	res.redirect('/v3');
+	res.redirect(`${req.protocol}://${req.headers.host}/v3`);
 });
 
 module.exports = router;

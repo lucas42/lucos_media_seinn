@@ -8,6 +8,7 @@ body { background: #000; color: #fff; font-size: 16px; left: 0; right: 0; top: 0
 .now .links li a { color: inherit; }
 .now .links li .loading { color: #fa0; }
 .now .links li .exticon { margin: 0 0.5em; }
+h2 { display: none; }
 .controls > *, .links li { cursor: pointer; }
 .links li a:hover { text-decoration: underline; }
 .controls > * { border: outset; padding: 0.2em 1em; font-weight: bold; }

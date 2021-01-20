@@ -11,9 +11,15 @@
 </head> 
 <body>
 	<div id="nonjs">
+		<h2>Current Track</h2>
 		<div class="now">
-			<div class="info"><span class="title">{{now.title}}</span><span class="artist ">{{now.artist}}</span><img class="img" src="{{now.thumb}}" /></div>
+			<div class="info">
+				<div class="title">{{now.title}}</div>
+				<div class="artist ">{{now.artist}}</div>
+				<img class="img" src="{{now.thumb}}" alt="" />
+			</div>
 		</div>
+		<h2>Controls</h2>
 		<ul class='controls'>
 			{{#isPlaying}}
 			<li>
@@ -35,6 +41,12 @@
 				<form method="post" action="/v3/next" id='next'>
 					<input type='hidden'/>
 					<input type='submit' value="Skip to the Next Track"/>
+				</form>
+			</li>
+			<li>
+				<form method="get" action="/v3" id='refresh'>
+					<input type='hidden'/>
+					<input type='submit' value="Refresh"/>
 				</form>
 			</li>
 		</ul>

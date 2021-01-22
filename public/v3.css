@@ -54,9 +54,6 @@ h2 { display: none; }
 		transition:height 0.5s ease-out;
 }
 
-/* Stop menu buttons being under vol */
-.lucos_navbar_menubutton { margin-right: 60px; padding-right: 0!important; }
-.lucos_navbar_menubutton ~ * { margin-right: auto; }
 .next .title { background:#502; color: white; text-align: center; display: block; padding: 1em; font-weight: bold; cursor: pointer; padding-right: 60px;}
 .playlist h3 { display: inline; margin: 0 1em; font-size: smaller;}
 .playlist { position: absolute; overflow: auto; margin: 0; right: 53px; left: 1em; padding-top: 20px; padding-bottom: 10px; -webkit-overflow-scrolling: touch; }
@@ -64,6 +61,14 @@ a { color: #502; font-weight: bold; text-decoration: none;}
 a:hover { text-decoration: underline; }
 .status { position: absolute; bottom: 20px; text-align: center; font-weight: bold; right: 60px; left: 60px;  }
 #controls { display: block; }
+
+/** Hack to move media player on receiver up so application name gets covered by nicer looking navbar **/
+body.cast-receiver.lucos_gotnavbar cast-media-player {
+	position: relative;
+	height: 100%;
+	display: block;
+	top: -10vw;
+}
 
 @media (min-width: 20cm) {
 	/*.now .img { -webkit-box-reflect: below 0 -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0)), to(rgba(255, 255, 255, 0.5)), color-stop(0.7, transparent)); }*/

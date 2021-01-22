@@ -42,4 +42,14 @@
 }
 body.lucos_gotnavbar {
 	padding-top: 30px;
-};
+}
+
+body.cast-receiver #lucos_navbar {
+	font-size: 4vh;
+	height: 3vh;
+	padding: 3vh;
+	border-bottom-width: 7px;
+}
+body.cast-receiver #lucos_navbar_logo {
+	height: 5vh;
+}

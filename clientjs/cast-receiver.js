@@ -9,7 +9,8 @@ const capabilities = receiverContext.getDeviceCapabilities();
 // If capabalities is null, then the device isn't set up for receiving casts;
 if (capabilities == null) return;
 
-document.body.appendChild(document.createElement('cast-media-player'));
+document.body.firstChild.replaceWith(document.createElement('cast-media-player'));
+document.body.classList.add("cast-receiver");
 const playerManager = receiverContext.getPlayerManager();
 
 // Ideally MEDIA_FINISHED would provide info about the track which has finished

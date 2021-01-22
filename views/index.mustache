@@ -23,7 +23,7 @@
 			</div>
 		</div>
 		<h2>Controls</h2>
-		<ul class='controls'>
+		<ul id='controls'>
 			{{#isPlaying}}
 			<li>
 				<form method="post" action="/v3/pause" id='playpause'>
@@ -54,6 +54,10 @@
 			</li>
 		</ul>
 	</div>
+
+	<script type="text/javascript" src="//www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+	<script type="text/javascript"
+	src="//www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
 	<script type="text/javascript" src="/v3.js"></script>
 </body>
 </html>

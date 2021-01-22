@@ -9,18 +9,25 @@ body { background: #000; color: #fff; font-size: 16px; left: 0; right: 0; top: 0
 .now .links li .loading { color: #fa0; }
 .now .links li .exticon { margin: 0 0.5em; }
 h2 { display: none; }
-.controls > *, .links li { cursor: pointer; }
+#controls > *, .links li { cursor: pointer; }
 .links li a:hover { text-decoration: underline; }
-.controls > * { border: outset; padding: 0.2em 1em; font-weight: bold; }
-.controls > *:hover { border-color: yellow; }
-.controls > *:active { border: inset; }
-.controls { text-align: center; clear: both; padding-top: 0.5em; background:#502; color: #fff; height: 1.8em; display: block; overflow: hidden; margin: 0; }
-.controls > * { background: white; color: black; margin: 1em 0.5em; }
+#controls > * { border: outset; padding: 0.2em 1em; font-weight: bold; }
+#controls > *:hover { border-color: yellow; }
+#controls > *:active { border: inset; }
+#controls { text-align: center; clear: both; padding-top: 0.5em; background:#502; color: #fff; height: 1.8em; display: block; overflow: hidden; margin: 0; }
+#controls > * { background: white; color: black; margin: 1em 0.5em; }
+#controls google-cast-launcher {
+	display: inline-block;
+	vertical-align: middle;
+	width: 25px;
+	height: 25px;
+	margin-left: 10px;
+}
 #lucos_navbar { border-bottom: solid #502; }
 
-#nonjs .controls li { background: transparent; border: none; margin: 0; padding: 0; }
-#nonjs .controls form { display: inline; }
-#nonjs .controls input { background: white; color: black; }
+#nonjs #controls li { background: transparent; border: none; margin: 0; padding: 0; }
+#nonjs #controls form { display: inline; }
+#nonjs #controls input { background: white; color: black; }
 #nonjs h1 { margin: 0 }
 
 .volcontain { width: 60px; position: absolute; right: 0; top: 0; bottom: 0; z-index: 1010; }
@@ -56,7 +63,7 @@ h2 { display: none; }
 a { color: #502; font-weight: bold; text-decoration: none;}
 a:hover { text-decoration: underline; }
 .status { position: absolute; bottom: 20px; text-align: center; font-weight: bold; right: 60px; left: 60px;  }
-.controls { display: block; }
+#controls { display: block; }
 
 @media (min-width: 20cm) {
 	/*.now .img { -webkit-box-reflect: below 0 -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0)), to(rgba(255, 255, 255, 0.5)), color-stop(0.7, transparent)); }*/
@@ -65,13 +72,13 @@ a:hover { text-decoration: underline; }
 	.next .title { display: none }
 	.now .links li { line-height: 2em; float: right; margin-right: 60px;}
 	.status { display: none; }
-	#nonjs .controls li { display: inline; }
+	#nonjs #controls li { display: inline; }
 	.now .links li .ext { display: none; }
 }
 @media (max-width: 20cm) {
-	.controls { display: none; }
-	#nonjs .controls { display:block; height: auto; list-style-type: none; padding: 0; }
-	#nonjs .controls input { width: 90%; margin: 0.5em 5%; }
+	#controls { display: none; }
+	#nonjs #controls { display:block; height: auto; list-style-type: none; padding: 0; }
+	#nonjs #controls input { width: 90%; margin: 0.5em 5%; }
 	.now .links li .link { display: none; }
 	.now .links li .exticon { display: none; }
 	

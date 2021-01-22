@@ -26,3 +26,7 @@ Use environment variable MEDIA_MANAGER to set baseurl of media manager.  Default
 ## Etymology of name
 *[lucOS](https://github.com/lucas42/lucos)* is a collection of systems designed to work together.  *Seinn* is the Irish word for play, in the musical sense.
 
+## Environment variables
+* _DEV_ If set, uses the dev version of the cast receiver application.  Defaults to null.
+* _MEDIA_MANAGER_ The origin to use for calls to lucos_media_manager.  Defaults to the production instance.
+

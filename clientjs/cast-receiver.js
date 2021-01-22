@@ -1,4 +1,5 @@
 const poll = require("./poll");
+const dataOrigin = clientVariables.mediaManager;
 
 // Don't even bother trying to create a cast recevier with the relevant libraries
 if (!('cast' in window)) return;

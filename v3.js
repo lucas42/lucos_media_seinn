@@ -2,11 +2,15 @@ const router = require('express').Router();
 const fetch = require('node-fetch');
 
 const mediaManager = process.env.MEDIA_MANAGER || "https://ceol.l42.eu/";
+const receiverApplicationId = process.env.DEV ? "5D5F55DE" : "34252B55";
 
 router.get('/', async (req, res) => {
 	const data = await fetch(mediaManager+"poll").then(resp => resp.json());
 	res.render("index", {
-		mediaManager,
+		clientVariables: JSON.stringify({
+			mediaManager,
+			receiverApplicationId,
+		}),
 		now: data.now.metadata,
 		isPlaying: data.isPlaying,
 	});

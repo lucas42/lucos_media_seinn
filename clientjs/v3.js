@@ -1,5 +1,11 @@
-require("./cast-receiver");
+if (!clientVariables) throw "Can't find `clientVariables` in global scope";
+
+const isCastReceiver = require("./cast-receiver")(clientVariables.mediaManager);
 require("./navbar");
 require("./keyboard");
-require("./cast-sender");
-if (!clientVariables) console.error("Can't find `clientVariables` in global scope");
+
+if (!isCastReceiver) {
+	require("./cast-sender");
+	require("./updates")(clientVariables.mediaManager);
+	require("./updateUI");
+}

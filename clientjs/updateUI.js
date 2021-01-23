@@ -12,4 +12,6 @@ function updateNow(now) {
 	document.getElementById("now_thumb").src = metadata.thumb;
 }
 
-pubsub.listen("managerData", readData, true);
+pubsub.listen("ready", () => {
+	pubsub.listenExisting("managerData", readData, true);
+});

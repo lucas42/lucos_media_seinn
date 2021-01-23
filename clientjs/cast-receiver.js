@@ -1,4 +1,4 @@
-const poll = require("./poll");
+const pubsub = require("./pubsub");
 
 /**
  * Attempts to loads a google cast receiver
@@ -41,7 +41,7 @@ function loadReceiver(mediaManager) {
 		fetch(mediaManager+"done?track="+encodeURIComponent(currentMedia.contentId)+"&status="+encodeURIComponent(event.endedReason), {method: 'POST'});
 	});
 	receiverContext.start();
-	poll(mediaManager+"poll/summary", data => {
+	pubsub.listen("managerData", data => {
 		const now = data.tracks[0];
 		if (!now) return console.error("No currently playing track", data);
 		const mediaInfo = playerManager.getMediaInformation();

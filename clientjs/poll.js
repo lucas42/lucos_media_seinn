@@ -1,3 +1,4 @@
+const pubsub = require("./pubsub");
 
 function poll(url, handleDataFunction, additionalParamFunction, cache) {
 	if (!url) throw "no URL given to poll";
@@ -20,6 +21,7 @@ function poll(url, handleDataFunction, additionalParamFunction, cache) {
 					hashcode = data.hashcode;
 					if (cache) cache.put(request, response.clone());
 					if (handleDataFunction) handleDataFunction(data);
+					pubsub.send("managerData", data);
 				}
 				actuallyPoll(hashcode);
 			});
@@ -34,4 +36,7 @@ function poll(url, handleDataFunction, additionalParamFunction, cache) {
 	actuallyPoll(null);
 }
 
-module.exports = poll;
+function basicPoll(mediaManager) {
+	poll(mediaManager+"poll/summary");
+}
+module.exports = basicPoll;

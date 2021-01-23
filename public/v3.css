@@ -25,10 +25,9 @@ h2 { display: none; }
 }
 #lucos_navbar { border-bottom: solid #502; }
 
-#nonjs #controls li { background: transparent; border: none; margin: 0; padding: 0; }
-#nonjs #controls form { display: inline; }
-#nonjs #controls input { background: white; color: black; }
-#nonjs h1 { margin: 0 }
+#controls li { background: transparent; border: none; margin: 0; padding: 0; }
+#controls form { display: inline; }
+#controls input { background: white; color: black; }
 
 .volcontain { width: 60px; position: absolute; right: 0; top: 0; bottom: 0; z-index: 1010; }
 .vol { width: 60px; position: absolute; right: 0; bottom: 0;
@@ -77,13 +76,13 @@ body.cast-receiver.lucos_gotnavbar cast-media-player {
 	.next .title { display: none }
 	#now .links li { line-height: 2em; float: right; margin-right: 60px;}
 	.status { display: none; }
-	#nonjs #controls li { display: inline; }
+	#controls li { display: inline; }
 	#now .links li .ext { display: none; }
 }
 @media (max-width: 20cm) {
 	#controls { display: none; }
-	#nonjs #controls { display:block; height: auto; list-style-type: none; padding: 0; }
-	#nonjs #controls input { width: 90%; margin: 0.5em 5%; }
+	#controls { display:block; height: auto; list-style-type: none; padding: 0; }
+	#controls input { width: 90%; margin: 0.5em 5%; }
 	#now .links li .link { display: none; }
 	#now .links li .exticon { display: none; }
 	

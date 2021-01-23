@@ -14,47 +14,45 @@
 	</script>
 </head> 
 <body>
-	<div id="nonjs">
-		<h2>Current Track</h2>
-		<div id="now">
-			<div class="info">
-				<div id="now_title">{{now.title}}</div>
-				<div id="now_artist">{{now.artist}}</div>
-				<img id="now_thumb" src="{{now.thumb}}" alt="" />
-			</div>
+	<h2>Current Track</h2>
+	<div id="now">
+		<div class="info">
+			<div id="now_title">{{now.title}}</div>
+			<div id="now_artist">{{now.artist}}</div>
+			<img id="now_thumb" src="{{now.thumb}}" alt="" />
 		</div>
-		<h2>Controls</h2>
-		<ul id='controls'>
-			{{#isPlaying}}
-			<li>
-				<form method="post" action="/v3/pause" id='playpause'>
-					<input type='hidden'/>
-					<input type='submit' value="Pause" id='playpause-submit'/>
-				</form>
-			</li>
-			{{/isPlaying}}
-			{{^isPlaying}}
-			<li>
-				<form method="post" action="/v3/play" id='playpause'>
-					<input type='hidden'/>
-					<input type='submit' value="Play" id='playpause-submit'/>
-				</form>
-			</li>
-			{{/isPlaying}}
-			<li>
-				<form method="post" action="/v3/next" id='next'>
-					<input type='hidden'/>
-					<input type='submit' value="Skip to the Next Track" id='next-submit'/>
-				</form>
-			</li>
-			<li>
-				<form method="get" action="/v3" id='refresh'>
-					<input type='hidden'/>
-					<input type='submit' value="Refresh" id='refresh-submit'/>
-				</form>
-			</li>
-		</ul>
 	</div>
+	<h2>Controls</h2>
+	<ul id='controls'>
+		{{#isPlaying}}
+		<li>
+			<form method="post" action="/v3/pause" id='playpause'>
+				<input type='hidden'/>
+				<input type='submit' value="Pause" id='playpause-submit'/>
+			</form>
+		</li>
+		{{/isPlaying}}
+		{{^isPlaying}}
+		<li>
+			<form method="post" action="/v3/play" id='playpause'>
+				<input type='hidden'/>
+				<input type='submit' value="Play" id='playpause-submit'/>
+			</form>
+		</li>
+		{{/isPlaying}}
+		<li>
+			<form method="post" action="/v3/next" id='next'>
+				<input type='hidden'/>
+				<input type='submit' value="Skip to the Next Track" id='next-submit'/>
+			</form>
+		</li>
+		<li>
+			<form method="get" action="/v3" id='refresh'>
+				<input type='hidden'/>
+				<input type='submit' value="Refresh" id='refresh-submit'/>
+			</form>
+		</li>
+	</ul>
 
 	<script type="text/javascript" src="//www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
 	<script type="text/javascript"

@@ -29,7 +29,7 @@
 			<li>
 				<form method="post" action="/v3/pause" id='playpause'>
 					<input type='hidden'/>
-					<input type='submit' value="Pause"/>
+					<input type='submit' value="Pause" id='playpause-submit'/>
 				</form>
 			</li>
 			{{/isPlaying}}
@@ -37,20 +37,20 @@
 			<li>
 				<form method="post" action="/v3/play" id='playpause'>
 					<input type='hidden'/>
-					<input type='submit' value="Play"/>
+					<input type='submit' value="Play" id='playpause-submit'/>
 				</form>
 			</li>
 			{{/isPlaying}}
 			<li>
 				<form method="post" action="/v3/next" id='next'>
 					<input type='hidden'/>
-					<input type='submit' value="Skip to the Next Track"/>
+					<input type='submit' value="Skip to the Next Track" id='next-submit'/>
 				</form>
 			</li>
 			<li>
 				<form method="get" action="/v3" id='refresh'>
 					<input type='hidden'/>
-					<input type='submit' value="Refresh"/>
+					<input type='submit' value="Refresh" id='refresh-submit'/>
 				</form>
 			</li>
 		</ul>

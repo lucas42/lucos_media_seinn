@@ -1,10 +1,15 @@
+
+/**
+ * Client variables are set by the server and included in a script tag
+ * Do all the handling of them here, so individual modules don't need to interact with global scope
+ **/
 if (!clientVariables) throw "Can't find `clientVariables` in global scope";
+const {mediaManager, receiverApplicationId} = clientVariables;
 
-
-require("./poll")(clientVariables.mediaManager);
-const isCastReceiver = require("./cast-receiver")(clientVariables.mediaManager);
+require("./poll")(mediaManager);
+require("./cast-receiver")(mediaManager);
 require("./navbar");
 require("./keyboard");
-require("./controls")(clientVariables.mediaManager);
-require("./cast-sender");
+require("./controls")(mediaManager);
+require("./cast-sender")(receiverApplicationId);
 require("./updateUI");

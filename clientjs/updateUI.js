@@ -10,6 +10,7 @@ function updateNow(now) {
 	document.getElementById("now_title").firstChild.nodeValue = metadata.title;
 	document.getElementById("now_artist").firstChild.nodeValue = metadata.artist;
 	document.getElementById("now_thumb").src = metadata.thumb;
+	document.getElementById("edit").action = metadata.editurl;
 }
 
 pubsub.listen("ready", () => {

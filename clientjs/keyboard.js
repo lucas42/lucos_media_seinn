@@ -2,18 +2,18 @@ const volume = require("./volume");
 document.addEventListener('keyup', function (e) {
 	e.preventDefault();
 	e.stopPropagation();
-	switch (e.keyCode) {
-		case 32: // space
+	switch (e.key) {
+		case " ":
 			document.getElementById("playpause").requestSubmit();
 			break;
-		case 78: //n
-		case 39: //right
+		case "n":
+		case "ArrowRight":
 			document.getElementById("next").requestSubmit();
 			break;
-		case 38: //up
+		case "ArrowUp":
 			volume.increment();
 			break;
-		case 40: //down
+		case "ArrowDown":
 			volume.decrement();
 			break;
 	}

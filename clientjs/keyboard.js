@@ -10,6 +10,9 @@ document.addEventListener('keyup', function (e) {
 		case "ArrowRight":
 			document.getElementById("next").requestSubmit();
 			break;
+		case "m":
+			document.getElementById("edit").requestSubmit();
+			break;
 		case "ArrowUp":
 			volume.increment();
 			break;

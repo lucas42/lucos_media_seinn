@@ -1,5 +1,4 @@
-const pubsub = require("./pubsub");	
-const getTime = require("./time");
+require("./lucos-time");
 
 class Navbar extends HTMLElement {
 	constructor() {
@@ -25,36 +24,10 @@ class Navbar extends HTMLElement {
 		titleNode.id='lucos_navbar_title';
 		navbar.appendChild(titleNode);
 		
-		const timeNode = document.createElement('time');
-		timeNode.appendChild(document.createTextNode(''));
-		timeNode.id = 'lucos_navbar_time';
-		let timeNode_timeout;
-		function updateNavBarTime(force) {
-			if (timeNode_timeout) clearTimeout(timeNode_timeout);
-			function leadingZero(num) {
-				num += '';
-				if (num.length == 1) return '0'+num;
-				if (num.length > 1) return num;
-				return '0';
-			}
-			const date = new Date(getTime(force));
-			timeNode.firstChild.nodeValue = leadingZero(date.getHours()) + ':' + leadingZero(date.getMinutes()) + ':' + leadingZero(date.getSeconds());
-			timeNode_timeout=setTimeout(updateNavBarTime, 1000-date.getMilliseconds());
-		}
-		updateNavBarTime();
-		timeNode.addEventListener('click', function _timenodecolour() {
-			timeNode.classList.add("updating");
-			updateNavBarTime(true);
-		}, false);
-		pubsub.listen('offsetupdate', function _timenodecolourend(offset) {
-			if (offset.fresh) timeNode.classList.remove("updating");
-		});
-		titleNode.appendChild(timeNode);
+		titleNode.appendChild(document.createElement('lucos-time'));
 		
 		// Swallow any clicks on the navbar to stop pages handling them
 		navbar.addEventListener("click", function _stopnavbarpropagation(event) { event.stopPropagation(); }, false);
-
-		pubsub.send('navbaradded', navbar);
 
 		// Primary stylesheet for the navbar
 		const mainStyle = document.createElement('style');
@@ -90,12 +63,9 @@ class Navbar extends HTMLElement {
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
-		#lucos_navbar_time {
+		lucos-time {
 			font-family: "Courier New", Courier, monospace;
 			margin: 0 1em;
-		}
-		#lucos_navbar_time.updating {
-			color: red;
 		}
 
 		`;

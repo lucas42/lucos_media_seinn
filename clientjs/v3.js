@@ -8,7 +8,7 @@ const {mediaManager, receiverApplicationId} = clientVariables;
 
 require("./poll")(mediaManager);
 require("./cast-receiver")(mediaManager);
-require("./navbar");
+require("./lucos-navbar");
 require("./keyboard");
 require("./controls")(mediaManager);
 require("./cast-sender")(receiverApplicationId);

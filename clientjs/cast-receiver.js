@@ -17,6 +17,7 @@ function loadReceiver(mediaManager) {
 
 	document.body.firstChild.replaceWith(document.createElement('cast-media-player'));
 	document.body.classList.add("cast-receiver");
+	document.querySelectorAll("lucos-navbar").forEach(navbar => {navbar.setAttribute("device", "cast-receiver")});
 	const playerManager = receiverContext.getPlayerManager();
 
 	// Ideally MEDIA_FINISHED would provide info about the track which has finished

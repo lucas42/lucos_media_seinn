@@ -1,4 +1,5 @@
 const pubsub = require("./pubsub");
+require("./page-loaded");
 
 function readData(data) {
 	const now = data.tracks[0] || {};

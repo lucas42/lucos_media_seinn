@@ -1,5 +1,5 @@
 html { padding-top:0!important; -webkit-overflow-scrolling: auto; }
-body { background: #000; color: #fff; font-size: 16px; left: 0; right: 0; top: 0; bottom: 0; position: absolute; padding: 0; margin: 0; }
+body { background: #000; color: #fff; font-size: 16px; left: 0; right: 0; top: 0; bottom: 0; position: absolute; margin: 0; }
 #now { text-align: center; background:#000; border-bottom: solid #502; color: white; overflow: hidden; padding: 1em; }
 #now_thumb { height: 100px; margin: 1em auto; }
 #now > .info > * { display: block; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -23,7 +23,7 @@ h2 { display: none; }
 	height: 25px;
 	margin-left: 10px;
 }
-#lucos_navbar { border-bottom: solid #502; }
+lucos-navbar { border-bottom: solid #502; }
 
 #controls li { background: transparent; border: none; margin: 0; padding: 0; }
 #controls form { display: inline; }
@@ -62,17 +62,20 @@ a:hover { text-decoration: underline; }
 #controls { display: block; }
 
 /** Hack to move media player on receiver up so application name gets covered by nicer looking navbar **/
-body.cast-receiver.lucos_gotnavbar cast-media-player {
+body.cast-receiver cast-media-player {
 	position: relative;
 	height: 100%;
 	display: block;
 	top: -10vw;
 }
 
+body.cast-receiver lucos-navbar {
+	border-bottom-width: 7px;
+}
+
 @media (min-width: 20cm) {
 	/*#now_thumb { -webkit-box-reflect: below 0 -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0)), to(rgba(255, 255, 255, 0.5)), color-stop(0.7, transparent)); }*/
 	#now_thumb { -webkit-box-reflect: below url(https://ceol.l42.eu/thumb.png); }
-	body { padding: 1em 1em 0 1em; }
 	.next .title { display: none }
 	#now .links li { line-height: 2em; float: right; margin-right: 60px;}
 	.status { display: none; }

@@ -1,4 +1,5 @@
 const pubsub = require("./pubsub");
+require("./page-loaded");
 
 function controls(mediaManager) {
 	function setupPlaypause() {

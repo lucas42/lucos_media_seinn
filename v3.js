@@ -13,6 +13,8 @@ router.get('/', async (req, res) => {
 		}),
 		now: data.now.metadata,
 		isPlaying: data.isPlaying,
+		volumeUp: Math.min(1, data.volume+0.1),
+		volumeDown: Math.max(0, data.volume-0.1),
 	});
 });
 
@@ -26,6 +28,10 @@ router.post('/pause', async (req,res) => {
 });
 router.post('/next', async (req,res) => {
 	await fetch(mediaManager+"next", {method: 'POST'});
+	res.redirect(`${req.protocol}://${req.headers.host}/v3`);
+});
+router.post('/volume', async (req,res) => {
+	await fetch(mediaManager+"volume?volume="+req.query.volume, {method: 'POST'});
 	res.redirect(`${req.protocol}://${req.headers.host}/v3`);
 });
 

@@ -14,10 +14,10 @@ document.addEventListener('keyup', function (e) {
 			document.getElementById("edit").requestSubmit();
 			break;
 		case "ArrowUp":
-			volume.increment();
+			document.getElementById("volume-up").requestSubmit();
 			break;
 		case "ArrowDown":
-			volume.decrement();
+			document.getElementById("volume-down").requestSubmit();
 			break;
 	}
 }, false);

@@ -1,6 +1,9 @@
 require("./lucos-time");
 
 class Navbar extends HTMLElement {
+	static get observedAttributes() {
+		return ['device'];
+	}
 	constructor() {
 		// Always call super first in constructor
 		super();

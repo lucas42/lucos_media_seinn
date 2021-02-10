@@ -1,54 +1,93 @@
-
-function getActual() {
-	return data.poll.volume;
-}
-function setActual(actualvolume) {
-	updateManager("volume", { volume: _validate(actualvolume) });
-}
-
-function setPercieved(val) {
-	var percievedvolume = _validate(val);
-	var actualvolume = _percieved2actual(percievedvolume);
-	setActual(actualvolume);
-}
-function getPercieved() {
-	var actualvolume = _validate(getActual());
-	return _actual2percieved(actualvolume);
-}
-function _validate(val) {
-	val = parseFloat(val);
-	if (isNaN(val)) throw "volume must be a number";
-	if (val < 0) val = 0;
-	if (val > 1) val = 1;
-	return val;
-}
-function _actual2percieved(val) {
-	return val;
-}
-function _percieved2actual(val) {
-	return val;
-}
-function increment() {
-	setPercieved(getPercieved() + 0.1);
-}
-function decrement() {
-	setPercieved(getPercieved() - 0.1);
-}
-/** Checks whether the _actual2percieved and _percieved2actual algorithms are symetrical and don't return out of bound values **/
-function test() {
-	var ii, aa, pp;
-	for (ii=0; ii<=1; ii+=0.1) {
-		aa = _percieved2actual(ii);
-		if (!(aa >= 0 && aa <= 1)) return false;
-		pp = _actual2percieved(aa);
-		if (ii != pp) return false;
+class VolumeControl extends HTMLElement {
+	static get observedAttributes() {
+		return ['volume'];
 	}
-	return true;
+	constructor() {
+		super();
+
+		const component = this;
+		const shadow = component.attachShadow({mode: 'open'});
+		component.addEventListener('click', e => {
+			e.stopPropagation();
+			const newVolume = 1 - (e.pageY/self.innerHeight);
+			updateVolume(newVolume);
+		});
+		const volcontain = document.createElement('div');
+		volcontain.classList.add("volcontain");
+		const vol = document.createElement('span');
+		vol.classList.add("vol");
+		volcontain.appendChild(vol);
+
+		const style = document.createElement('style');
+		style.textContent = `
+
+		.volcontain { 
+			width: 60px;
+			position: absolute;
+			right: 0;
+			top: 0;
+			bottom: 0;
+			z-index: 1010;
+		}
+		.vol {
+			width: 60px;
+			position: absolute;
+			right: 0;
+			bottom: 0;
+			-webkit-border-radius: 20px;
+			-webkit-border-radius: 20px 20px 0 0;
+			background: #aaa;
+			background: rgba(0,0,0,0.6);
+			background:
+				-webkit-gradient(linear, 0 0, 100% 0,
+					color-stop(0, rgba(50,140,255,0.5)),
+					color-stop(0.15, rgba(255,255,255,0.9)),
+					color-stop(0.5, rgba(50,140,255,0.5)));
+			-webkit-box-shadow:0 2px 2px rgba(0,0,0,0.15);
+			-webkit-transition:height 0.5s ease-out;
+			border-radius: 20px;
+			border-radius: 20px 20px 0 0;
+			background:
+				gradient(linear, 0 0, 100% 0,
+					color-stop(0, rgba(50,140,255,0.5)),
+					color-stop(0.15, rgba(255,255,255,0.9)),
+					color-stop(0.5, rgba(50,140,255,0.5)));
+			box-shadow:0 2px 2px rgba(0,0,0,0.15);
+			transition:height 0.5s ease-out;
+		}
+
+		`;
+		shadow.append(style);
+		shadow.append(volcontain);
+
+		component.calculateHeight = () => {
+			const height = self.innerHeight * component.getAttribute("volume");
+			vol.style.height = height + "px";
+		}
+
+		function updateVolume(newVolume) {
+			const event = new CustomEvent('volumeUpdated', {detail: newVolume});
+			component.dispatchEvent(event);
+		}
+
+		component.querySelector("#volume-up").addEventListener('submit', async event => {
+			event.preventDefault();
+			updateVolume(Math.min(1, parseFloat(component.getAttribute("volume"))+0.1),);
+		});
+		component.querySelector("#volume-down").addEventListener('submit', async event => {
+			event.preventDefault();
+			updateVolume(Math.max(0, parseFloat(component.getAttribute("volume"))-0.1),);
+		});
+	}
+
+	attributeChangedCallback(name, oldValue, newValue) {
+		switch (name) {
+			case "volume":
+				this.calculateHeight();
+				break;
+		}
+	}
 }
-module.exports = {
-	getPercieved: getPercieved,
-	setPercieved: setPercieved,
-	increment: increment,
-	decrement: decrement,
-	test: test
-};
+
+
+customElements.define('volume-control', VolumeControl);

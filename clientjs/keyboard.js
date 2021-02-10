@@ -1,4 +1,3 @@
-const volume = require("./volume");
 document.addEventListener('keyup', function (e) {
 	e.preventDefault();
 	e.stopPropagation();

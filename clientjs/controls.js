@@ -23,6 +23,13 @@ function controls(mediaManager) {
 			await fetch(mediaManager+"next", {method: 'POST'});
 		});
 	}
+	function setupVolume() {
+		document.querySelectorAll("volume-control")
+			.forEach(volControl => volControl.addEventListener("volumeUpdated", async event => {
+				event.preventDefault();
+				await fetch(mediaManager+"volume?volume="+event.detail, {method: 'POST'});
+			}));
+	}
 
 	/**
 	 * The refresh button isn't needed if JS is running as we poll for changes constantly
@@ -37,6 +44,7 @@ function controls(mediaManager) {
 	function setupControls() {
 		setupPlaypause();
 		setupNext();
+		setupVolume();
 		removeRefresh();
 	}
 

@@ -13,3 +13,4 @@ require("./keyboard");
 require("./controls")(mediaManager);
 require("./cast-sender")(receiverApplicationId);
 require("./updateUI");
+require("./volume");

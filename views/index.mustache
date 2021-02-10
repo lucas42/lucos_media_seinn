@@ -47,16 +47,17 @@
 			</form>
 		</li>
 		<li>
-			<form method="post" action="/v3/volume?volume={{volumeUp}}" id='volume-up'>
-				<input type='hidden'/>
-				<input type='submit' value="Increase Volume" id='volume-up-submit'/>
-			</form>
-		</li>
-		<li>
-			<form method="post" action="/v3/volume?volume={{volumeDown}}" id='volume-down'>
-				<input type='hidden'/>
-				<input type='submit' value="Decrease Volume" id='volume-down-submit'/>
-			</form>
+			<volume-control>
+				<form method="post" action="/v3/volume?volume={{volumeUp}}" id='volume-up'>
+					<input type='hidden'/>
+					<input type='submit' value="Increase Volume" id='volume-up-submit'/>
+				</form>
+				/
+				<form method="post" action="/v3/volume?volume={{volumeDown}}" id='volume-down'>
+					<input type='hidden'/>
+					<input type='submit' value="Decrease Volume" id='volume-down-submit'/>
+				</form>
+			</volume-control>
 		</li>
 		<li>
 			<form method="get" action="{{now.editurl}}" id='edit' target='_blank'>

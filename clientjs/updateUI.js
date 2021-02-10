@@ -4,6 +4,8 @@ require("./page-loaded");
 function readData(data) {
 	const now = data.tracks[0] || {};
 	updateNow(now);
+	document.querySelectorAll("volume-control")
+		.forEach(volControl => volControl.setAttribute("volume", data.volume));
 }
 
 function updateNow(now) {

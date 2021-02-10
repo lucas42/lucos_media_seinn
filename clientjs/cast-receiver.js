@@ -43,6 +43,7 @@ function loadReceiver(mediaManager) {
 	});
 	receiverContext.start();
 	pubsub.listen("managerData", data => {
+		receiverContext.setSystemVolumeLevel(data.volume);  // This doesn't appear in the docs, but I found it mentioned on stackoverflow...
 		const now = data.tracks[0];
 		if (!now) return console.error("No currently playing track", data);
 		const mediaInfo = playerManager.getMediaInformation();

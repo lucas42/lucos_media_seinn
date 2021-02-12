@@ -3,11 +3,11 @@ const pubsub = require("./pubsub");
 /**
  * Attempts to loads a google cast receiver
  * @param {string} mediaManager the origin of a lucos_media_manager server (including trailing slash)
- * @returns {boolean} Whether or not the recevier was successfully loaded
+ * @returns {boolean} Whether or not the receiver was successfully loaded
  */
 function loadReceiver(mediaManager) {
 
-	// Don't even bother trying to create a cast recevier with the relevant libraries
+	// Don't even bother trying to create a cast receiver with the relevant libraries
 	if (!('cast' in window)) return false;
 	const receiverContext = cast.framework.CastReceiverContext.getInstance();
 	const capabilities = receiverContext.getDeviceCapabilities();
@@ -41,9 +41,9 @@ function loadReceiver(mediaManager) {
 		if (!currentMedia) return;
 		fetch(mediaManager+"done?track="+encodeURIComponent(currentMedia.contentId)+"&status="+encodeURIComponent(event.endedReason), {method: 'POST'});
 	});
+	handleVolumes(mediaManager, receiverContext);
 	receiverContext.start();
 	pubsub.listen("managerData", data => {
-		receiverContext.setSystemVolumeLevel(data.volume);  // This doesn't appear in the docs, but I found it mentioned on stackoverflow...
 		const now = data.tracks[0];
 		if (!now) return console.error("No currently playing track", data);
 		const mediaInfo = playerManager.getMediaInformation();
@@ -81,5 +81,30 @@ function loadReceiver(mediaManager) {
 			.catch(err => console.error("Can't load track", err));
 	});
 	return true;
+}
+
+/**
+ * Covers logic for volume changes, both initiated from the server or the device
+ */
+function handleVolumes(mediaManager, receiverContext) {
+	let desiredVolume;
+
+	// Check for changes in volume coming from server
+	pubsub.listen("managerData", data => {
+		desiredVolume = data.volume;
+		receiverContext.setSystemVolumeLevel(desiredVolume);  // This doesn't appear in the docs, but I found it mentioned on stackoverflow...
+	});
+
+	// Check for changes in volume on the cast device (eg from a physical button)
+	receiverContext.addEventListener(cast.framework.system.EventType.SYSTEM_VOLUME_CHANGED, event => {
+		const newVolume = event.data.muted ? 0 : event.data.level;
+
+		// If the volumes match, this event was likely fired in response to a server update
+		// Therefore, no need to tell the server about the new volume
+		if (newVolume === desiredVolume) return;
+
+		fetch(mediaManager+"volume?volume="+newVolume, {method: 'POST'});
+	});
+
 }
 module.exports = loadReceiver;

@@ -15,9 +15,28 @@ function loadReceiver(mediaManager) {
 	// If capabalities is null, then the device isn't set up for receiving casts;
 	if (capabilities == null) return false;
 
-	document.body.firstChild.replaceWith(document.createElement('cast-media-player'));
-	document.body.classList.add("cast-receiver");
-	document.querySelectorAll("lucos-navbar").forEach(navbar => {navbar.setAttribute("device", "cast-receiver")});
+	const mediaPlayer = document.createElement('cast-media-player');
+	const playerStyleOverrides = document.createElement('style');
+	playerStyleOverrides.textContent = `
+		.metadata .metadataPlaceHolder .playback-logo {
+			display: none;
+		}
+		#castMetadataTitle {
+			font-size: 4.5vw;
+		}
+		#castMetadataSubtitle, #castMetadataSubtitle2 {
+			font-size: 2.5vw;
+			line-height: 1;
+			text-transform: none;
+		}
+	`;
+	mediaPlayer.shadowRoot.append(playerStyleOverrides);
+	document.body.prepend(mediaPlayer);
+
+	document.querySelectorAll("lucos-navbar").forEach(navbar => {
+		navbar.setAttribute("device", "cast-receiver");
+		navbar.style.borderBottomWidth = "7px";
+	});
 	const playerManager = receiverContext.getPlayerManager();
 
 	// Ideally MEDIA_FINISHED would provide info about the track which has finished

@@ -18,6 +18,8 @@ h2 { display: none; }
 	height: 25px;
 	margin-left: 10px;
 }
+
+/* App-specific customization of navbar (base navbar style lives in web component) */
 lucos-navbar { border-bottom: solid #502; }
 
 #controls li { background: transparent; border: none; margin: 0; padding: 0; }
@@ -55,18 +57,6 @@ a { color: #502; font-weight: bold; text-decoration: none;}
 a:hover { text-decoration: underline; }
 .status { position: absolute; bottom: 20px; text-align: center; font-weight: bold; right: 60px; left: 60px;  }
 #controls { display: block; }
-
-/** Hack to move media player on receiver up so application name gets covered by nicer looking navbar **/
-body.cast-receiver cast-media-player {
-	position: relative;
-	height: 100%;
-	display: block;
-	top: -10vw;
-}
-
-body.cast-receiver lucos-navbar {
-	border-bottom-width: 7px;
-}
 
 @media (min-width: 20cm) {
 	/*#now_thumb { -webkit-box-reflect: below 0 -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0)), to(rgba(255, 255, 255, 0.5)), color-stop(0.7, transparent)); }*/

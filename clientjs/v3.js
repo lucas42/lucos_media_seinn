@@ -6,12 +6,13 @@
 if (!clientVariables) throw "Can't find `clientVariables` in global scope";
 const {mediaManager, receiverApplicationId} = clientVariables;
 
+require("./manager").init(mediaManager);  // Initiate the manager first so other modules can use it immediately
 require("./poll")(mediaManager);
 require("./cast-receiver")(mediaManager);
 require("./lucos-navbar");
 require("./keyboard");
-require("./controls")(mediaManager);
+require("./controls");
 require("./cast-sender")(receiverApplicationId);
 require("./updateUI");
 require("./volume");
-require("./player")(mediaManager);
+require("./player");

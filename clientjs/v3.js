@@ -14,3 +14,4 @@ require("./controls")(mediaManager);
 require("./cast-sender")(receiverApplicationId);
 require("./updateUI");
 require("./volume");
+require("./player")(mediaManager);

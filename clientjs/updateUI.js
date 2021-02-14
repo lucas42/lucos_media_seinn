@@ -1,16 +1,8 @@
 const pubsub = require("./pubsub");
 require("./page-loaded");
 
-function readData(data) {
-	const tracks = data.tracks;
-	const now = tracks.shift();
-	updateNow(now);
-	updatePlaylist(tracks);
-	document.querySelectorAll("volume-control")
-		.forEach(volControl => volControl.setAttribute("volume", data.volume));
-}
-
-function updateNow(now) {
+function updateNow(data) {
+	const now = data.tracks[0];
 	const metadata = now.metadata || {};
 	document.getElementById("now_title").firstChild.nodeValue = metadata.title;
 	document.getElementById("now_artist").firstChild.nodeValue = metadata.artist;
@@ -18,7 +10,8 @@ function updateNow(now) {
 	document.getElementById("edit").action = metadata.editurl;
 }
 
-function updatePlaylist(tracks) {
+function updatePlaylist(data) {
+	const tracks = data.tracks.slice(1); // Ignore first track as that's used by `now`
 	const playlist = document.getElementById("playlist");
 	while (playlist.firstChild) {
 		playlist.removeChild(playlist.lastChild);
@@ -32,6 +25,13 @@ function updatePlaylist(tracks) {
 	});
 }
 
+function updateVolume(data) {
+	document.querySelectorAll("volume-control")
+		.forEach(volControl => volControl.setAttribute("volume", data.volume));
+}
+
 pubsub.listen("ready", () => {
-	pubsub.listenExisting("managerData", readData, true);
+	pubsub.listenExisting("managerData", updateNow, true);
+	pubsub.listenExisting("managerData", updatePlaylist, true);
+	pubsub.listenExisting("managerData", updateVolume, true);
 });

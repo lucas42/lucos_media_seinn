@@ -1,8 +1,8 @@
-html { 
-	padding-top:0!important; 
+html {
+	padding-top:0!important;
 	-webkit-overflow-scrolling: auto;
 }
-body { 
+body {
 	background: #000;
 	color: #fff;
 	font-size: 16px;
@@ -15,17 +15,62 @@ body {
 	display: flex;
 	flex-direction: column;
 }
-#now { text-align: center; background:#000; border-bottom: solid #502; color: white; overflow: hidden; padding: 1em; flex-shrink: 0; }
-#now_thumb { height: 100px; margin: 1em auto; }
-#now > .info > * { display: block; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#now .links { margin: 1em auto; }
-#now .links li { list-style-type: none; line-height: 3em;  color: #55f; font-weight: bold; }
-#now .links li a { color: inherit; }
-#now .links li .loading { color: #fa0; }
-#now .links li .exticon { margin: 0 0.5em; }
-h2 { display: none; }
-.links li a:hover { text-decoration: underline; }
-#controls { text-align: center; clear: both; padding-top: 0.5em; background:#502; color: #fff; height: 1.8em; display: block; overflow: hidden; margin: 0; flex-shrink: 0; }
+#now {
+	text-align: center;
+	background:#000;
+	border-bottom: solid #502;
+	color: white;
+	overflow: hidden;
+	padding: 1em;
+	flex-shrink: 0;
+}
+#now_thumb {
+	height: 100px;
+	margin: 1em auto;
+}
+#now > .info > * {
+	display: block;
+	font-weight: bold;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+#now .links {
+	margin: 1em auto;
+}
+#now .links li {
+	list-style-type: none;
+	line-height: 3em;
+	 color: #55f;
+	font-weight: bold;
+}
+#now .links li a {
+	color: inherit;
+}
+#now .links li .loading {
+	color: #fa0;
+}
+#now .links li .exticon {
+	margin: 0 0.5em;
+}
+h2 {
+	display: none;
+}
+.links li a:hover {
+	text-decoration: underline;
+}
+#controls {
+	text-align: center;
+	clear: both;
+	padding-top: 0.5em;
+	background:#502;
+	color: #fff;
+	height: 1.8em;
+	display: block;
+	overflow: hidden;
+	margin: 0;
+	flex-shrink: 0;
+}
 #controls google-cast-launcher {
 	display: inline-block;
 	vertical-align: middle;
@@ -35,70 +80,174 @@ h2 { display: none; }
 }
 
 /* App-specific customization of navbar (base navbar style lives in web component) */
-lucos-navbar { border-bottom: solid #502; }
-
-#controls li { background: transparent; border: none; margin: 0; padding: 0; }
-#controls form { display: inline; }
-#controls input { background: white; color: black; }
-
-.volcontain { width: 60px; position: absolute; right: 0; top: 0; bottom: 0; z-index: 1010; }
-.vol { width: 60px; position: absolute; right: 0; bottom: 0;
-		-webkit-border-radius: 20px;
-		-webkit-border-radius: 20px 20px 0 0;
-		background: #aaa;
-		background: rgba(0,0,0,0.6);
-		background:
-			-webkit-gradient(linear, 0 0, 100% 0,
-				color-stop(0, rgba(50,140,255,0.5)),
-				color-stop(0.15, rgba(255,255,255,0.9)),
-				color-stop(0.5, rgba(50,140,255,0.5)));
-		-webkit-box-shadow:0 2px 2px rgba(0,0,0,0.15);
-		-webkit-transition:height 0.5s ease-out;
-		border-radius: 20px;
-		border-radius: 20px 20px 0 0;
-		background:
-			gradient(linear, 0 0, 100% 0,
-				color-stop(0, rgba(50,140,255,0.5)),
-				color-stop(0.15, rgba(255,255,255,0.9)),
-				color-stop(0.5, rgba(50,140,255,0.5)));
-		box-shadow:0 2px 2px rgba(0,0,0,0.15);
-		transition:height 0.5s ease-out;
+lucos-navbar {
+	border-bottom: solid #502;
 }
 
-.next .title { background:#502; color: white; text-align: center; display: block; padding: 1em; font-weight: bold; cursor: pointer; padding-right: 60px;}
-#playlist { overflow: auto; margin: 0; padding-top: 20px; padding-bottom: 10px; -webkit-overflow-scrolling: touch; list-style-type: disc; }
-#playlist li { font-weight: bold; font-size: larger; line-height: 0.9em; }
-#playlist li > span { font-size: small; padding: 0 1em; }
-a { color: #502; font-weight: bold; text-decoration: none;}
-a:hover { text-decoration: underline; }
-.status { position: absolute; bottom: 20px; text-align: center; font-weight: bold; right: 60px; left: 60px;  }
-#controls { display: block; }
+#controls li {
+	background: transparent;
+	border: none;
+	margin: 0;
+	padding: 0;
+}
+#controls form {
+	display: inline;
+}
+#controls input {
+	background: white;
+	color: black;
+}
+
+.volcontain {
+	width: 60px;
+	position: absolute;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	z-index: 1010;
+}
+.vol {
+	width: 60px;
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	-webkit-border-radius: 20px;
+	-webkit-border-radius: 20px 20px 0 0;
+	background: #aaa;
+	background: rgba(0,0,0,0.6);
+	background:
+		-webkit-gradient(linear, 0 0, 100% 0,
+			color-stop(0, rgba(50,140,255,0.5)),
+			color-stop(0.15, rgba(255,255,255,0.9)),
+			color-stop(0.5, rgba(50,140,255,0.5)));
+	-webkit-box-shadow:0 2px 2px rgba(0,0,0,0.15);
+	-webkit-transition:height 0.5s ease-out;
+	border-radius: 20px;
+	border-radius: 20px 20px 0 0;
+	background:
+		gradient(linear, 0 0, 100% 0,
+			color-stop(0, rgba(50,140,255,0.5)),
+			color-stop(0.15, rgba(255,255,255,0.9)),
+			color-stop(0.5, rgba(50,140,255,0.5)));
+	box-shadow:0 2px 2px rgba(0,0,0,0.15);
+	transition:height 0.5s ease-out;
+}
+
+.next .title {
+	background:#502;
+	color: white;
+	text-align: center;
+	display: block;
+	padding: 1em;
+	font-weight: bold;
+	cursor: pointer;
+	padding-right: 60px;
+}
+#playlist {
+	overflow: auto;
+	margin: 0;
+	padding-top: 20px;
+	padding-bottom: 10px;
+	-webkit-overflow-scrolling: touch;
+	list-style-type: disc;
+}
+#playlist li {
+	font-weight: bold;
+	font-size: larger;
+	line-height: 0.9em;
+}
+#playlist li > span {
+	font-size: small;
+	padding: 0 1em;
+}
+a {
+	color: #502;
+	font-weight: bold;
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: underline;
+}
+.status {
+	position: absolute;
+	bottom: 20px;
+	text-align: center;
+	font-weight: bold;
+	right: 60px;
+	left: 60px;
+}
+#controls {
+	display: block;
+}
 
 @media (min-width: 20cm) {
-	/*#now_thumb { -webkit-box-reflect: below 0 -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0)), to(rgba(255, 255, 255, 0.5)), color-stop(0.7, transparent)); }*/
-	#now_thumb { -webkit-box-reflect: below url(https://ceol.l42.eu/thumb.png); }
-	.next .title { display: none }
-	#now .links li { line-height: 2em; float: right; margin-right: 60px;}
-	.status { display: none; }
-	#controls li { display: inline; }
-	#now .links li .ext { display: none; }
+	/*#now_thumb {
+	-webkit-box-reflect: below 0 -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0)), to(rgba(255, 255, 255, 0.5)), color-stop(0.7, transparent));
+	}*/
+	#now_thumb {
+		-webkit-box-reflect: below url(https://ceol.l42.eu/thumb.png);
+	}
+	.next .title {
+		display: none
+	}
+	#now .links li {
+		line-height: 2em;
+		float: right;
+		margin-right: 60px;
+	}
+	.status {
+		display: none;
+	}
+	#controls li {
+		display: inline;
+	}
+	#now .links li .ext {
+		display: none;
+	}
 }
 @media (max-width: 20cm) {
-	#controls { display: none; }
-	#controls { display:block; height: auto; list-style-type: none; padding: 0; }
-	#controls input { width: 90%; margin: 0.5em 5%; }
-	#now .links li .link { display: none; }
-	#now .links li .exticon { display: none; }
-	
-	/* Hide the first playlist item as that's shown in .next */
-	.playlist li:first-child { display: none; }
+	#controls {
+		display: none;
+	}
+	#controls {
+		display:block;
+		height: auto;
+		list-style-type: none;
+		padding: 0;
+	}
+	#controls input {
+		width: 90%;
+		margin: 0.5em 5%;
+	}
+	#now .links li .link {
+		display: none;
+	}
+	#now .links li .exticon {
+		display: none;
+	}
 }
 @media (max-width: 20cm) and (min-width: 399px) {
-	#now > .info { float: right; width: 240px; margin-right: 60px; }
-	#now { padding: 1em 0 0 0; }
-	#now > .links { padding: 0; max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	#now > .links li { display: block; }
+	#now > .info {
+		float: right;
+		width: 240px;
+		margin-right: 60px;
+	}
+	#now {
+		padding: 1em 0 0 0;
+	}
+	#now > .links {
+		padding: 0;
+		max-width: 110px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	#now > .links li {
+		display: block;
+	}
 }
 @media (max-height: 10cm) {
-	.playlist { display: none; }
+	.playlist {
+		display: none;
+	}
 }

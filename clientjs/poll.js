@@ -1,42 +1,23 @@
 const pubsub = require("./pubsub");
+const manager = require("./manager");
 
-function poll(url, handleDataFunction, additionalParamFunction, cache) {
-	if (!url) throw "no URL given to poll";
-	if (handleDataFunction && typeof handleDataFunction != 'function') throw "handleDataFunction must be a function";
-	if (additionalParamFunction && typeof additionalParamFunction != 'function') throw "additionalParamFunction must be a function";
-	function actuallyPoll(hashcode) {
-		var params = "?";
-		params += "hashcode="+hashcode;
-		params += "&_cb="+new Date().getTime();
-		if (additionalParamFunction) params += additionalParamFunction();
-		var response;
-		fetch(url+params).then(function decodePoll(response) {
-			return response.clone().json().then(function handlePoll(data) {
+async function poll(hashcode) {
+	try {
+		data = await manager.getJson("poll/summary", { hashcode, "_cb": new Date().getTime() });
 
-				// Create a request object which ignores all the params to cache against
-				var request = new Request(url);
+		// If there's a hashcode, use the new one and evaluate new data.
+		if (data.hashcode) {
+			hashcode = data.hashcode;
+			pubsub.send("managerData", data);
+		}
+		poll(hashcode);
+	} catch(error){
 
-				// If there's a hashcode, use the new one and evaluate new data.
-				if (data.hashcode) {
-					hashcode = data.hashcode;
-					if (cache) cache.put(request, response.clone());
-					if (handleDataFunction) handleDataFunction(data);
-					pubsub.send("managerData", data);
-				}
-				actuallyPoll(hashcode);
-			});
-		}).catch(function pollError(error){
-
-			// Wait 5 second before trying again to prevent making things worse
-			setTimeout(function pollRetry() {
-				actuallyPoll(hashcode);
-			}, 5000);
-		});
-	}
-	actuallyPoll(null);
+		// Wait 5 second before trying again to prevent making things worse
+		setTimeout(function pollRetry() {
+			poll(hashcode);
+		}, 5000);
+	};
 }
 
-function basicPoll(mediaManager) {
-	poll(mediaManager+"poll/summary");
-}
-module.exports = basicPoll;
+poll(null);

@@ -59,7 +59,13 @@ function waitFor(type, callback) {
 function trigger(type, msg, source, internal) {
 	if (internal) triggered[type] = msg;
 	if (msgListeners[type]) for (var ii in msgListeners[type]) {
-		if (internal || msgListeners[type][ii].ext) msgListeners[type][ii].callback(msg, source);
+		if (internal || msgListeners[type][ii].ext) {
+			try {
+				msgListeners[type][ii].callback(msg, source);
+			} catch (error) {
+				console.error(`Error when triggering pubsub message "${type}"\n`, error);
+			}
+		}
 	}
 }
 function send(type, msg, target) {

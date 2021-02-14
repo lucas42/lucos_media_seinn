@@ -1,6 +1,21 @@
-html { padding-top:0!important; -webkit-overflow-scrolling: auto; }
-body { background: #000; color: #fff; font-size: 16px; left: 0; right: 0; top: 0; bottom: 0; position: absolute; margin: 0; }
-#now { text-align: center; background:#000; border-bottom: solid #502; color: white; overflow: hidden; padding: 1em; }
+html { 
+	padding-top:0!important; 
+	-webkit-overflow-scrolling: auto;
+}
+body { 
+	background: #000;
+	color: #fff;
+	font-size: 16px;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	position: absolute;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+}
+#now { text-align: center; background:#000; border-bottom: solid #502; color: white; overflow: hidden; padding: 1em; flex-shrink: 0; }
 #now_thumb { height: 100px; margin: 1em auto; }
 #now > .info > * { display: block; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #now .links { margin: 1em auto; }
@@ -10,7 +25,7 @@ body { background: #000; color: #fff; font-size: 16px; left: 0; right: 0; top: 0
 #now .links li .exticon { margin: 0 0.5em; }
 h2 { display: none; }
 .links li a:hover { text-decoration: underline; }
-#controls { text-align: center; clear: both; padding-top: 0.5em; background:#502; color: #fff; height: 1.8em; display: block; overflow: hidden; margin: 0; }
+#controls { text-align: center; clear: both; padding-top: 0.5em; background:#502; color: #fff; height: 1.8em; display: block; overflow: hidden; margin: 0; flex-shrink: 0; }
 #controls google-cast-launcher {
 	display: inline-block;
 	vertical-align: middle;
@@ -51,8 +66,9 @@ lucos-navbar { border-bottom: solid #502; }
 }
 
 .next .title { background:#502; color: white; text-align: center; display: block; padding: 1em; font-weight: bold; cursor: pointer; padding-right: 60px;}
-.playlist h3 { display: inline; margin: 0 1em; font-size: smaller;}
-.playlist { position: absolute; overflow: auto; margin: 0; right: 53px; left: 1em; padding-top: 20px; padding-bottom: 10px; -webkit-overflow-scrolling: touch; }
+#playlist { overflow: auto; margin: 0; padding-top: 20px; padding-bottom: 10px; -webkit-overflow-scrolling: touch; list-style-type: disc; }
+#playlist li { font-weight: bold; font-size: larger; line-height: 0.9em; }
+#playlist li > span { font-size: small; padding: 0 1em; }
 a { color: #502; font-weight: bold; text-decoration: none;}
 a:hover { text-decoration: underline; }
 .status { position: absolute; bottom: 20px; text-align: center; font-weight: bold; right: 60px; left: 60px;  }

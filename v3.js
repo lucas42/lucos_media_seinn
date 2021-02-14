@@ -5,13 +5,15 @@ const mediaManager = process.env.MEDIA_MANAGER || "https://ceol.l42.eu/";
 const receiverApplicationId = process.env.DEV ? "5D5F55DE" : "34252B55";
 
 router.get('/', async (req, res) => {
-	const data = await fetch(mediaManager+"poll").then(resp => resp.json());
+	const data = await fetch(mediaManager+"poll/summary").then(resp => resp.json());
+	const now = data.tracks.shift();
 	res.render("index", {
 		clientVariables: JSON.stringify({
 			mediaManager,
 			receiverApplicationId,
 		}),
-		now: data.now.metadata,
+		now,
+		playlist: data.tracks,
 		isPlaying: data.isPlaying,
 		volumeUp: Math.min(1, data.volume+0.1),
 		volumeDown: Math.max(0, data.volume-0.1),

@@ -34,6 +34,7 @@ function _makeRequestToManager(endpoint, method, parameters={}) {
 	if (!mediaManager) throw "making request before manager module initiated";
 	const searchParams = _getUpdateParams();
 	for (const [key, value] of Object.entries(parameters)) {
+		if (value === null || value === undefined) continue;
 		searchParams.set(key, value);
 	}
 	let url = mediaManager+endpoint;

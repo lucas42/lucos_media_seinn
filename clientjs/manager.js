@@ -1,9 +1,18 @@
-const {getTimeElapsed, getCurrentTrack } = require("./player");
-
 let mediaManager = undefined;
+let getTimeElapsed = () => undefined;
+let getCurrentTrack = () => undefined;
 
 function init(mediaManagerValue) {
 	mediaManager = mediaManagerValue;
+}
+
+/**
+ * The functions for checking the current status of play varies by player
+ * Therefore, let each player set these when they're ready
+ **/
+function setUpdateFunctions(timeElapsed, currentTrack) {
+	getTimeElapsed = timeElapsed;
+	getCurrentTrack = currentTrack;
 }
 
 /**
@@ -41,4 +50,4 @@ async function getJson(endpoint, parameters={}) {
 	return response.json();
 }
 
-module.exports = {init, getJson, post};
+module.exports = {init, getJson, post, setUpdateFunctions};

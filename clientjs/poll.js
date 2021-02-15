@@ -12,6 +12,7 @@ async function poll(hashcode) {
 		}
 		poll(hashcode);
 	} catch(error){
+		console.error("Error whilst polling, wait 5 seconds\n",error);
 
 		// Wait 5 second before trying again to prevent making things worse
 		setTimeout(function pollRetry() {

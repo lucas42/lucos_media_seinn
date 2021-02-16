@@ -16,3 +16,4 @@ require("./cast-sender")(receiverApplicationId);
 require("./updateUI");
 require("./volume");
 require("./player");
+require("./devices-overlay");

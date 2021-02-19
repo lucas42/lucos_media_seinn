@@ -12,7 +12,8 @@ async function updateCurrentAudio(data) {
 
 	updateVolume(data.volume);
 	const now = data.tracks[0];
-	if (data.isPlaying) {
+	const shouldPlay = data.isPlaying && data.thisDevice && data.thisDevice.isCurrent;
+	if (shouldPlay) {
 		if (!currentAudio) {
 			await playTrack(now);
 		} else if (currentAudio.url !== now.url) {

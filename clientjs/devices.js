@@ -38,7 +38,6 @@ function updateDevice(data) {
  */
 function modifyData(data) {
 	data.thisDevice = data.devices.find(device => device.uuid === uuid);
-	if (!data.thisDevice || !data.thisDevice.isCurrent) data.isPlaying = false;
 }
 
 pubsub.listenExisting("managerData", modifyData, true);

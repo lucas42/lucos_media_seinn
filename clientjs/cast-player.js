@@ -51,20 +51,22 @@ handleVolumes(receiverContext);
 receiverContext.start();
 pubsub.listen("managerData", data => {
 	const now = data.tracks[0];
+	const shouldPlay = data.isPlaying && data.thisDevice && data.thisDevice.isCurrent;
 	if (!now) return console.error("No currently playing track", data);
 	const mediaInfo = playerManager.getMediaInformation();
+
 	if (mediaInfo && now.url == mediaInfo.contentId) {
 		if (playerManager.getPlayerState() == cast.framework.messages.PlayerState.PLAYING) {
-			if (!data.isPlaying) playerManager.pause();
+			if (!shouldPlay) playerManager.pause();
 		} else {
-			if (data.isPlaying) playerManager.play();
+			if (shouldPlay) playerManager.play();
 		}
 		return;
 	}
 
 	loadData = new cast.framework.messages.LoadRequestData();
 	loadData.currentTime = now.currentTime;
-	loadData.autoplay = data.isPlaying;
+	loadData.autoplay = shouldPlay;
 	loadData.media = new cast.framework.messages.MediaInformation();
 	loadData.media.contentId = now.url;
 	loadData.media.metadata = new cast.framework.messages.MusicTrackMediaMetadata();
@@ -78,7 +80,7 @@ pubsub.listen("managerData", data => {
 		];
 	playerManager.load(loadData)
 		.then(() => {
-			if (data.isPlaying) {
+			if (shouldPlay) {
 				playerManager.play();
 			} else {
 				playerManager.pause();

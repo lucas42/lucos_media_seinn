@@ -9,10 +9,8 @@ function setupPlaypause() {
 		event.preventDefault();
 		if (playpauseSubmit.value == "Play") {
 			await manager.post("play");
-			playpauseSubmit.value = "Pause"
 		} else {
 			await manager.post("pause");
-			playpauseSubmit.value = "Play"
 		}
 	});
 }

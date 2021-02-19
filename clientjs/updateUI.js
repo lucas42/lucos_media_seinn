@@ -30,8 +30,18 @@ function updateVolume(data) {
 		.forEach(volControl => volControl.setAttribute("volume", data.volume));
 }
 
+function updatePlayPauseButton(data) {
+	const playpauseSubmit = document.getElementById('playpause-submit');
+	if (data.isPlaying) {
+		playpauseSubmit.value = "Pause"
+	} else {
+		playpauseSubmit.value = "Play"
+	}
+}
+
 pubsub.listen("ready", () => {
 	pubsub.listenExisting("managerData", updateNow, true);
 	pubsub.listenExisting("managerData", updatePlaylist, true);
 	pubsub.listenExisting("managerData", updateVolume, true);
+	pubsub.listenExisting("managerData", updatePlayPauseButton, true);
 });

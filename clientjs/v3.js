@@ -17,3 +17,4 @@ require("./player");
 require("./components/lucos-navbar");
 require("./components/volume");
 require("./components/devices-overlay");
+require("./components/playlist");

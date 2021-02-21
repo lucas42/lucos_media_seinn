@@ -10,21 +10,6 @@ function updateNow(data) {
 	document.getElementById("edit").action = metadata.editurl;
 }
 
-function updatePlaylist(data) {
-	const tracks = data.tracks.slice(1); // Ignore first track as that's used by `now`
-	const playlist = document.getElementById("playlist");
-	while (playlist.firstChild) {
-		playlist.removeChild(playlist.lastChild);
-	}
-	tracks.forEach(track => {
-		const li = document.createElement("li");
-		const span = document.createElement("span");
-		span.appendChild(document.createTextNode(track.metadata.title));
-		li.appendChild(span);
-		playlist.appendChild(li);
-	});
-}
-
 function updatePlayPauseButton(data) {
 	const playpauseSubmit = document.getElementById('playpause-submit');
 	if (data.isPlaying) {
@@ -36,6 +21,5 @@ function updatePlayPauseButton(data) {
 
 pubsub.listen("ready", () => {
 	pubsub.listenExisting("managerData", updateNow, true);
-	pubsub.listenExisting("managerData", updatePlaylist, true);
 	pubsub.listenExisting("managerData", updatePlayPauseButton, true);
 });

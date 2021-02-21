@@ -108,23 +108,6 @@ lucos-navbar {
 	cursor: pointer;
 	padding-right: 60px;
 }
-#playlist {
-	overflow: auto;
-	margin: 0;
-	padding-top: 20px;
-	padding-bottom: 10px;
-	-webkit-overflow-scrolling: touch;
-	list-style-type: disc;
-}
-#playlist li {
-	font-weight: bold;
-	font-size: larger;
-	line-height: 0.9em;
-}
-#playlist li > span {
-	font-size: small;
-	padding: 0 1em;
-}
 a {
 	color: #502;
 	font-weight: bold;
@@ -209,10 +192,5 @@ a:hover {
 	}
 	#now > .links li {
 		display: block;
-	}
-}
-@media (max-height: 10cm) {
-	.playlist {
-		display: none;
 	}
 }

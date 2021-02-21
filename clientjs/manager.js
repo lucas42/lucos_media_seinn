@@ -1,3 +1,4 @@
+const devices = require("./devices");
 let mediaManager = undefined;
 let getTimeElapsed = () => undefined;
 let getCurrentTrack = () => undefined;
@@ -21,6 +22,8 @@ function setUpdateFunctions(timeElapsed, currentTrack) {
  */
 function _getUpdateParams() {
 	const params = new URLSearchParams();
+	params.set("device", devices.getCurrent());
+
 	const timeElapsed = getTimeElapsed();
 	const currentTrack = getCurrentTrack();
 	if (timeElapsed === undefined || currentTrack === undefined) return params;

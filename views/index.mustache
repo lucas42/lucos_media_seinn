@@ -72,11 +72,13 @@
 		</li>
 	</ul>
 	<h2>Playlist</h2>
-	<ol is="track-playlist" start="2">
-	{{#playlist}}
-		<li><span>{{metadata.title}}</span></li>
-	{{/playlist}}
-	</ol>
+	<track-playlist>
+		<ol start="2">
+		{{#playlist}}
+			<li><span>{{metadata.title}}</span></li>
+		{{/playlist}}
+		</ol>
+	</track-playlist>
 	<script type="text/javascript" src="//www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
 	<script type="text/javascript"
 	src="//www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>

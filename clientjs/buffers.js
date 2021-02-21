@@ -1,5 +1,6 @@
-const buffers = {};
+const pubsub = require("./pubsub");
 
+const buffers = {};
 const audioContext = new AudioContext();
 
 /**
@@ -10,7 +11,7 @@ const audioContext = new AudioContext();
 function getBuffer(url) {
 	function setState(state) {
 		buffers[url].state = state;
-		// TODO: some sort of event to let UI know to update
+		pubsub.send('trackStateChange', {url, state});
 	}
 	async function bufferTrack() {
 		setState("fetching");
@@ -40,4 +41,9 @@ function preBufferTracks(tracks, count) {
 	});
 }
 
-module.exports = {getBuffer, preBufferTracks};
+function getState(url) {
+	if (!(url in buffers)) return null;
+	return buffers[url].state;
+}
+
+module.exports = {getBuffer, preBufferTracks, getState};

@@ -1,3 +1,4 @@
+require("./track-state");
 const pubsub = require("../pubsub");
 const manager = require("../manager");
 class NowPlaying extends HTMLElement {
@@ -44,6 +45,9 @@ class NowPlaying extends HTMLElement {
 		artistDiv.appendChild(artist);
 		shadow.appendChild(artistDiv);
 
+		const state = document.createElement("track-state");
+		shadow.appendChild(state);
+
 		const thumbnail = document.createElement("img");
 		thumbnail.alt = "";
 		thumbnail.classList.add("thumbnail");
@@ -56,11 +60,13 @@ class NowPlaying extends HTMLElement {
 			title.nodeValue = metadata.title;
 			artist.nodeValue = metadata.artist;
 			thumbnail.src = metadata.thumb;
+			component.setAttribute("url", now.url);
+			state.setAttribute("url", now.url);
 		}, true);
 
 		component.addEventListener("click", event => {
 			document.getElementById("playpause").requestSubmit();
-		})
+		});
 	}
 }
 

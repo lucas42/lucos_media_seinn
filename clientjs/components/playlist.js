@@ -1,3 +1,4 @@
+require("./track-state");
 const pubsub = require("../pubsub");
 
 class Playlist extends HTMLElement {
@@ -41,9 +42,15 @@ class Playlist extends HTMLElement {
 			}
 			tracks.forEach(track => {
 				const li = document.createElement("li");
-				const span = document.createElement("span");
-				span.appendChild(document.createTextNode(track.metadata.title));
-				li.appendChild(span);
+
+				const state = document.createElement("track-state");
+				state.setAttribute("url", track.url);
+				li.appendChild(state);
+
+				const title = document.createElement("span");
+				title.appendChild(document.createTextNode(track.metadata.title));
+				li.appendChild(title);
+
 				list.appendChild(li);
 			});
 		}

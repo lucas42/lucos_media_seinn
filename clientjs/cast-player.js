@@ -126,4 +126,8 @@ function getCurrentTrack() {
 	return mediaInfo.contentId;
 }
 
-module.exports = { getTimeElapsed, getCurrentTrack };
+function isPlaying() {
+	return (playerManager.getPlayerState() === cast.framework.messages.PlayerState.PLAYING);
+}
+
+module.exports = { getTimeElapsed, getCurrentTrack, isPlaying };

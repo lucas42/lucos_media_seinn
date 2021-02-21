@@ -12,6 +12,8 @@ function isCastReceiver() {
 
 // Chromecasts are really flakely when it comes to using AudioBuffers and the like
 // So use a bespoke player for those devices
-const updateFunctions = isCastReceiver() ? require("./cast-player") : require("./web-player");
+const {getTimeElapsed, getCurrentTrack, isPlaying} = isCastReceiver() ? require("./cast-player") : require("./web-player");
 
-manager.setUpdateFunctions(updateFunctions.getTimeElapsed, updateFunctions.getCurrentTrack);
+manager.setUpdateFunctions(getTimeElapsed, getCurrentTrack);
+
+module.exports = { getCurrentTrack, isPlaying };

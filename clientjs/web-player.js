@@ -89,4 +89,11 @@ function getCurrentTrack() {
 	return currentAudio.url;
 }
 
-module.exports = { getTimeElapsed, getCurrentTrack };
+/**
+ * Returns true if the player is current playing media
+ */
+function isPlaying() {
+	return !!currentAudio;
+}
+
+module.exports = { getTimeElapsed, getCurrentTrack, isPlaying };

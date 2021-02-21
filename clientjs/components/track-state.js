@@ -1,6 +1,7 @@
 const buffers = require("../buffers");
 const pubsub = require("../pubsub");
 const player = require("../player");
+const localDevice = require("../local-device");
 
 class TrackState extends HTMLElement {
 	static get observedAttributes() {
@@ -56,8 +57,8 @@ function getState(url) {
 	if (currentTrack === url && player.isPlaying()) return "playing";
 	let state = buffers.getState(url);
 	if (currentTrack === url && state === "ready") {
-		// TODO: check whether the local device is current
-		return "paused";
+		if (localDevice.isCurrent()) return "paused";
+		return "elsewhere";
 	}
 	if (state) return state;
 	return "unloaded";

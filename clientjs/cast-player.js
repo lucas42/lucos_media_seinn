@@ -1,5 +1,6 @@
 const pubsub = require("./pubsub");
 const manager = require("./manager");
+const localDevice = require("./local-device");
 
 const receiverContext = cast.framework.CastReceiverContext.getInstance();
 const mediaPlayer = document.createElement('cast-media-player');
@@ -51,7 +52,7 @@ handleVolumes(receiverContext);
 receiverContext.start();
 pubsub.listen("managerData", data => {
 	const now = data.tracks[0];
-	const shouldPlay = data.isPlaying && data.thisDevice && data.thisDevice.isCurrent;
+	const shouldPlay = data.isPlaying && localDevice.isCurrent();
 	if (!now) return console.error("No currently playing track", data);
 	const mediaInfo = playerManager.getMediaInformation();
 

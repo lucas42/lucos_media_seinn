@@ -1,5 +1,6 @@
 const pubsub = require("../pubsub");
 const manager = require("../manager");
+const localDevice = require("../local-device");
 
 class DevicesOverlay extends HTMLElement {
 	constructor() {
@@ -20,6 +21,14 @@ class DevicesOverlay extends HTMLElement {
 			while (container.firstChild) {
 				container.removeChild(container.lastChild);
 			}
+
+			data.devices.sort((a, b) => {
+				if (a.uuid === localDevice.getUuid()) return -1;
+				if (b.uuid === localDevice.getUuid()) return 1;
+				if (a.isConnected !=  b.isConnected) return a.isConnected ? -1 : 1;
+				if (a.name === b.name) return 0;
+				return a.name > b.name ? 1 : -1;
+			});
 			data.devices.forEach(device => {
 				const form = document.createElement("form");
 				form.dataset.uuid = device.uuid;

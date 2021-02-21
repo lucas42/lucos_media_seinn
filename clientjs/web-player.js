@@ -1,6 +1,7 @@
 const pubsub = require("./pubsub");
 const {getBuffer, preBufferTracks} = require("./buffers");
 const manager = require("./manager");
+const localDevice = require("./local-device");
 
 const audioContext = new AudioContext();
 let globalGain = audioContext.createGain();
@@ -12,7 +13,7 @@ async function updateCurrentAudio(data) {
 
 	updateVolume(data.volume);
 	const now = data.tracks[0];
-	const shouldPlay = data.isPlaying && data.thisDevice && data.thisDevice.isCurrent;
+	const shouldPlay = data.isPlaying && localDevice.isCurrent();
 	if (shouldPlay) {
 		if (!currentAudio) {
 			await playTrack(now);

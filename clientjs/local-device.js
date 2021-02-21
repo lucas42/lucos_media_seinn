@@ -1,9 +1,8 @@
 const { v4: uuidv4 } = require('uuid');
-const pubsub = require("./pubsub");
-const manager = require("./manager");
 
 let uuid = localStorage.getItem('device-uuid');
 let name = localStorage.getItem('device-name');
+let current;
 
 if (!uuid) {
 	uuid = uuidv4();
@@ -20,5 +19,11 @@ function setName(newName) {
 	name = newName;
 	localStorage.setItem('device-name', name);
 }
+function isCurrent() {
+	return current;
+}
+function setCurrent(newIsCurrent) {
+	current = newIsCurrent;
+}
 
-module.exports = {getUuid, getName, setName};
+module.exports = {getUuid, getName, setName, isCurrent, setCurrent};

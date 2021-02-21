@@ -1,4 +1,4 @@
-const currentDevice = require("./current-device");
+const localDevice = require("./local-device");
 let mediaManager = undefined;
 let getTimeElapsed = () => undefined;
 let getCurrentTrack = () => undefined;
@@ -22,7 +22,7 @@ function setUpdateFunctions(timeElapsed, currentTrack) {
  */
 function _getUpdateParams() {
 	const params = new URLSearchParams();
-	params.set("device", currentDevice.getUuid());
+	params.set("device", localDevice.getUuid());
 
 	const timeElapsed = getTimeElapsed();
 	const currentTrack = getCurrentTrack();

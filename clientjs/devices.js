@@ -1,29 +1,24 @@
 const { v4: uuidv4 } = require('uuid');
 const pubsub = require("./pubsub");
+const manager = require("./manager");
+const currentDevice = require("./current-device");
 
-let uuid = localStorage.getItem('device-uuid');
-let name = localStorage.getItem('device-name');
-let isCurrent = false;
-
-if (!uuid) {
-	uuid = uuidv4();
-	localStorage.setItem('device-uuid', uuid);
-}
-
-
-function updateDevice(data) {
+function updateCurrentDevice(data) {
 	const device = data.thisDevice;
 
-	// If nothing has changed, then don't take action
-	if (device.name === name && device.isCurrent === isCurrent) return;
+	// If name hasn't changed, then don't take action
+	if (device.name === currentDevice.getName()) return;
 
-	name = device.name;
+	// If the server is still using a default name, then update it with the local one
+	if (currentDevice.getName() && device.isDefaultName) {
+		return manager.post("devices", {
+			uuid: currentDevice.getUuid(),
+			name: currentDevice.getName()
+		});
+	}
 
-	// TODO: if the name from the server is Device X and there's something custom in localstorage,
-	// then update the server with the custom one
-	localStorage.setItem('device-name', name);
-	isCurrent = device.isCurrent;
-	pubsub.send("deviceSwitch", device);
+	// Otherwise server provided name takes precedent
+	currentDevice.setName(device.name);
 }
 
 /**
@@ -32,23 +27,17 @@ function updateDevice(data) {
  */
 function modifyData(data) {
 	data.devices.sort((a, b) => {
-		if (a.uuid === uuid) return -1;
-		if (b.uuid === uuid) return 1;
+		if (a.uuid === currentDevice.getUuid()) return -1;
+		if (b.uuid === currentDevice.getUuid()) return 1;
 		if (a.isConnected !=  b.isConnected) return a.isConnected ? -1 : 1;
 		if (a.name === b.name) return 0;
 		return a.name > b.name ? 1 : -1;
 	});
-	data.thisDevice = data.devices.find(device => device.uuid === uuid);
+	data.thisDevice = data.devices.find(device => device.uuid === currentDevice.getUuid());
 	if (!data.thisDevice) {
 		throw "Connected device not returned by server"
 	}
 }
 
-function getCurrent() {
-	return uuid;
-}
-
 pubsub.listenExisting("managerData", modifyData, true);
-pubsub.listenExisting("managerData", updateDevice, true);
-
-module.exports = {getCurrent};
+pubsub.listenExisting("managerData", updateCurrentDevice, true);

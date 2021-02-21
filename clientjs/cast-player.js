@@ -61,6 +61,9 @@ pubsub.listen("managerData", data => {
 		} else {
 			if (shouldPlay) playerManager.play();
 		}
+		if (now.currentTime > playerManager.getCurrentTimeSec()) {
+			playerManager.seek(now.currentTime);
+		}
 		return;
 	}
 
@@ -114,11 +117,13 @@ function handleVolumes(receiverContext) {
 }
 
 function getTimeElapsed() {
-	return 0;
+	return playerManager.getCurrentTimeSec();
 }
 
 function getCurrentTrack() {
-	return "unknown";
+	const mediaInfo = playerManager.getMediaInformation();
+	if (!mediaInfo) return undefined;
+	return mediaInfo.contentId;
 }
 
 module.exports = { getTimeElapsed, getCurrentTrack };

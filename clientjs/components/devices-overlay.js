@@ -1,5 +1,5 @@
-const pubsub = require("./pubsub");
-const manager = require("./manager");
+const pubsub = require("../pubsub");
+const manager = require("../manager");
 
 class DevicesOverlay extends HTMLElement {
 	constructor() {

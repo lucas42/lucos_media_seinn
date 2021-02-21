@@ -1,5 +1,5 @@
-const pubsub = require("./pubsub");
-const manager = require("./manager");
+const pubsub = require("../pubsub");
+const manager = require("../manager");
 class VolumeControl extends HTMLElement {
 	static get observedAttributes() {
 		return ['volume'];

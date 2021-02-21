@@ -9,11 +9,11 @@ const {mediaManager, receiverApplicationId} = clientVariables;
 require("./manager").init(mediaManager);  // Initiate the manager first so other modules can use it immediately
 require("./devices"); // Load devices early so it can modify the `managerData` object before others use it
 require("./poll");
-require("./lucos-navbar");
 require("./keyboard");
 require("./controls");
 require("./cast-sender")(receiverApplicationId);
 require("./updateUI");
-require("./volume");
 require("./player");
-require("./devices-overlay");
+require("./components/lucos-navbar");
+require("./components/volume");
+require("./components/devices-overlay");

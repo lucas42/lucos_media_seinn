@@ -9,7 +9,7 @@ class Navbar extends HTMLElement {
 		super();
 		const component = this;
 
-		const shadow = this.attachShadow({mode: 'open'});
+		const shadow = this.attachShadow({mode: 'closed'});
 	
 		const navbar = document.createElement('div');
 		navbar.id="lucos_navbar";
@@ -40,6 +40,18 @@ class Navbar extends HTMLElement {
 
 		mainStyle.textContent = `
 
+		:host {
+			z-index:1000;
+			color: white;
+			background-color: black;
+			background-image: -webkit-gradient(linear, 0 100%, 0 0, color-stop(0, transparent), color-stop(0.15, transparent), color-stop(0.9, rgba(255, 255, 255, 0.4)));
+			height: 100%;
+			position: absolute;
+			left: 0;
+			right: 0;
+			top: 0;
+			height: 30px;
+		}
 		#lucos_navbar {
 			font-size: 18px;
 			font-family: Georgia, serif;
@@ -123,18 +135,6 @@ function addGlobalStyle() {
 	const globalStyle = document.createElement('style');
 
 	globalStyle.textContent = `
-		lucos-navbar {
-			z-index:1000;
-			color: white;
-			background-color: black;
-			background-image: -webkit-gradient(linear, 0 100%, 0 0, color-stop(0, transparent), color-stop(0.15, transparent), color-stop(0.9, rgba(255, 255, 255, 0.4)));
-			height: 100%;
-			position: absolute;
-			left: 0;
-			right: 0;
-			top: 0;
-			height: 30px;
-		}
 		body {
 			padding-top: 30px;
 		}

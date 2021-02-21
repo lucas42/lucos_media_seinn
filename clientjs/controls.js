@@ -21,13 +21,6 @@ function setupNext() {
 		await manager.post("next");
 	});
 }
-function setupVolume() {
-	document.querySelectorAll("volume-control")
-		.forEach(volControl => volControl.addEventListener("volumeUpdated", async event => {
-			event.preventDefault();
-			await manager.post("volume", {volume: event.detail});
-		}));
-}
 
 /**
  * The refresh button isn't needed if JS is running as we poll for changes constantly
@@ -42,7 +35,6 @@ function removeRefresh() {
 function setupControls() {
 	setupPlaypause();
 	setupNext();
-	setupVolume();
 	removeRefresh();
 }
 

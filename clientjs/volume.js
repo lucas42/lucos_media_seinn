@@ -1,3 +1,5 @@
+const pubsub = require("./pubsub");
+const manager = require("./manager");
 class VolumeControl extends HTMLElement {
 	static get observedAttributes() {
 		return ['volume'];
@@ -60,14 +62,8 @@ class VolumeControl extends HTMLElement {
 		shadow.append(style);
 		shadow.append(volcontain);
 
-		component.calculateHeight = () => {
-			const height = self.innerHeight * component.getAttribute("volume");
-			vol.style.height = height + "px";
-		}
-
 		function updateVolume(newVolume) {
-			const event = new CustomEvent('volumeUpdated', {detail: newVolume});
-			component.dispatchEvent(event);
+			return manager.post("volume", {volume: newVolume});
 		}
 
 		component.querySelector("#volume-up").addEventListener('submit', async event => {
@@ -78,14 +74,11 @@ class VolumeControl extends HTMLElement {
 			event.preventDefault();
 			updateVolume(Math.max(0, parseFloat(component.getAttribute("volume"))-0.1),);
 		});
-	}
 
-	attributeChangedCallback(name, oldValue, newValue) {
-		switch (name) {
-			case "volume":
-				this.calculateHeight();
-				break;
-		}
+		pubsub.listenExisting("managerData", data => {
+			const height = self.innerHeight * data.volume;
+			vol.style.height = height + "px";
+		}, true);
 	}
 }
 

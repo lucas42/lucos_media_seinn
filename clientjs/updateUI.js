@@ -25,11 +25,6 @@ function updatePlaylist(data) {
 	});
 }
 
-function updateVolume(data) {
-	document.querySelectorAll("volume-control")
-		.forEach(volControl => volControl.setAttribute("volume", data.volume));
-}
-
 function updatePlayPauseButton(data) {
 	const playpauseSubmit = document.getElementById('playpause-submit');
 	if (data.isPlaying) {
@@ -42,6 +37,5 @@ function updatePlayPauseButton(data) {
 pubsub.listen("ready", () => {
 	pubsub.listenExisting("managerData", updateNow, true);
 	pubsub.listenExisting("managerData", updatePlaylist, true);
-	pubsub.listenExisting("managerData", updateVolume, true);
 	pubsub.listenExisting("managerData", updatePlayPauseButton, true);
 });

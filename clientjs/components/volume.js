@@ -7,6 +7,8 @@ class VolumeControl extends HTMLElement {
 	constructor() {
 		super();
 
+		let currentVolume = 0.5;
+
 		const component = this;
 		const shadow = component.attachShadow({mode: 'open'});
 		component.addEventListener('click', e => {
@@ -68,15 +70,16 @@ class VolumeControl extends HTMLElement {
 
 		component.querySelector("#volume-up").addEventListener('submit', async event => {
 			event.preventDefault();
-			updateVolume(Math.min(1, parseFloat(component.getAttribute("volume"))+0.1),);
+			updateVolume(Math.min(1, currentVolume+0.1),);
 		});
 		component.querySelector("#volume-down").addEventListener('submit', async event => {
 			event.preventDefault();
-			updateVolume(Math.max(0, parseFloat(component.getAttribute("volume"))-0.1),);
+			updateVolume(Math.max(0, currentVolume-0.1),);
 		});
 
 		pubsub.listenExisting("managerData", data => {
-			const height = self.innerHeight * data.volume;
+			currentVolume = data.volume;
+			const height = self.innerHeight * currentVolume;
 			vol.style.height = height + "px";
 		}, true);
 	}

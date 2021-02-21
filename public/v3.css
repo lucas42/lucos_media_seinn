@@ -1,5 +1,5 @@
 html {
-	padding-top:0!important;
+	padding-top:0;
 	-webkit-overflow-scrolling: auto;
 }
 body {
@@ -18,8 +18,10 @@ body {
 h2 {
 	display: none;
 }
-.links li a:hover {
-	text-decoration: underline;
+
+/* App-specific customization of navbar (base navbar style lives in web component) */
+lucos-navbar {
+	border-bottom: solid #502;
 }
 #controls {
 	text-align: center;
@@ -41,11 +43,6 @@ h2 {
 	margin-left: 10px;
 }
 
-/* App-specific customization of navbar (base navbar style lives in web component) */
-lucos-navbar {
-	border-bottom: solid #502;
-}
-
 #controls li {
 	background: transparent;
 	border: none;
@@ -60,49 +57,8 @@ lucos-navbar {
 	color: black;
 }
 
-.next .title {
-	background:#502;
-	color: white;
-	text-align: center;
-	display: block;
-	padding: 1em;
-	font-weight: bold;
-	cursor: pointer;
-	padding-right: 60px;
-}
-a {
-	color: #502;
-	font-weight: bold;
-	text-decoration: none;
-}
-a:hover {
-	text-decoration: underline;
-}
-.status {
-	position: absolute;
-	bottom: 20px;
-	text-align: center;
-	font-weight: bold;
-	right: 60px;
-	left: 60px;
-}
-#controls {
-	display: block;
-}
 
 @media (min-width: 20cm) {
-	/*#now_thumb {
-	-webkit-box-reflect: below 0 -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0)), to(rgba(255, 255, 255, 0.5)), color-stop(0.7, transparent));
-	}*/
-	#now_thumb {
-		-webkit-box-reflect: below url(https://ceol.l42.eu/thumb.png);
-	}
-	.next .title {
-		display: none
-	}
-	.status {
-		display: none;
-	}
 	#controls li {
 		display: inline;
 	}
@@ -120,15 +76,5 @@ a:hover {
 	#controls input {
 		width: 90%;
 		margin: 0.5em 5%;
-	}
-}
-@media (max-width: 20cm) and (min-width: 399px) {
-	#now > .info {
-		float: right;
-		width: 240px;
-		margin-right: 60px;
-	}
-	#now {
-		padding: 1em 0 0 0;
 	}
 }

@@ -64,7 +64,7 @@ lucos-navbar {
 	}
 }
 @media (max-width: 20cm) {
-	#controls {
+	#controls #playpause {
 		display: none;
 	}
 	#controls {

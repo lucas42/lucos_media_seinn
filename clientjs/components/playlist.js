@@ -8,12 +8,14 @@ class Playlist extends HTMLElement {
 		const shadow = component.attachShadow({mode: 'closed'});
 		const style = document.createElement('style');
 		style.textContent = `
-			ol {
+			:host {
 				overflow: auto;
 				margin: 0;
 				padding-top: 20px;
 				padding-bottom: 10px;
 				-webkit-overflow-scrolling: touch;
+			}
+			ol {
 				list-style-type: disc;
 			}
 			li {

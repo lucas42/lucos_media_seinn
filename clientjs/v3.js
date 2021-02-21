@@ -20,3 +20,4 @@ require("./components/playlist");
 require("./components/now-playing");
 require("./components/edit-form");
 require("./components/playpause-form");
+require("./components/next-form");

@@ -10,7 +10,6 @@ require("./manager").init(mediaManager);  // Initiate the manager first so other
 require("./devices"); // Load devices early so it can modify the `managerData` object before others use it
 require("./poll");
 require("./keyboard");
-require("./controls");
 require("./cast-sender")(receiverApplicationId);
 require("./player");
 require("./components/lucos-navbar");
@@ -21,3 +20,4 @@ require("./components/now-playing");
 require("./components/edit-form");
 require("./components/playpause-form");
 require("./components/next-form");
+require("./components/refresh-form");

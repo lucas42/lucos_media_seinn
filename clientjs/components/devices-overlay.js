@@ -85,7 +85,7 @@ class DevicesOverlay extends HTMLElement {
 			background: #503;
 		}
 		#overlay form[data-is-connected=false] {
-			opacity: 0.4;
+			display: none;
 		}
 
 		`;

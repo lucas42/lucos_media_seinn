@@ -31,7 +31,6 @@ class TrackState extends HTMLElement {
 					display: inline-block;
 					font-size: 0.7em;
 					color: white;
-					text-transform: capitalize;
 					background-color: ${getBackgroundColor(state)};
 				}
 			`;

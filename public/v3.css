@@ -15,44 +15,6 @@ body {
 	display: flex;
 	flex-direction: column;
 }
-#now {
-	text-align: center;
-	background:#000;
-	border-bottom: solid #502;
-	color: white;
-	overflow: hidden;
-	padding: 1em;
-	flex-shrink: 0;
-}
-#now_thumb {
-	height: 100px;
-	margin: 1em auto;
-}
-#now > .info > * {
-	display: block;
-	font-weight: bold;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-#now .links {
-	margin: 1em auto;
-}
-#now .links li {
-	list-style-type: none;
-	line-height: 3em;
-	 color: #55f;
-	font-weight: bold;
-}
-#now .links li a {
-	color: inherit;
-}
-#now .links li .loading {
-	color: #fa0;
-}
-#now .links li .exticon {
-	margin: 0 0.5em;
-}
 h2 {
 	display: none;
 }
@@ -138,19 +100,11 @@ a:hover {
 	.next .title {
 		display: none
 	}
-	#now .links li {
-		line-height: 2em;
-		float: right;
-		margin-right: 60px;
-	}
 	.status {
 		display: none;
 	}
 	#controls li {
 		display: inline;
-	}
-	#now .links li .ext {
-		display: none;
 	}
 }
 @media (max-width: 20cm) {
@@ -167,12 +121,6 @@ a:hover {
 		width: 90%;
 		margin: 0.5em 5%;
 	}
-	#now .links li .link {
-		display: none;
-	}
-	#now .links li .exticon {
-		display: none;
-	}
 }
 @media (max-width: 20cm) and (min-width: 399px) {
 	#now > .info {
@@ -182,15 +130,5 @@ a:hover {
 	}
 	#now {
 		padding: 1em 0 0 0;
-	}
-	#now > .links {
-		padding: 0;
-		max-width: 110px;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	#now > .links li {
-		display: block;
 	}
 }

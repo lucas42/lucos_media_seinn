@@ -18,3 +18,4 @@ require("./components/lucos-navbar");
 require("./components/volume");
 require("./components/devices-overlay");
 require("./components/playlist");
+require("./components/now-playing");

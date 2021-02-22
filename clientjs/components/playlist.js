@@ -1,4 +1,5 @@
 require("./track-state");
+require("./track-options");
 const pubsub = require("../pubsub");
 
 class Playlist extends HTMLElement {
@@ -23,6 +24,7 @@ class Playlist extends HTMLElement {
 				font-weight: bold;
 				font-size: larger;
 				line-height: 0.9em;
+				cursor: pointer;
 			}
 			li > span {
 				font-size: small;
@@ -51,10 +53,40 @@ class Playlist extends HTMLElement {
 				title.appendChild(document.createTextNode(track.metadata.title));
 				li.appendChild(title);
 
+				listenForPress(li, track);
 				list.appendChild(li);
 			});
 		}
 		pubsub.listenExisting("managerData", updatePlaylist, true);
+	}
+}
+
+function listenForPress(node, track) {
+	let timer;
+	function startPress(event) {
+		event.preventDefault();
+		stopPress();  // Ensure there is only one press at a time
+		timer = window.setTimeout(pressed, 1000);
+	}
+	function stopPress() {
+		if (timer) window.clearTimeout(timer);
+	}
+	node.addEventListener("mousedown", startPress, false);
+	node.addEventListener("touchstart", startPress, false);
+	node.addEventListener("mouseup", stopPress, false);
+	node.addEventListener("mouseleave", stopPress, false);
+	node.addEventListener("touchend", stopPress, false);
+	node.addEventListener("contextmenu", stopPress, false);
+	function pressed() {
+		const options = node.querySelector("track-options");
+		if (options) {
+			node.removeChild(options);
+		} else {
+			const options = document.createElement("track-options");
+			options.setAttribute("url", track.url);
+			options.setAttribute("editurl", track.metadata.editurl);
+			node.append(options);
+		}
 	}
 }
 

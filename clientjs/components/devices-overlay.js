@@ -35,6 +35,7 @@ class DevicesOverlay extends HTMLElement {
 				form.dataset.name = device.name;
 				form.dataset.isCurrent = device.isCurrent;
 				form.dataset.isConnected = device.isConnected;
+				form.dataset.isLocal = (device.uuid === localDevice.getUuid());
 				const nameField = document.createElement("input");
 				nameField.value = device.name;
 				form.appendChild(nameField);
@@ -84,7 +85,7 @@ class DevicesOverlay extends HTMLElement {
 		#overlay form[data-is-current=true] {
 			background: #503;
 		}
-		#overlay form[data-is-connected=false] {
+		#overlay form[data-is-connected=false][data-is-current=false][data-is-local=false] {
 			display: none;
 		}
 

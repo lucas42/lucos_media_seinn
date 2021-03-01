@@ -62,6 +62,10 @@ class NowPlaying extends HTMLElement {
 			thumbnail.src = metadata.thumb;
 			component.setAttribute("url", now.url);
 			state.setAttribute("url", now.url);
+			if (data.isPlaying !== component.isPlaying) {
+				component.isPlaying = data.isPlaying;
+				pubsub.send('trackStateChange', {url:now.url, isPlaying:data.isPlaying});
+			}
 		}, true);
 
 		component.addEventListener("click", event => {

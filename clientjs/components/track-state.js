@@ -52,12 +52,21 @@ class TrackState extends HTMLElement {
 }
 
 function getState(url) {
-	currentTrack = document.querySelector("now-playing").getAttribute("url");
+	const currentTrack = document.querySelector("now-playing").getAttribute("url");
 	let state = buffers.getState(url);
+
+	// If playing locally, base the state on what is happening
+	// (regardless of what the server says *should* be happening)
 	if (currentTrack === url && state === "ready") {
 		if (player.isPlaying()) return "playing";
 		if (localDevice.isCurrent()) return "paused";
-		return "elsewhere";
+	}
+
+	// If playing on a non-local device, base the state on what that device *should* be doing
+	if (currentTrack === url && !localDevice.isCurrent()) {
+		const shouldBePlaying = document.querySelector("now-playing").isPlaying;
+		if (shouldBePlaying) return "elsewhere";
+		return "paused";
 	}
 	if (state) return state;
 	return "unloaded";

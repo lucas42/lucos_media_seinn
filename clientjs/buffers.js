@@ -37,7 +37,11 @@ function getBuffer(url) {
  */
 function preBufferTracks(tracks, count) {
 	tracks.slice(0, count).forEach(track => {
-		getBuffer(track.url);
+		getBuffer(track.url).catch(() => {
+			// If something fails whilst pre-buffering, clear the cached buffer
+			// so that it'll try again from scratch when playing
+			delete buffers[track.url];
+		});
 	});
 }
 

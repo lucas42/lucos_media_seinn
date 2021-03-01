@@ -33,24 +33,29 @@ function updateVolume(volume, fadeTime=0) {
 }
 async function playTrack(track, volume) {
 	if (currentAudio) throw "trying to play track while another is playing";
-	const source = audioContext.createBufferSource();
-	source.addEventListener("ended", trackEndedHandler);
+	try {
+		const source = audioContext.createBufferSource();
+		source.addEventListener("ended", trackEndedHandler);
 
-	// Create a gain for this particular audio track, so it can be faded separately
-	const gainNode = audioContext.createGain();
-	gainNode.connect(globalGain);
-	source.connect(gainNode);
-	source.trackUrl = track.url;
+		// Create a gain for this particular audio track, so it can be faded separately
+		const gainNode = audioContext.createGain();
+		gainNode.connect(globalGain);
+		source.connect(gainNode);
+		source.trackUrl = track.url;
 
-	currentAudio = {
-		source,
-		gain: gainNode.gain,
-		url: track.url,
+		currentAudio = {
+			source,
+			gain: gainNode.gain,
+			url: track.url,
+		}
+
+		source.buffer = await getBuffer(track.url);
+		source.start(0, track.currentTime);
+		currentAudio.startTime = audioContext.currentTime - track.currentTime;
+	} catch (error) {
+		console.error("Skipping track", error.message);
+		manager.post("done", {track: track.url, status: error.message});
 	}
-
-	source.buffer = await getBuffer(track.url);
-	source.start(0, track.currentTime);
-	currentAudio.startTime = audioContext.currentTime - track.currentTime;
 }
 
 function stopCurrentTrack(fadeTime) {

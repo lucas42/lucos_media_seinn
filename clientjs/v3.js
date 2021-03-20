@@ -21,3 +21,4 @@ require("./components/edit-form");
 require("./components/playpause-form");
 require("./components/next-form");
 require("./components/refresh-form");
+require("./load-service-worker");

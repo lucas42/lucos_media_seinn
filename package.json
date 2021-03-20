@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "build": "browserify clientjs/v3.js > public/v3.js"
+    "build": "browserify clientjs/v3.js > public/v3.js && browserify clientjs/service-worker/index.js > public/serviceworker-v3.js"
   },
   "repository": {
     "type": "git",

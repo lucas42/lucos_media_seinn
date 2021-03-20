@@ -22,7 +22,7 @@ function setUpdateFunctions(timeElapsed, currentTrack) {
  */
 function _getUpdateParams() {
 	const params = new URLSearchParams();
-	params.set("device", localDevice.getUuid());
+	if (localDevice.getUuid() !== undefined) params.set("device", localDevice.getUuid());
 
 	const timeElapsed = getTimeElapsed();
 	const currentTrack = getCurrentTrack();

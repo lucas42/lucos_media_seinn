@@ -1,15 +1,19 @@
 
 var msgListeners = {}, triggered = {}, msg;
-window.addEventListener('message', function _parsewindowmessage(event) {
-	try {
-		msg = JSON.parse(event.data);
-	} catch (e) {
-		event.preventDefault();
-		return;
-	}
-	if (msg.type) trigger(msg.type, msg, event.source, false);
+if(typeof window !== 'undefined') {
+	window.addEventListener('message', function _parsewindowmessage(event) {
+		try {
+			msg = JSON.parse(event.data);
+		} catch (e) {
+			event.preventDefault();
+			return;
+		}
+		if (msg.type) trigger(msg.type, msg, event.source, false);
 
-}, false);
+	}, false);
+} else {
+	window = "GLOBAL"; // Quite hacky.  Think of a better way to work in environments without a `window` global variable
+}
 
 /**
  * Listen for messages of a given type

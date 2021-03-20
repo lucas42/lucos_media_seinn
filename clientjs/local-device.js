@@ -1,23 +1,33 @@
 const { v4: uuidv4 } = require('uuid');
 
-let uuid = localStorage.getItem('device-uuid');
-let name = localStorage.getItem('device-name');
+let uuid;
+let name;
 let current;
 
-if (!uuid) {
-	uuid = uuidv4();
-	localStorage.setItem('device-uuid', uuid);
+if (typeof localStorage !== 'undefined') {
+	uuid = localStorage.getItem('device-uuid');
+	name = localStorage.getItem('device-name');
+
+	if (!uuid) {
+		uuid = uuidv4();
+		localStorage.setItem('device-uuid', uuid);
+	}
 }
 
 function getUuid() {
 	return uuid;
+}
+function setUuid(newUuid) {
+	if (uuid === newUuid) return;
+	if (uuid !== undefined) throw "Device uuid already set, can't change";
+	uuid = newUuid;
 }
 function getName() {
 	return name;
 }
 function setName(newName) {
 	name = newName;
-	localStorage.setItem('device-name', name);
+	if (typeof localStorage !== 'undefined') localStorage.setItem('device-name', name);
 }
 function isCurrent() {
 	return current;

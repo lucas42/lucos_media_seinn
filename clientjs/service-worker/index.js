@@ -2,6 +2,7 @@ require("../manager").init("https://ceol.l42.eu/"); // TODO: get this host from 
 const staticResources = require("./static-resources");
 const actions = require("./actions");
 const { getPoll, modifyPollData } = require("./polling");
+require("./preload");
 self.addEventListener('install', event => {
 	event.waitUntil(staticResources.refresh());
 });
@@ -11,7 +12,7 @@ async function handleRequest(request) {
 	const params = new URLSearchParams(url.search);
 	if (request.method === "POST") {
 		modifyPollData(request);
-		await actions.add(request);
+		actions.add(request);
 		return new Response(new Blob(), {status: 202, statusText: "Accepted by Service Worker"});
 	}
 	if (url.pathname === "/poll/summary") {

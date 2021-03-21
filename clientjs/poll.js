@@ -3,7 +3,7 @@ const manager = require("./manager");
 let suppressErrors = false;
 
 // Don't show any errors whilst the page unloads as it gets confusing in the console whether it's the old page or new page
-if (window) window.addEventListener("unload", event => {
+if (typeof window === "object") window.addEventListener("unload", event => {
 	suppressErrors = true;
 });
 

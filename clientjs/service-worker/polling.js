@@ -3,8 +3,13 @@ const actions = require("./actions");
 require("../poll");
 const { getTrackState } = require("./preload");
 
+const POLL_CACHE = 'polls-v1';
+// This isn't a valid request, but it never hits the network, so the only
+// thing that matters is consistency when reading and writing from cache
+const pollRequest = new Request("POLL");
+
 let listeners = [];
-let pollData = {};
+let pollData = { unloaded: true };
 
 pubsub.listenExisting("managerData", async serverData => {
 	pollData = serverData;
@@ -24,11 +29,17 @@ pubsub.listenExisting("trackStateChange", async ({url}) => {
 	dataChanged();
 });
 
+/**
+ * Gets invoked after any time pollData is modified
+ * Iterates through any long polls waiting and returns the latest data
+ * Also stores the data in cache to allow for service wokrer restarts
+ */
 function dataChanged() {
 	let resolve;
 	while (resolve = listeners.shift()) {
 		resolve(getCurrentResponse());
 	}
+	saveToCache(getCurrentResponse());
 }
 
 function getCurrentResponse() {
@@ -37,6 +48,11 @@ function getCurrentResponse() {
 	return new Response(blob, {status: 200, type : 'application/json'});
 }
 
+/**
+ * Called when a polling request hits the service worker
+ * Either returns the current response (if the hashcode is out-of-date)
+ * Or waits for a change in data before returning a response with the latest data
+ */
 function getPoll(hashcode) {
 	if (hashcode !== pollData.hashcode) {
 		return getCurrentResponse();
@@ -46,6 +62,32 @@ function getPoll(hashcode) {
 	});
 }
 
+/**
+ * Saves a given Response object into cache
+ **/
+async function saveToCache(pollResponse) {
+	const pollCache = await caches.open(POLL_CACHE);
+	await pollCache.put(pollRequest, pollResponse)
+}
+/**
+ * Triggers a "managerData" event based on the poll data currently in the cache
+ * Note: as this function is asynchronous it's possbible (though unlikely) that data from the server
+ * is returned before the cache data.  Therefore, only fire "managerData" if pollData hasn't been populated yet.
+ **/
+async function loadFromCache() {
+	const pollCache = await caches.open(POLL_CACHE);
+	const pollResponse = await pollCache.match(pollRequest);
+	if (!pollResponse) return;
+	const newData = await pollResponse.json();
+	if (!pollData.unloaded) return;
+	pubsub.send("managerData", newData);
+}
+
+/**
+ * Modifes pollData based on a given action request
+ * NB: the calling function should call `dataChanged`
+ * after all the relevant actions have been processed
+ **/
 function enactAction(action) {
 	const url = new URL(action.url);
 	const params = new URLSearchParams(url.search);
@@ -92,9 +134,15 @@ function enactAction(action) {
 			console.error("unknown action", command, params.toString());
 	}
 }
+
+/**
+ * Modifies pollData with a single action
+ * Shouldn't be called multiple times together as `dataChanged` gets triggered each time
+ **/
 function modifyPollData(action) {
 	enactAction(action);
 	dataChanged();
 }
 
+loadFromCache();
 module.exports = {getPoll, modifyPollData};

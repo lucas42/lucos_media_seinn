@@ -47,6 +47,7 @@ class Playlist extends HTMLElement {
 
 				const state = document.createElement("track-state");
 				state.setAttribute("url", track.url);
+				if (track.state) state.setAttribute("service-worker-state", track.state);
 				li.appendChild(state);
 
 				const title = document.createElement("span");

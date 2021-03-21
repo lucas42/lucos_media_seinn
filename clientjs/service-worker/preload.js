@@ -71,11 +71,11 @@ pubsub.listenExisting("managerData", data => {
 
 async function getTrackState(trackUrl) {
 	if (trackUrl in fetchingTracks) return "fetching";
-	if (trackUrl in erroringTracks) return "errored";
+	if (trackUrl in erroringTracks) return "failed";
 	const trackCache = await caches.open(TRACK_CACHE);
 	const trackRequest = new Request(trackUrl);
 	const fromTrackCache = await trackCache.match(trackRequest);
-	if (fromTrackCache) return "cached";
+	if (fromTrackCache) return "downloaded";
 	return "unloaded";
 }
 

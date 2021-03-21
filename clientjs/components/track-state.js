@@ -5,7 +5,7 @@ const localDevice = require("../local-device");
 
 class TrackState extends HTMLElement {
 	static get observedAttributes() {
-		return ['url'];
+		return ['url','service-worker-state'];
 	}
 	constructor() {
 		super();
@@ -18,7 +18,7 @@ class TrackState extends HTMLElement {
 		shadow.append(stateNode);
 
 		component.updateState = () => {
-			let state = getState(component.getAttribute("url"));
+			let state = getState(component.getAttribute("url"), component.getAttribute("service-worker-state"));
 			style.textContent = `
 				:host {
 					text-align: center;
@@ -45,13 +45,14 @@ class TrackState extends HTMLElement {
 	attributeChangedCallback(name, oldValue, newValue) {
 		switch (name) {
 			case "url":
+			case "service-worker-state":
 				this.updateState();
 				break;	
 		}
 	}
 }
 
-function getState(url) {
+function getState(url, serviceWorkerState) {
 	const currentTrack = document.querySelector("now-playing").getAttribute("url");
 	let state = buffers.getState(url);
 
@@ -69,6 +70,7 @@ function getState(url) {
 		return "paused";
 	}
 	if (state) return state;
+	if (serviceWorkerState) return serviceWorkerState;
 	return "unloaded";
 }
 

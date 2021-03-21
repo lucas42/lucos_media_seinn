@@ -1,5 +1,12 @@
 const pubsub = require("./pubsub");
 const manager = require("./manager");
+let suppressErrors = false;
+
+// Don't show any errors whilst the page unloads as it gets confusing in the console whether it's the old page or new page
+if (window) window.addEventListener("unload", event => {
+	suppressErrors = true;
+});
+
 
 async function poll(hashcode) {
 	try {
@@ -12,7 +19,7 @@ async function poll(hashcode) {
 		}
 		poll(hashcode);
 	} catch(error){
-		console.error("Error whilst polling, wait 5 seconds\n",error);
+		if (!suppressErrors) console.error("Error whilst polling, wait 5 seconds\n",error,hashcode);
 
 		// Wait 5 second before trying again to prevent making things worse
 		setTimeout(function pollRetry() {

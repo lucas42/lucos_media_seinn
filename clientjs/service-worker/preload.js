@@ -51,7 +51,7 @@ async function fetchTrack (trackCache, trackRequest) {
 async function fetchImage (cache, request) {
 	try {
 		const response = await fetch(request);
-		if (response.status !== 200) new Error("non-200 response");
+		if (response.status > 499) new Error("Error status code");
 		try {
 			await cache.put(request, response);
 		} catch (error) {

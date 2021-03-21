@@ -1,14 +1,26 @@
 const pubsub = require("../pubsub");
 const actions = require("./actions");
 require("../poll");
+const { getTrackState } = require("./preload");
 
 let listeners = [];
 let pollData = {};
 
-pubsub.listenExisting("managerData", serverData => {
+pubsub.listenExisting("managerData", async serverData => {
 	pollData = serverData;
 	actions.getQueue()
 		.forEach(enactAction);
+	for (const track of pollData.tracks) {
+		track.state = await getTrackState(track.url);
+	}
+	dataChanged();
+});
+
+pubsub.listenExisting("trackStateChange", async ({url}) => {
+	const state = await getTrackState(url);
+	for (const track of pollData.tracks) {
+		if (track.url === url) track.state = state;
+	}
 	dataChanged();
 });
 
@@ -20,7 +32,8 @@ function dataChanged() {
 }
 
 function getCurrentResponse() {
-	const blob = new Blob([JSON.stringify(pollData)]);
+	const body = JSON.stringify(pollData);
+	const blob = new Blob([body]);
 	return new Response(blob, {status: 200, type : 'application/json'});
 }
 

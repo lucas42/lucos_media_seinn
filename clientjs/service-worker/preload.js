@@ -30,8 +30,8 @@ function preloadTracks(tracks) {
 
 async function fetchTrack (trackCache, trackRequest) {
 	try {
-		const trackResponse = fetch(trackRequest);
-		if (trackResponse.status !== 200) throw "non-200 response";
+		const trackResponse = await fetch(trackRequest);
+		if (trackResponse.status !== 200) throw new Error("non-200 response");
 		try {
 			await trackCache.put(trackRequest, trackResponse)
 		} catch (error) {
@@ -41,6 +41,7 @@ async function fetchTrack (trackCache, trackRequest) {
 
 	// If the track wasn't reachable, tell the server, which should skip that one out
 	} catch (error) {
+		console.error("Failed to preload track:", error.message)
 		manager.post("done", {track: trackRequest.url, status: error.message});
 		erroringTracks[trackRequest.url] = error.message;
 	}
@@ -49,8 +50,8 @@ async function fetchTrack (trackCache, trackRequest) {
 }
 async function fetchImage (cache, request) {
 	try {
-		const response = fetch(request);
-		if (response.status !== 200) throw "non-200 response";
+		const response = await fetch(request);
+		if (response.status !== 200) new Error("non-200 response");
 		try {
 			await cache.put(request, response);
 		} catch (error) {
@@ -68,9 +69,13 @@ pubsub.listenExisting("managerData", data => {
 	preloadTracks(data.tracks);
 });
 
-function getTrackState(trackUrl) {
+async function getTrackState(trackUrl) {
 	if (trackUrl in fetchingTracks) return "fetching";
 	if (trackUrl in erroringTracks) return "errored";
+	const trackCache = await caches.open(TRACK_CACHE);
+	const trackRequest = new Request(trackUrl);
+	const fromTrackCache = await trackCache.match(trackRequest);
+	if (fromTrackCache) return "cached";
 	return "unloaded";
 }
 

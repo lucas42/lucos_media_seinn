@@ -13,8 +13,8 @@ let pollData = { unloaded: true };
 
 pubsub.listenExisting("managerData", async serverData => {
 	pollData = serverData;
-	actions.getQueue()
-		.forEach(enactAction);
+	const actionQueue = await actions.getQueue();
+	actionQueue.forEach(enactAction);
 	for (const track of pollData.tracks) {
 		track.state = await getTrackState(track.url);
 	}
@@ -70,17 +70,18 @@ async function saveToCache(pollResponse) {
 	await pollCache.put(pollRequest, pollResponse)
 }
 /**
- * Triggers a "managerData" event based on the poll data currently in the cache
+ * Updates the pollData based on waht's currently in the cache
  * Note: as this function is asynchronous it's possbible (though unlikely) that data from the server
- * is returned before the cache data.  Therefore, only fire "managerData" if pollData hasn't been populated yet.
+ * is returned before the cache data.  Therefore, only modifes anything if pollData hasn't been populated yet.
  **/
 async function loadFromCache() {
 	const pollCache = await caches.open(POLL_CACHE);
 	const pollResponse = await pollCache.match(pollRequest);
 	if (!pollResponse) return;
-	const newData = await pollResponse.json();
+	const cacheData = await pollResponse.json();
 	if (!pollData.unloaded) return;
-	pubsub.send("managerData", newData);
+	pollData = cacheData;
+	dataChanged();
 }
 
 /**

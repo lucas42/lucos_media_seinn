@@ -12,7 +12,7 @@ async function handleRequest(request) {
 	const params = new URLSearchParams(url.search);
 	if (request.method === "POST") {
 		modifyPollData(request);
-		actions.add(request);
+		await actions.add(request);
 		return new Response(new Blob(), {status: 202, statusText: "Accepted by Service Worker"});
 	}
 	if (url.pathname === "/poll/summary") {

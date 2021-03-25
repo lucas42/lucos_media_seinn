@@ -3,6 +3,8 @@ const staticResources = require("./static-resources");
 const actions = require("./actions");
 const { getPoll, modifyPollData } = require("./polling");
 require("./preload");
+const localDevice = require("../local-device");
+
 self.addEventListener('install', event => {
 	event.waitUntil(staticResources.refresh());
 });
@@ -10,6 +12,7 @@ self.addEventListener('install', event => {
 async function handleRequest(request) {
 	const url = new URL(request.url);
 	const params = new URLSearchParams(url.search);
+	if (params.has("device")) localDevice.setUuid(params.get("device"));
 	if (request.method === "POST") {
 		modifyPollData(request);
 		await actions.add(request);

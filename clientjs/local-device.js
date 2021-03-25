@@ -36,4 +36,4 @@ function setCurrent(newIsCurrent) {
 	current = newIsCurrent;
 }
 
-module.exports = {getUuid, getName, setName, isCurrent, setCurrent};
+module.exports = {getUuid, setUuid, getName, setName, isCurrent, setCurrent};

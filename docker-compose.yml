@@ -8,4 +8,4 @@ services:
       environment:
         DEV: null
         MEDIA_MANAGER: null
-      image: lucas42/lucos_seinn
+      image: lucas42/lucos_media_seinn

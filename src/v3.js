@@ -38,7 +38,7 @@ router.post('/volume', async (req,res) => {
 });
 router.get('/_info', async (req,res) => {
 	const info = {
-		"system": "lucos_seinn",
+		"system": "lucos_media_seinn",
 		"checks": {
 			"media-manager": {
 				"techDetail": "Can fetch data from media manager",
@@ -46,7 +46,7 @@ router.get('/_info', async (req,res) => {
 		},
 		"metrics": {},
 		"ci": {
-			"circle": "gh/lucas42/lucos_seinn"
+			"circle": "gh/lucas42/lucos_media_seinn"
 		}
 	};
 	try {

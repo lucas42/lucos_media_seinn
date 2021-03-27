@@ -18,6 +18,9 @@ async function handleRequest(request) {
 		await actions.add(request);
 		return new Response(new Blob(), {status: 202, statusText: "Accepted by Service Worker"});
 	}
+	if (url.pathname === "/_info") {
+		return await fetch(request);
+	}
 	if (url.pathname === "/poll/summary") {
 		const hashcode = parseInt(params.get("hashcode"));
 		return getPoll(hashcode);

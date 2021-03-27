@@ -5,6 +5,7 @@ const localUrls = [
 	'/v3.css',
 	'/v3.js',
 	'/logo.jpg',
+	'/manifest.json',
 ];
 const crossDomainUrls = [
 	'https://l42.eu/logo.png',

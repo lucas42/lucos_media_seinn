@@ -36,5 +36,29 @@ router.post('/volume', async (req,res) => {
 	await fetch(mediaManager+"volume?volume="+req.query.volume, {method: 'POST'});
 	res.redirect(`${req.protocol}://${req.headers.host}/v3`);
 });
+router.get('/_info', async (req,res) => {
+	const info = {
+		"system": "lucos_seinn",
+		"checks": {
+			"media-manager": {
+				"techDetail": "Can fetch data from media manager",
+			}
+		},
+		"metrics": {},
+		"ci": {
+			"circle": "gh/lucas42/lucos_seinn"
+		}
+	};
+	try {
+		const pollResp = await fetch(mediaManager+"poll/summary");
+		if (!pollResp.ok) throw new Error(`Error from media-manager: ${pollResp.statusText}`);
+		await pollResp.json();
+		info.checks["media-manager"].ok = true;
+	} catch (error) {
+		info.checks["media-manager"].ok = false;
+		info.checks["media-manager"].debug = error.message;
+	}
+	res.json(info);
+});
 
 module.exports = router;

@@ -16,6 +16,7 @@ const crossDomainUrls = [
 ];
 async function refresh() {
 	try {
+		await caches.delete('resources-v1');
 		const cache = await caches.open(RESOURCE_CACHE);
 		await cache.addAll(localUrls);
 

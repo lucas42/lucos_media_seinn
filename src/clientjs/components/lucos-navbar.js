@@ -28,6 +28,10 @@ class Navbar extends HTMLElement {
 		navbar.appendChild(titleNode);
 		
 		titleNode.appendChild(document.createElement('lucos-time'));
+
+		const spacerNode = document.createElement('span');
+		spacerNode.id='lucos_navbar_spacer';
+		navbar.appendChild(spacerNode);
 		
 		// Swallow any clicks on the navbar to stop pages handling them
 		navbar.addEventListener("click", function _stopnavbarpropagation(event) { event.stopPropagation(); }, false);
@@ -56,31 +60,32 @@ class Navbar extends HTMLElement {
 			font-size: 18px;
 			font-family: Georgia, serif;
 			height: 100%;
+			display: flex;
 		}
 		#lucos_navbar_logo {
-			float: left;
 			height: 25px;
-			padding: 2.5px 2%;
+			padding: 2.5px 15px;
+			width: 70px;
 			cursor: pointer;
-			max-width: 20%;
 			border: none;
 		}
 		#lucos_navbar_title {
 			text-align: center;
-			display: block;
 			line-height: 30px;
 			font-weight: bold;
-			position: absolute;
-			width: 50%;
-			margin: 0 25%;
 			overflow: hidden;
 			height: 30px;
 			text-overflow: ellipsis;
 			white-space: nowrap;
+			flex-grow: 1;
 		}
 		lucos-time {
 			font-family: "Courier New", Courier, monospace;
 			margin: 0 1em;
+		}
+		#lucos_navbar_spacer {
+			width: 100px;
+			flex-shrink: 9999;
 		}
 
 		`;

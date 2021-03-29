@@ -32,5 +32,4 @@ async function refresh() {
 	}
 }
 
-
 module.exports = {refresh}

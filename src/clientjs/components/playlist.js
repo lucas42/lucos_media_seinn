@@ -18,7 +18,8 @@ class Playlist extends HTMLElement {
 				-webkit-overflow-scrolling: touch;
 			}
 			ol {
-				list-style-type: disc;
+				list-style-type: none;
+				padding-inline-start: 0;
 			}
 			li {
 				font-weight: bold;
@@ -26,9 +27,24 @@ class Playlist extends HTMLElement {
 				line-height: 0.9em;
 				cursor: pointer;
 			}
-			li > span {
+			li > .toggle {
+				width: 1em;
+				display: inline-block;
+				text-align: center;
+			}
+			li > .title {
 				font-size: small;
 				padding: 0 1em;
+			}
+			track-options {
+				overflow: hidden;
+				transition: max-height 0.5s ease-out;
+			}
+			[expanded=false] track-options {
+				max-height: 0;
+			}
+			[expanded=true] track-options {
+				max-height: 2em;
 			}
 
 		`;
@@ -52,9 +68,15 @@ class Playlist extends HTMLElement {
 
 				const title = document.createElement("span");
 				title.appendChild(document.createTextNode(track.metadata.title));
+				title.className = "title";
 				li.appendChild(title);
 
-				listenForPress(li, track);
+				const options = document.createElement("track-options");
+				options.setAttribute("url", track.url);
+				options.setAttribute("editurl", track.metadata.editurl);
+				li.append(options);
+
+				listenForPress(component, li, options);
 				list.appendChild(li);
 			});
 		}
@@ -62,31 +84,38 @@ class Playlist extends HTMLElement {
 	}
 }
 
-function listenForPress(node, track) {
+function listenForPress(playlist, node, options) {
 	let timer;
 	function startPress(event) {
-		event.preventDefault();
 		stopPress();  // Ensure there is only one press at a time
-		timer = window.setTimeout(pressed, 1000);
+		timer = window.setTimeout(pressed, 500);
 	}
 	function stopPress() {
 		if (timer) window.clearTimeout(timer);
 	}
-	node.addEventListener("mousedown", startPress, false);
-	node.addEventListener("touchstart", startPress, false);
-	node.addEventListener("mouseup", stopPress, false);
-	node.addEventListener("mouseleave", stopPress, false);
-	node.addEventListener("touchend", stopPress, false);
-	node.addEventListener("contextmenu", stopPress, false);
+	node.addEventListener("mousedown", startPress, {passive: true});
+	node.addEventListener("touchstart", startPress, {passive: true});
+	node.addEventListener("mouseup", stopPress, {passive: true});
+	node.addEventListener("mouseleave", stopPress, {passive: true});
+	node.addEventListener("touchend", stopPress, {passive: true});
+	node.addEventListener("contextmenu", stopPress, {passive: true});
+	playlist.addEventListener("scroll", stopPress, {passive: true});
+	node.setAttribute("expanded", "false");
+
+	const toggle = document.createElement("span");
+	toggle.appendChild(document.createTextNode("+"));  // Was originally going to use ▶ for the toggle, but that gets confused with play
+	toggle.addEventListener("click", pressed, {passive: true});
+	toggle.className = "toggle";
+	node.prepend(toggle);
+
 	function pressed() {
-		const options = node.querySelector("track-options");
-		if (options) {
-			node.removeChild(options);
+		stopPress();
+		if (node.getAttribute("expanded") == "true") {
+			node.setAttribute("expanded", "false");
+			toggle.firstChild.textContent = "+";
 		} else {
-			const options = document.createElement("track-options");
-			options.setAttribute("url", track.url);
-			options.setAttribute("editurl", track.metadata.editurl);
-			node.append(options);
+			node.setAttribute("expanded", "true");
+			toggle.firstChild.textContent = "-";
 		}
 	}
 }

@@ -33,4 +33,3 @@ async function handleRequest(request) {
 self.addEventListener('fetch', event => {
 	event.respondWith(handleRequest(event.request));
 });
-

@@ -6,7 +6,11 @@ class NextForm extends HTMLFormElement {
 
 		this.addEventListener('submit', async event => {
 			event.preventDefault();
-			await manager.post("next");
+			const currentTrack = document.querySelector("now-playing").getAttribute("url");
+			await manager.post("done", {
+				track: currentTrack,
+				status: "skipped",
+			});
 		});
 	}
 }

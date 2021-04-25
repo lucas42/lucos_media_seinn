@@ -1,4 +1,5 @@
 require("./track-state");
+require("./lyric-viewer");
 const pubsub = require("../pubsub");
 const manager = require("../manager");
 class NowPlaying extends HTMLElement {
@@ -30,6 +31,12 @@ class NowPlaying extends HTMLElement {
 				overflow: hidden;
 				text-overflow: ellipsis;
 			}
+			.lyricButton:not([data-has-lyrics]) {
+				display: none;
+			}
+			[hidden] {
+				display: none;
+			}
 		`;
 		shadow.append(style);
 
@@ -53,6 +60,18 @@ class NowPlaying extends HTMLElement {
 		thumbnail.classList.add("thumbnail");
 		shadow.appendChild(thumbnail);
 
+		const lyricViewer = document.createElement("lyric-viewer");
+		lyricViewer.hidden = true;
+		shadow.appendChild(lyricViewer);
+
+		const lyricButton = document.createElement("button");
+		lyricButton.classList.add("lyricButton");
+		lyricButton.addEventListener("click", event => {
+			event.stopPropagation();
+			lyricViewer.hidden = !lyricViewer.hidden;
+		});
+		lyricButton.appendChild(document.createTextNode("Lyrics"));
+		shadow.appendChild(lyricButton);
 
 		pubsub.listenExisting("managerData", data => {
 			const now = data.tracks[0];
@@ -60,6 +79,12 @@ class NowPlaying extends HTMLElement {
 			title.nodeValue = metadata.title;
 			artist.nodeValue = metadata.artist;
 			thumbnail.src = metadata.thumb;
+			if (metadata.lyrics) {
+				lyricButton.dataset.hasLyrics = true
+			} else {
+				delete lyricButton.dataset.hasLyrics;
+			}
+			lyricViewer.setAttribute("lyrics", metadata.lyrics || "");
 			component.setAttribute("url", now.url);
 			state.setAttribute("url", now.url);
 			if (now.state) state.setAttribute("service-worker-state", now.state);

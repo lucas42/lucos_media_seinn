@@ -30,6 +30,7 @@ async function handleRequest(request) {
 	console.error("Request not in cache", url.pathname, url.method, url.origin, url.search);
 	return await fetch(request);
 }
+
 self.addEventListener('fetch', event => {
 	event.respondWith(handleRequest(event.request));
 });

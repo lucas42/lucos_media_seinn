@@ -40,6 +40,12 @@ playerManager.addEventListener(cast.framework.events.EventType.REQUEST_QUEUE_UPD
 	playerManager.pause();
 	manager.post("next");
 });
+playerManager.addEventListener(cast.framework.events.EventType.REQUEST_PLAY, event => {
+	manager.post("play");
+});
+playerManager.addEventListener(cast.framework.events.EventType.REQUEST_PAUSE, event => {
+	manager.post("pause");
+});
 playerManager.addEventListener(cast.framework.events.EventType.MEDIA_FINISHED, event => {
 
 	// Interrupted means the track was actively changed, so no need to update the server

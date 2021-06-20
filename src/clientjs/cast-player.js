@@ -41,9 +41,11 @@ playerManager.addEventListener(cast.framework.events.EventType.REQUEST_QUEUE_UPD
 	manager.post("next");
 });
 playerManager.addEventListener(cast.framework.events.EventType.REQUEST_PLAY, event => {
+	if (!localDevice.isCurrent()) return;
 	manager.post("play");
 });
 playerManager.addEventListener(cast.framework.events.EventType.REQUEST_PAUSE, event => {
+	if (!localDevice.isCurrent()) return;
 	manager.post("pause");
 });
 playerManager.addEventListener(cast.framework.events.EventType.MEDIA_FINISHED, event => {

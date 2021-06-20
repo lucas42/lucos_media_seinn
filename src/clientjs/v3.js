@@ -10,6 +10,7 @@ require("./manager").init(mediaManager);  // Initiate the manager first so other
 require("./poll");
 require("./local-device-updates");
 require("./keyboard");
+require("./media-session");
 require("./cast-sender")(receiverApplicationId);
 require("./player");
 require("./components/lucos-navbar");

@@ -58,7 +58,7 @@ function getState(url, serviceWorkerState) {
 
 	// If playing locally, base the state on what is happening
 	// (regardless of what the server says *should* be happening)
-	if (currentTrack === url && state === "ready") {
+	if (currentTrack === url && (!state || state === "ready")) {
 		if (player.isPlaying()) return "playing";
 		if (localDevice.isCurrent()) return "paused";
 	}

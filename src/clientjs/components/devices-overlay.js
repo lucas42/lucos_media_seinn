@@ -1,6 +1,7 @@
 const pubsub = require("../pubsub");
 const manager = require("../manager");
 const localDevice = require("../local-device");
+require("./cast-sender");
 
 class DevicesOverlay extends HTMLElement {
 	constructor() {
@@ -17,9 +18,11 @@ class DevicesOverlay extends HTMLElement {
 		container.addEventListener("click", event => event.stopPropagation());
 		container.addEventListener("keyup", event => event.stopPropagation());
 		shadow.append(overlay);
+		const deviceList = document.createElement("div");
+		container.append(deviceList);
 		pubsub.listenExisting("managerData", data => {
-			while (container.firstChild) {
-				container.removeChild(container.lastChild);
+			while (deviceList.firstChild) {
+				deviceList.removeChild(deviceList.lastChild);
 			}
 
 			data.devices.sort((a, b) => {
@@ -54,9 +57,11 @@ class DevicesOverlay extends HTMLElement {
 					event.preventDefault();
 					manager.post("devices", {uuid:device.uuid, name:nameField.value});
 				});
-				container.appendChild(form);
+				deviceList.appendChild(form);
 			})
-		});		
+		});
+		const castSender = document.createElement("cast-sender");
+		container.append(castSender);
 		const style = document.createElement('style');
 		style.textContent = `
 
@@ -87,6 +92,11 @@ class DevicesOverlay extends HTMLElement {
 		}
 		#overlay form[data-is-connected=false][data-is-current=false][data-is-local=false] {
 			display: none;
+		}
+		cast-sender {
+			display: block;
+			margin: 0.5em;
+			text-align: right;
 		}
 
 		`;

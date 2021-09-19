@@ -35,14 +35,6 @@ lucos-navbar {
 	margin: 0;
 	flex-shrink: 0;
 }
-#controls google-cast-launcher {
-	display: inline-block;
-	vertical-align: middle;
-	width: 25px;
-	height: 25px;
-	margin-left: 10px;
-}
-
 #controls li {
 	background: transparent;
 	border: none;

@@ -9,10 +9,7 @@ const localUrls = [
 ];
 const crossDomainUrls = [
 	'https://l42.eu/logo.png',
-	'//www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1',
 	'//www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js',
-	'//www.gstatic.com/cast/sdk/libs/sender/1.0/cast_framework.js',
-	'//www.gstatic.com/eureka/clank/89/cast_sender.js',
 ];
 async function refresh() {
 	try {

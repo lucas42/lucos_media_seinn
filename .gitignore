@@ -1,2 +1,4 @@
 .env
 node_modules
+src/public/v3.js
+src/public/serviceworker-v3.js

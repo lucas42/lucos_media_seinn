@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "folder-hash": "^4.0.2",
-    "lucos_navbar": "^1.0.1",
+    "lucos_navbar": "^1.1.0",
     "lucos_pubsub": "^1.0.1",
     "uuid": "^8.3.2",
     "webpack-cli": "^4.10.0"

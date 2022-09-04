@@ -50,6 +50,8 @@ router.get('/_info', async (req,res) => {
 		},
 		icon: "/logo.jpg",
 		network_only: false,
+		title: "Play Music",
+		show_on_homepage: true,
 	};
 	try {
 		const pollResp = await fetch(mediaManager+"poll/summary");

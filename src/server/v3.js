@@ -47,7 +47,9 @@ router.get('/_info', async (req,res) => {
 		"metrics": {},
 		"ci": {
 			"circle": "gh/lucas42/lucos_media_seinn"
-		}
+		},
+		icon: "/logo.jpg",
+		network_only: false,
 	};
 	try {
 		const pollResp = await fetch(mediaManager+"poll/summary");

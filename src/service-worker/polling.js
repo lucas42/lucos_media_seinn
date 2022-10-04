@@ -126,6 +126,9 @@ function enactAction(action) {
 					device.name = params.get("name");
 				}
 			});
+			if (params.get("play") == "true") {
+				pollData.isPlaying = true;
+			}
 			break;
 		case "devices/current":
 			pollData.devices.forEach(device => {

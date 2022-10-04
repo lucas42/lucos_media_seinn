@@ -11,6 +11,7 @@ import './components/playlist.js';
 import './components/now-playing.js';
 import './components/edit-form.js';
 import './components/playpause-form.js';
+import './components/playhere-form.js';
 import './components/next-form.js';
 import './components/refresh-form.js';
 import './load-service-worker.js';

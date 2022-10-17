@@ -126,14 +126,14 @@ function enactAction(action) {
 					device.name = params.get("name");
 				}
 			});
-			if (params.get("play") == "true") {
-				pollData.isPlaying = true;
-			}
 			break;
 		case "devices/current":
 			pollData.devices.forEach(device => {
 				device.isCurrent = (device.uuid === params.get("uuid"));
 			});
+			if (params.get("play") == "true") {
+				pollData.isPlaying = true;
+			}
 			break;
 		default:
 			console.error("unknown action", command, params.toString());

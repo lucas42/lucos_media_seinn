@@ -1,11 +1,12 @@
 version: '3'
 services:
-    seinn:
-      build: .
-      container_name: seinn
-      ports: 
-        - "3001:3001"
-      environment:
-        DEV: null
-        MEDIA_MANAGER: null
-      image: lucas42/lucos_media_seinn
+  seinn:
+    build: .
+    container_name: seinn
+    ports: 
+      - "3001:3001"
+    environment:
+      DEV: null
+      MEDIA_MANAGER: null
+    image: lucas42/lucos_media_seinn
+    restart: always

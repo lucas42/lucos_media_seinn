@@ -33,6 +33,6 @@
     "lucos_navbar": "^1.1.2",
     "lucos_pubsub": "^1.0.1",
     "uuid": "^9.0.0",
-    "webpack-cli": "^4.10.0"
+    "webpack-cli": "^5.0.0"
   }
 }

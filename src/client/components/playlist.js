@@ -46,6 +46,16 @@ class Playlist extends HTMLElement {
 			[expanded=true] track-options {
 				max-height: 2em;
 			}
+			li.new-track > .title:after {
+				content: "NEW";
+				background-color: #dd0;
+				color: #000;
+				font-size: 9px;
+				padding: 0 3px;
+				border-radius: 3px;
+				margin-left: 5px;
+				vertical-align: super;
+			}
 
 		`;
 		shadow.append(style);
@@ -75,6 +85,15 @@ class Playlist extends HTMLElement {
 				options.setAttribute("url", track.url);
 				options.setAttribute("editurl", track.metadata.editurl);
 				li.append(options);
+
+				// Mark tracks added in the last day as new
+				if (track.metadata.added) {
+					const added = new Date(track.metadata.added);
+					const age = new Date() - added;
+					if (age < 24 * 60 * 60 * 1000) {
+						li.classList.add("new-track");
+					}
+				}
 
 				listenForPress(component, li, options);
 				list.appendChild(li);

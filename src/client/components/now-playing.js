@@ -37,7 +37,7 @@ class NowPlaying extends HTMLElement {
 			[hidden] {
 				display: none;
 			}
-			:host:before {
+			:host.new-track:before {
 				content: "NEW";
 				background-color: #dd0;
 				color: #000;

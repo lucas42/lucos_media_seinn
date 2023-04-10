@@ -37,7 +37,7 @@ class NowPlaying extends HTMLElement {
 			[hidden] {
 				display: none;
 			}
-			:host.new-track:before {
+			:host(.new-track):before {
 				content: "NEW";
 				background-color: #dd0;
 				color: #000;
@@ -109,9 +109,9 @@ class NowPlaying extends HTMLElement {
 				const added = new Date(metadata.added);
 				const age = new Date() - added;
 				if (age < 24 * 60 * 60 * 1000) {
-					shadow.classList.add("new-track");
+					shadow.host.classList.add("new-track");
 				} else {
-					shadow.classList.remove("new-track");
+					shadow.host.classList.remove("new-track");
 				}
 			}
 		}, true);

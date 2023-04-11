@@ -86,13 +86,9 @@ class Playlist extends HTMLElement {
 				options.setAttribute("editurl", track.metadata.editurl);
 				li.append(options);
 
-				// Mark tracks added in the last day as new
-				if (track.metadata.added) {
-					const added = new Date(track.metadata.added);
-					const age = new Date() - added;
-					if (age < 24 * 60 * 60 * 1000) {
-						li.classList.add("new-track");
-					}
+				// Identify new tracks
+				if (track.metadata.new) {
+					li.classList.add("new-track");
 				}
 
 				listenForPress(component, li, options);

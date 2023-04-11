@@ -105,14 +105,10 @@ class NowPlaying extends HTMLElement {
 				component.isPlaying = data.isPlaying;
 				send('trackStateChange', {url:now.url, isPlaying:data.isPlaying});
 			}
-			if (metadata.added) {
-				const added = new Date(metadata.added);
-				const age = new Date() - added;
-				if (age < 24 * 60 * 60 * 1000) {
-					shadow.host.classList.add("new-track");
-				} else {
-					shadow.host.classList.remove("new-track");
-				}
+			if (metadata.new) {
+				shadow.host.classList.add("new-track");
+			} else {
+				shadow.host.classList.remove("new-track");
 			}
 		}, true);
 

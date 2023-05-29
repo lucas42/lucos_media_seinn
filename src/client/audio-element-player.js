@@ -22,10 +22,15 @@ async function updateCurrentAudio(data) {
 	}
 }
 async function playTrack(track) {
-	currentAudio = new Audio(track.url);
-	currentAudio.currentTime = track.currentTime;
-	currentAudio.addEventListener("ended", trackEndedHandler);
-	await currentAudio.play();
+	try {
+		currentAudio = new Audio(track.url);
+		currentAudio.currentTime = track.currentTime;
+		currentAudio.addEventListener("ended", trackEndedHandler);
+		await currentAudio.play();
+	} catch (error) {
+		console.error("Skipping track", error.message);
+		post("done", {track: track.url, status: error.message});
+	}
 }
 
 function stopCurrentTrack(fadeTime) {

@@ -32,7 +32,7 @@
     "folder-hash": "^4.0.4",
     "lucos_navbar": "^1.2.0",
     "lucos_pubsub": "^1.0.1",
-    "uuid": "^9.0.0",
+    "uuid": "^9.0.1",
     "webpack-cli": "^5.1.4"
   }
 }

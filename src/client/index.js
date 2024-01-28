@@ -14,4 +14,5 @@ import './components/playpause-form.js';
 import './components/playhere-form.js';
 import './components/next-form.js';
 import './components/refresh-form.js';
+import './components/collections-overlay.js';
 import './load-service-worker.js';

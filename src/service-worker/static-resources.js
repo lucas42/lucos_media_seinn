@@ -7,22 +7,11 @@ const localUrls = [
 	'/logo.jpg',
 	'/manifest.json',
 ];
-const crossDomainUrls = [
-	'https://l42.eu/logo.png',
-];
 export async function refresh() {
 	try {
 		await caches.delete('resources-v1');
 		const cache = await caches.open(RESOURCE_CACHE);
 		await cache.addAll(localUrls);
-
-		// `addAll` doesn't work for URLs which need a `no-cors` request
-		// Instead need to fetch them individually and call `put`
-		Promise.all(crossDomainUrls.map(async url => {
-			const request = new Request(url, {mode: 'no-cors'})
-			const response = await fetch(request);
-			await cache.put(request, response);
-		}));
 	} catch (error) {
 		console.error("Failed to cache resources:", error.message);
 	}

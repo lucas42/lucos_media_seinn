@@ -13,7 +13,7 @@ app.set('views', `./src/views`);
 app.use('/v3', v3);
 app.use('/', v3);
 
-app.use(express.static('./src/public', {extensions: ['json']}));
+app.use(express.static('./src/resources', {extensions: ['json']}));
 app.listen(port, function () {
   console.log('App listening on port ' + port);
 });

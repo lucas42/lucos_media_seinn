@@ -10,12 +10,12 @@ export default async () => {
 		},
 		output: {
 			filename: '[name].js',
-			path: new URL('./src/public/', import.meta.url).pathname,
+			path: new URL('./src/resources/', import.meta.url).pathname,
 		},
 		plugins: [
 			// Get the hashes of all the resources & templates to embed in a comment in service worker
 			new webpack.BannerPlugin({
-				banner: `Resource Hash: ${(await hashElement("./src/public")).hash}\nClient JS Hash: ${(await hashElement("./src/client")).hash}`,
+				banner: `Resource Hash: ${(await hashElement("./src/resources")).hash}\nClient JS Hash: ${(await hashElement("./src/client")).hash}`,
 				include: 'serviceworker',
 			}),
 		],

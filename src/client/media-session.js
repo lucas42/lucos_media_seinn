@@ -21,16 +21,14 @@ try {
 	});
 
 	listenExisting("managerData", data => {
-		const now = data.tracks[0];
-		if (!now) return console.error("No currently playing track", data);
+		const metadata = data.tracks[0]?.metadata || {};
 		navigator.mediaSession.playbackState = data.isPlaying ? "playing" : "paused";
+		const artwork = metadata.img ? [{ src: metadata.img }] : [];
 		navigator.mediaSession.metadata = new MediaMetadata({
-			title: now.metadata.title,
-			artist: now.metadata.artist,
-			album: now.metadata.album,
-			artwork: [
-				{ src: now.metadata.img },
-			]
+			title: metadata.title,
+			artist: metadata.artist,
+			album: metadata.album,
+			artwork,
 		});
 	});
 } catch (error) {

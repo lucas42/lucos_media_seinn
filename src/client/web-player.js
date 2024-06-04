@@ -14,7 +14,7 @@ async function updateCurrentAudio(data) {
 
 	updateVolume(data.volume);
 	const now = data.tracks[0];
-	const shouldPlay = data.isPlaying && localDevice.isCurrent();
+	const shouldPlay = now && data.isPlaying && localDevice.isCurrent();
 	if (shouldPlay) {
 		if (!currentAudio) {
 			await playTrack(now);

@@ -5,9 +5,7 @@ class EditForm extends HTMLFormElement {
 		super();
 		const form = this;
 		listenExisting("managerData", data => {
-			const now = data.tracks[0];
-			const metadata = now.metadata || {};
-			form.action = metadata.editurl;
+			form.action = data.tracks[0]?.metadata?.editurl;
 		}, true);
 	}
 }

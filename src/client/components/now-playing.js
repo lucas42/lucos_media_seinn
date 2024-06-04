@@ -87,11 +87,11 @@ class NowPlaying extends HTMLElement {
 		shadow.appendChild(lyricButton);
 
 		listenExisting("managerData", data => {
-			const now = data.tracks[0];
+			const now = data.tracks[0] || {};
 			const metadata = now.metadata || {};
 			title.nodeValue = metadata.title;
 			artist.nodeValue = metadata.artist;
-			thumbnail.src = metadata.thumb;
+			thumbnail.src = metadata.thumb || "https://staticmedia.l42.eu/music-error.png";
 			if (metadata.lyrics) {
 				lyricButton.dataset.hasLyrics = true
 			} else {

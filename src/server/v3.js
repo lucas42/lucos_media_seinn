@@ -2,7 +2,6 @@ import express from 'express';
 const router = express.Router();
 
 const mediaManager = process.env.MEDIA_MANAGER || "https://ceol.l42.eu/";
-const receiverApplicationId = process.env.DEV ? "5D5F55DE" : "34252B55";
 
 router.get('/', async (req, res) => {
 	const data = await fetch(mediaManager+"poll/summary").then(resp => resp.json());
@@ -10,7 +9,6 @@ router.get('/', async (req, res) => {
 	res.render("index", {
 		clientVariables: JSON.stringify({
 			mediaManager,
-			receiverApplicationId,
 		}),
 		now,
 		playlist: data.tracks,

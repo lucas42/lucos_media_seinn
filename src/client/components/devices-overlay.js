@@ -1,7 +1,6 @@
 import { listenExisting } from 'lucos_pubsub';
 import { post } from '../../classes/manager.js';
 import localDevice from '../../classes/local-device.js';
-import './cast-sender.js';
 
 class DevicesOverlay extends HTMLElement {
 	constructor() {
@@ -60,8 +59,6 @@ class DevicesOverlay extends HTMLElement {
 				deviceList.appendChild(form);
 			})
 		});
-		const castSender = document.createElement("cast-sender");
-		container.append(castSender);
 		const style = document.createElement('style');
 		style.textContent = `
 
@@ -92,11 +89,6 @@ class DevicesOverlay extends HTMLElement {
 		}
 		#overlay form[data-is-connected=false][data-is-current=false][data-is-local=false] {
 			display: none;
-		}
-		cast-sender {
-			display: block;
-			margin: 0.5em;
-			text-align: right;
 		}
 
 		`;

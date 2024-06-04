@@ -30,7 +30,7 @@ class VolumeControl extends HTMLElement {
 			width: 60px;
 			position: absolute;
 			right: 0;
-			top: 0;
+			top: 30px;
 			bottom: 0;
 			z-index: 1010;
 		}

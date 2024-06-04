@@ -5,6 +5,7 @@ import { add } from './actions.js';
 import { getPoll, modifyPollData } from './polling.js';
 import './preload.js';
 import localDevice from '../classes/local-device.js';
+import './update.js';
 
 self.addEventListener('install', event => {
 	event.waitUntil(refresh());

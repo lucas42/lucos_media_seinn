@@ -14,7 +14,7 @@ async function updateCurrentAudio(data) {
 			stopCurrentTrack(3); // Fade out the current track
 			await playTrack(now);
 		}
-		currentAudio.volume = data.volume;
+		if (currentAudio) currentAudio.volume = data.volume;
 	} else {
 		if (currentAudio) {
 			stopCurrentTrack(0); // For pausing, do a sudden stop
@@ -28,8 +28,12 @@ async function playTrack(track) {
 		currentAudio.addEventListener("ended", trackEndedHandler);
 		await currentAudio.play();
 	} catch (error) {
-		console.error("Skipping track", error.message);
-		post("done", {track: track.url, status: error.message});
+		if (error.name === "NotAllowedError") {
+			currentAudio = null;
+		} else {
+			console.error("Skipping track", error.message);
+			post("done", {track: track.url, status: error.message});
+		}
 	}
 }
 

@@ -1,4 +1,4 @@
-import { listen } from 'lucos_pubsub';
+const statusChannel = new BroadcastChannel("lucos_status");
 try {
 	if (!('serviceWorker' in navigator)) throw "no service worker support";
 	const registration = await navigator.serviceWorker.register('/serviceworker-v3.js');
@@ -19,6 +19,13 @@ try {
 	navigator.serviceWorker.addEventListener("controllerchange", () => {
 		window.location.reload();
 	});
+	statusChannel.addEventListener("message", function streamStatusMessage(event) {
+		if (event.data == "service-worker-skip-waiting") {
+			registration.active?.postMessage('abort-connections');
+			registration.waiting?.postMessage('skip-waiting');
+		}
+	});
+
 } catch (error) {
 	console.error('ServiceWorker registration failed: ' + error);
 }

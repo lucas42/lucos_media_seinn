@@ -149,4 +149,15 @@ export function modifyPollData(action) {
 	dataChanged();
 }
 
+/**
+ * Service Worker won't shut down while there are polls open
+ * Go through anything still listening, and resolve them
+ */
+export function freeUpConnections() {
+	let resolve;
+	while (resolve = listeners.shift()) {
+		resolve(getCurrentResponse());
+	}
+}
+
 loadFromCache();

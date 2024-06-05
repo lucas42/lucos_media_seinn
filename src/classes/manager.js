@@ -3,6 +3,10 @@ let mediaManager = undefined;
 let getTimeElapsed = () => undefined;
 let getCurrentTrack = () => undefined;
 
+
+const controller = new AbortController();
+const signal = controller.signal;
+
 export function init(mediaManagerValue) {
 	mediaManager = mediaManagerValue;
 }
@@ -42,7 +46,7 @@ function _makeRequestToManager(endpoint, method, parameters={}) {
 	}
 	let url = mediaManager+endpoint;
 	if (searchParams.toString()) url += "?" + searchParams.toString();
-	return fetch(url, {method})
+	return fetch(url, {method, signal})
 }
 
 export function post(endpoint, parameters={}) {
@@ -54,3 +58,6 @@ export async function getJson(endpoint, parameters={}) {
 	return response.json();
 }
 
+export function abortAllRequests(reason) {
+	controller.abort(reason);
+}

@@ -1,7 +1,13 @@
-const statusChannel = new BroadcastChannel("lucos_status");
-statusChannel.addEventListener("message", function streamStatusMessage(event) {
+import { abortAllRequests } from '../classes/manager.js';
+import { freeUpConnections } from './polling.js';
+self.addEventListener("message", function streamStatusMessage(event) {
 	switch (event.data) {
-		case "service-worker-skip-waiting":
+		case "abort-connections":
+			abortAllRequests("Shutting down old service worker");
+			freeUpConnections();
+			break;
+		case "skip-waiting":
 			self.skipWaiting();
+			break;
 	}
 });

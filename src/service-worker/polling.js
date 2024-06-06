@@ -1,5 +1,5 @@
 import { listenExisting } from 'lucos_pubsub';
-import { getQueue } from './actions.js';
+import { getOutstandingRequests } from 'restful-queue';
 import '../classes/poll.js';
 import { getTrackState } from './preload.js';
 
@@ -14,8 +14,10 @@ let pollData = { unloaded: true };
 
 listenExisting("managerData", async serverData => {
 	pollData = serverData;
-	const actionQueue = await getQueue();
-	actionQueue.forEach(enactAction);
+	const outstandingRequests = await getOutstandingRequests();
+	for (const request of outstandingRequests) {
+		enactAction(request);
+	}
 	for (const track of pollData.tracks) {
 		track.state = await getTrackState(track.url);
 	}

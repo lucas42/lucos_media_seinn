@@ -1,7 +1,7 @@
 import {init as managerInit} from '../classes/manager.js'
 managerInit("https://ceol.l42.eu/"); // TODO: get this host from environment variable somehow
 import {refresh} from './static-resources.js';
-import { add } from './actions.js';
+import { queueAndAttemptRequest } from 'restful-queue';
 import { getPoll, modifyPollData } from './polling.js';
 import './preload.js';
 import localDevice from '../classes/local-device.js';
@@ -16,9 +16,8 @@ async function handleRequest(request) {
 	const params = new URLSearchParams(url.search);
 	if (params.has("device")) localDevice.setUuid(params.get("device"));
 	if (request.method === "POST") {
-		modifyPollData(request);
-		await add(request);
-		return new Response(new Blob(), {status: 202, statusText: "Accepted by Service Worker"});
+		modifyPollData(request.clone());
+		return queueAndAttemptRequest(request);
 	}
 	if (url.pathname === "/_info") {
 		return await fetch(request);

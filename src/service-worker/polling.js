@@ -1,4 +1,4 @@
-import { listenExisting } from 'lucos_pubsub';
+import { listen, listenExisting } from 'lucos_pubsub';
 import { getOutstandingRequests } from 'restful-queue';
 import '../classes/poll.js';
 import { getTrackState } from './preload.js';
@@ -161,5 +161,14 @@ export function freeUpConnections() {
 		resolve(getCurrentResponse());
 	}
 }
+
+const streamStatus = new BroadcastChannel("stream_status");
+listen("polling_connected", () => {
+	streamStatus.postMessage("opened");
+});
+listen("polling_disconnected", () => {
+	streamStatus.postMessage("closed");
+});
+
 
 loadFromCache();

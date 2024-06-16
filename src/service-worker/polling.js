@@ -162,12 +162,22 @@ export function freeUpConnections() {
 	}
 }
 
-const streamStatus = new BroadcastChannel("stream_status");
+let pollingState = 'closed';
+const statusChannel = new BroadcastChannel("lucos_status");
 listen("polling_connected", () => {
-	streamStatus.postMessage("opened");
+	pollingState = 'opened';
+	statusChannel.postMessage("streaming-opened");
 });
 listen("polling_disconnected", () => {
-	streamStatus.postMessage("closed");
+	pollingState = 'closed';
+	statusChannel.postMessage("streaming-closed");
+});
+
+// When a new client starts listening, resend the current polling state.
+statusChannel.addEventListener('message', function statusMessageReceived(event) {
+	if ("client-loaded" == event.data) {
+		statusChannel.postMessage('streaming-'+pollingState);
+	}
 });
 
 

@@ -1,5 +1,4 @@
 import './init-manager.js'; // Initiate the manager first so other modules can use it immediately
-import './polling-status.js';
 import '../classes/poll.js';
 import './local-device-updates.js';
 import './keyboard.js';
@@ -17,3 +16,6 @@ import './components/next-form.js';
 import './components/refresh-form.js';
 import './components/collections-overlay.js';
 import './load-service-worker.js';
+
+const statusChannel = new BroadcastChannel("lucos_status");
+statusChannel.postMessage("client-loaded"); // This tells the service worker a new client is listening, so to re-send the latest state

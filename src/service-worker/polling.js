@@ -102,6 +102,9 @@ async function enactAction(action) {
 					case "is-playing":
 						pollData.isPlaying = (data.toLowerCase() === "true");
 						break;
+					case "volume":
+						pollData.volume = Number(data);
+						break;
 					default:
 						console.error("Unknown PUT request to endpoint", url.pathname);	
 				}

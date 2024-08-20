@@ -1,5 +1,5 @@
 import { listenExisting } from 'lucos_pubsub';
-import { post } from '../../classes/manager.js';
+import { put } from '../../classes/manager.js';
 
 class VolumeControl extends HTMLElement {
 	static get observedAttributes() {
@@ -66,7 +66,7 @@ class VolumeControl extends HTMLElement {
 		shadow.append(volcontain);
 
 		function updateVolume(newVolume) {
-			return post("volume", {volume: newVolume});
+			return put("v3/volume", newVolume);
 		}
 
 		component.querySelector("#volume-up").addEventListener('submit', async event => {

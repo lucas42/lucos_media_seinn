@@ -31,8 +31,8 @@ router.post('/next', async (req,res) => {
 	res.redirect(`${req.protocol}://${req.headers.host}/v3`);
 });
 router.post('/volume', async (req,res) => {
-	await fetch(mediaManager+"volume?volume="+req.query.volume, {method: 'POST'});
-	res.redirect(`${req.protocol}://${req.headers.host}/v3`);
+	await fetch(mediaManager+"v3/volume", {method: 'PUT', body: req.query.volume});
+	res.redirect(`${req.protocol}://${req.headers.host}/`);
 });
 router.get('/_info', async (req,res) => {
 	const info = {

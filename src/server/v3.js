@@ -19,12 +19,12 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/play', async (req,res) => {
-	await fetch(mediaManager+"play", {method: 'POST'});
-	res.redirect(`${req.protocol}://${req.headers.host}/v3`);
+	await fetch(mediaManager+"v3/is-playing", {method: 'PUT', body: "true"});
+	res.redirect(`${req.protocol}://${req.headers.host}/`);
 });
 router.post('/pause', async (req,res) => {
-	await fetch(mediaManager+"pause", {method: 'POST'});
-	res.redirect(`${req.protocol}://${req.headers.host}/v3`);
+	await fetch(mediaManager+"v3/is-playing", {method: 'PUT', body: "false"});
+	res.redirect(`${req.protocol}://${req.headers.host}/`);
 });
 router.post('/next', async (req,res) => {
 	await fetch(mediaManager+"next", {method: 'POST'});

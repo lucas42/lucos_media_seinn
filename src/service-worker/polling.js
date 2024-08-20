@@ -16,7 +16,7 @@ listenExisting("managerData", async serverData => {
 	pollData = serverData;
 	const outstandingRequests = await getOutstandingRequests();
 	for (const request of outstandingRequests) {
-		enactAction(request);
+		await enactAction(request);
 	}
 	for (const track of pollData.tracks) {
 		track.state = await getTrackState(track.url);
@@ -92,12 +92,19 @@ async function loadFromCache() {
  * NB: the calling function should call `dataChanged`
  * after all the relevant actions have been processed
  **/
-function enactAction(action) {
+async function enactAction(action) {
 	const url = new URL(action.url);
 	if (url.pathname.startsWith("/v3/")) {
 		switch (action.method) {
 			case 'PUT':
-				console.error("Unknown PUT request to endpoint", url.pathname);
+				const data = await action.text();
+				switch (url.pathname.replace("/v3/","")) {
+					case "is-playing":
+						pollData.isPlaying = (data.toLowerCase() === "true");
+						break;
+					default:
+						console.error("Unknown PUT request to endpoint", url.pathname);	
+				}
 				break;
 			case 'DELETE':
 
@@ -161,8 +168,8 @@ function enactAction(action) {
  * Modifies pollData with a single action
  * Shouldn't be called multiple times together as `dataChanged` gets triggered each time
  **/
-export function modifyPollData(action) {
-	enactAction(action);
+export async function modifyPollData(action) {
+	await enactAction(action);
 	dataChanged();
 }
 

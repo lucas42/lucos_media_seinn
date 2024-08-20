@@ -57,13 +57,13 @@ export function post(endpoint, parameters={}) {
 export function put(endpoint, body) {
 	if (!mediaManager) throw "making request before manager module initiated";
 	const url = mediaManager+endpoint;
-	return fetch(url, {method: 'PUT', body});
+	return fetch(url, {method: 'PUT', body, signal});
 }
 
 export function del(endpoint) { // Not called 'delete', because that's a reserved word in javascript
 	if (!mediaManager) throw "making request before manager module initiated";
 	const url = mediaManager+endpoint;
-	return fetch(url, {method: 'DELETE'});
+	return fetch(url, {method: 'DELETE', signal});
 }
 
 export async function getJson(endpoint, parameters={}) {

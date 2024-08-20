@@ -1,5 +1,5 @@
 import { listenExisting } from 'lucos_pubsub';
-import { post } from '../../classes/manager.js';
+import { put } from '../../classes/manager.js';
 
 class PlayPauseForm extends HTMLFormElement {
 	constructor() {
@@ -19,9 +19,9 @@ class PlayPauseForm extends HTMLFormElement {
 		this.addEventListener('submit', async event => {
 			event.preventDefault();
 			if (submit.value == "Play") {
-				await post("play");
+				await put("v3/is-playing", "true");
 			} else {
-				await post("pause");
+				await put("v3/is-playing", "false");
 			}
 		});
 	}

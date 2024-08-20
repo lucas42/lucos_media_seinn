@@ -1,5 +1,5 @@
 import { listenExisting } from 'lucos_pubsub';
-import { post } from '../classes/manager.js';
+import { put, post } from '../classes/manager.js';
 
 /**
  * Handles actions triggered outside the browser, for example buttons on a bluetooth headset
@@ -8,13 +8,13 @@ try {
 	if (!('mediaSession' in navigator)) throw "Browser doesn't support mediaSession";
 
 	navigator.mediaSession.setActionHandler('play', () => {
-		post("play");
+		put("v3/is-playing", "true");
 	});
 	navigator.mediaSession.setActionHandler('pause', () => {
-		post("pause");
+		put("v3/is-playing", "false");
 	});
 	navigator.mediaSession.setActionHandler('stop', () => {
-		post("stop");
+		put("v3/is-playing", "false");
 	});
 	navigator.mediaSession.setActionHandler('nexttrack', () => {
 		post("next");

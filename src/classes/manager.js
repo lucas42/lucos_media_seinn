@@ -50,7 +50,20 @@ function _makeRequestToManager(endpoint, method, parameters={}) {
 }
 
 export function post(endpoint, parameters={}) {
+	console.error("Deprecated call to v2 media_manager endpoint", endpoint); // POST requests aren't idempotent, making service worker logic tricker - move to /v3 which uses PUT & DELETE
 	_makeRequestToManager(endpoint, 'post', parameters);
+}
+
+export function put(endpoint, body) {
+	if (!mediaManager) throw "making request before manager module initiated";
+	const url = mediaManager+endpoint;
+	return fetch(url, {method: 'PUT', body});
+}
+
+export function del(endpoint) { // Not called 'delete', because that's a reserved word in javascript
+	if (!mediaManager) throw "making request before manager module initiated";
+	const url = mediaManager+endpoint;
+	return fetch(url, {method: 'DELETE'});
 }
 
 export async function getJson(endpoint, parameters={}) {

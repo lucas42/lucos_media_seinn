@@ -15,7 +15,7 @@ async function handleRequest(request) {
 	const url = new URL(request.url);
 	const params = new URLSearchParams(url.search);
 	if (params.has("device")) localDevice.setUuid(params.get("device"));
-	if (request.method === "POST") {
+	if (["POST", "PUT", "DELETE"].includes(request.method)) {
 		modifyPollData(request.clone());
 		return queueAndAttemptRequest(request);
 	}

@@ -8,7 +8,7 @@
  **/
 
 import { listenExisting } from 'lucos_pubsub';
-import { post } from '../../classes/manager.js';
+import { put } from '../../classes/manager.js';
 import localDevice from '../../classes/local-device.js';
 
 class PlayHereForm extends HTMLFormElement {
@@ -20,10 +20,8 @@ class PlayHereForm extends HTMLFormElement {
 		this.append(submit);
 		this.addEventListener('submit', async event => {
 			event.preventDefault();
-			await post("devices/current", {
-				uuid:localDevice.getUuid(),
-				play: "true",
-			});
+			await put("v3/current-device", localDevice.getUuid());
+			await put("v3/is-playing", "true");
 		});
 		listenExisting("managerData", data => {
 			if (localDevice.isCurrent()) {

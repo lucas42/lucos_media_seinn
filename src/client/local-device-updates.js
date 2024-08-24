@@ -1,6 +1,6 @@
 import localDevice from '../classes/local-device.js';
 import { listenExisting } from 'lucos_pubsub';
-import { post } from '../classes/manager.js';
+import { put } from '../classes/manager.js';
 
 function updatelocalDevice(data) {
 	const device = data.devices.find(device => device.uuid === localDevice.getUuid());
@@ -14,10 +14,7 @@ function updatelocalDevice(data) {
 
 	// If the server is still using a default name, then update it with the local one
 	if (localDevice.getName() && device.isDefaultName) {
-		return post("devices", {
-			uuid: localDevice.getUuid(),
-			name: localDevice.getName()
-		});
+		return put(`v3/device-names/${localDevice.getUuid()}`, localDevice.getName());
 	}
 
 	// Otherwise server provided name takes precedent

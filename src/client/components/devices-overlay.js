@@ -1,5 +1,5 @@
 import { listenExisting } from 'lucos_pubsub';
-import { post } from '../../classes/manager.js';
+import { put } from '../../classes/manager.js';
 import localDevice from '../../classes/local-device.js';
 
 class DevicesOverlay extends HTMLElement {
@@ -50,11 +50,11 @@ class DevicesOverlay extends HTMLElement {
 				makeCurrent.value = "▶";
 				form.appendChild(makeCurrent);
 				makeCurrent.addEventListener("click", event => {
-					post("devices/current", {uuid:device.uuid});
+					put("v3/current-device", device.uuid);
 				});
 				form.addEventListener("submit", event => {
 					event.preventDefault();
-					post("devices", {uuid:device.uuid, name:nameField.value});
+					put(`v3/device-names/${device.uuid}`, nameField.value);
 				});
 				deviceList.appendChild(form);
 			})

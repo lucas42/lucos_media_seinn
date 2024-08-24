@@ -95,23 +95,36 @@ async function loadFromCache() {
 async function enactAction(action) {
 	const url = new URL(action.url);
 	if (url.pathname.startsWith("/v3/")) {
+		const pathparts = url.pathname.split('/');
+		const params = new URLSearchParams(url.search);
 		switch (action.method) {
 			case 'PUT':
 				const data = await action.text();
-				switch (url.pathname.replace("/v3/","")) {
+				switch (pathparts[2]) {
 					case "is-playing":
 						pollData.isPlaying = (data.toLowerCase() === "true");
 						break;
 					case "volume":
 						pollData.volume = Number(data);
 						break;
+					case "device-names":
+						const uuid = pathparts[3];
+						pollData.devices.forEach(device => {
+							if (device.uuid === uuid) {
+								device.name = data;
+							}
+						});
+						break;
+					case "current-device":
+						pollData.devices.forEach(device => {
+							device.isCurrent = (device.uuid === data);
+						});
+						break;
 					default:
 						console.error("Unknown PUT request to endpoint", url.pathname);	
 				}
 				break;
 			case 'DELETE':
-				const pathparts = url.pathname.split('/');
-				const params = new URLSearchParams(url.search);
 				if (pathparts[2] === 'playlist') {
 					if (pathparts.length === 5) {
 						const playlist = pathparts[3]; // Unused for now

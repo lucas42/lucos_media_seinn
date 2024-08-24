@@ -4,7 +4,7 @@ const router = express.Router();
 const mediaManager = process.env.MEDIA_MANAGER || "https://ceol.l42.eu/";
 
 router.get('/', async (req, res) => {
-	const data = await fetch(mediaManager+"poll/summary").then(resp => resp.json());
+	const data = await fetch(mediaManager+"v3/poll").then(resp => resp.json());
 	const now = data.tracks.shift();
 	res.render("index", {
 		clientVariables: JSON.stringify({
@@ -52,7 +52,7 @@ router.get('/_info', async (req,res) => {
 		show_on_homepage: true,
 	};
 	try {
-		const pollResp = await fetch(mediaManager+"poll/summary");
+		const pollResp = await fetch(mediaManager+"v3/poll");
 		if (!pollResp.ok) throw new Error(`Error from media-manager: ${pollResp.statusText}`);
 		await pollResp.json();
 		info.checks["media-manager"].ok = true;

@@ -25,7 +25,7 @@ async function handleRequest(request) {
 	if (url.hostname === "am.l42.eu") {
 		return await fetch(request);
 	}
-	if (url.pathname === "/poll/summary") {
+	if (url.pathname === "/v3/poll") {
 		const hashcode = parseInt(params.get("hashcode"));
 		return getPoll(hashcode);
 	}

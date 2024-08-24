@@ -1,5 +1,6 @@
 import { send } from 'lucos_pubsub';
-import { getJson } from './manager.js';
+import { get } from './manager.js';
+import localDevice from './local-device.js';
 let suppressErrors = false;
 let isConnected = false;
 
@@ -11,7 +12,8 @@ if (typeof window === "object") window.addEventListener("unload", event => {
 
 async function poll(hashcode) {
 	try {
-		const data = await getJson("poll/summary", { hashcode, "_cb": new Date().getTime() });
+		const response = await get(`v3/poll?device=${localDevice.getUuid()}&hashcode=${hashcode}`);
+		const data = await response.json();
 		if (!isConnected) {
 			isConnected = true;
 			send("polling_connected");

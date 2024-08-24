@@ -83,6 +83,7 @@ class Playlist extends HTMLElement {
 
 				const options = document.createElement("track-options");
 				options.setAttribute("url", track.url);
+				options.setAttribute("uuid", track.uuid);
 				options.setAttribute("editurl", track.metadata.editurl);
 				li.append(options);
 

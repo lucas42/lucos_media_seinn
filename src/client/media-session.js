@@ -17,7 +17,7 @@ try {
 		put("v3/is-playing", "false");
 	});
 	navigator.mediaSession.setActionHandler('nexttrack', () => {
-		post("next");
+		document.getElementById("next").requestSubmit();
 	});
 
 	listenExisting("managerData", data => {

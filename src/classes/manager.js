@@ -60,10 +60,10 @@ export function put(endpoint, body) {
 	return fetch(url, {method: 'PUT', body, signal});
 }
 
-export function del(endpoint) { // Not called 'delete', because that's a reserved word in javascript
+export function del(endpoint, body) { // Not called 'delete', because that's a reserved word in javascript
 	if (!mediaManager) throw "making request before manager module initiated";
 	const url = mediaManager+endpoint;
-	return fetch(url, {method: 'DELETE', signal});
+	return fetch(url, {method: 'DELETE', body, signal});
 }
 
 export async function getJson(endpoint, parameters={}) {

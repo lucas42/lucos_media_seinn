@@ -98,6 +98,7 @@ class NowPlaying extends HTMLElement {
 				delete lyricButton.dataset.hasLyrics;
 			}
 			lyricViewer.setAttribute("lyrics", metadata.lyrics || "");
+			component.setAttribute("uuid", now.uuid);
 			component.setAttribute("url", now.url);
 			state.setAttribute("url", now.url);
 			if (now.state) state.setAttribute("service-worker-state", now.state);

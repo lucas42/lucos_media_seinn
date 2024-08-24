@@ -42,7 +42,7 @@ async function fetchTrack (trackCache, trackRequest) {
 	// If the track wasn't reachable, tell the server, which should skip that one out
 	} catch (error) {
 		console.error("Failed to preload track:", error.message)
-		post("done", {track: trackRequest.url, status: error.message});
+		// TODO: skip track in any playlist it's currently queued in
 		erroringTracks[trackRequest.url] = error.message;
 	}
 	delete fetchingTracks[trackRequest.url];

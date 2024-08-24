@@ -110,8 +110,20 @@ async function enactAction(action) {
 				}
 				break;
 			case 'DELETE':
-
-				console.error("Unknown DELETE request to endpoint", url.pathname);
+				const pathparts = url.pathname.split('/');
+				const params = new URLSearchParams(url.search);
+				if (pathparts[2] === 'playlist') {
+					if (pathparts.length === 5) {
+						const playlist = pathparts[3]; // Unused for now
+						const uuid = pathparts[4];
+						const action = params.get("action"); // Not needed by service worker
+						pollData.tracks = pollData.tracks.filter(track => track.uuid !== uuid);
+					} else {
+						console.error("Unsupported v3 playlist url", url.pathname);
+					}
+				} else {
+					console.error("Unknown DELETE request to endpoint", url.pathname);
+				}
 				break;
 			default:
 				console.error("Unsupported method for v3 endpoint", url.method, url.pathname);

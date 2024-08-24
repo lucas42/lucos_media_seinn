@@ -1,7 +1,7 @@
-import { post } from '../../classes/manager.js';
+import { del } from '../../classes/manager.js';
 class TrackOptions extends HTMLElement {
 	static get observedAttributes() {
-		return ['url','editurl'];
+		return ['url', 'uuid', 'editurl'];
 	}
 	constructor() {
 		super();
@@ -38,10 +38,9 @@ class TrackOptions extends HTMLElement {
 		component.skipForm = document.createElement("form");
 		component.skipForm.addEventListener("submit", event => {
 			event.preventDefault();
-			post("done", {
-				track: component.getAttribute("url"),
-				status: "manual skip",
-			});
+			const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
+			const uuid = component.getAttribute("uuid");
+			del(`v3/playlist/${playlist}/${uuid}?action=skip`);
 		});
 		const skipSubmit = document.createElement("input");
 		skipSubmit.type = "submit";

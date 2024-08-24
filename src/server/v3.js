@@ -27,8 +27,8 @@ router.post('/pause', async (req,res) => {
 	res.redirect(`${req.protocol}://${req.headers.host}/`);
 });
 router.post('/next', async (req,res) => {
-	await fetch(mediaManager+"next", {method: 'POST'});
-	res.redirect(`${req.protocol}://${req.headers.host}/v3`);
+	await fetch(mediaManager+"v3/skip-track", {method: 'POST'});
+	res.redirect(`${req.protocol}://${req.headers.host}/`);
 });
 router.post('/volume', async (req,res) => {
 	await fetch(mediaManager+"v3/volume", {method: 'PUT', body: req.query.volume});

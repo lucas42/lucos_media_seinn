@@ -1,5 +1,5 @@
 import { listenExisting } from 'lucos_pubsub';
-import { post } from '../classes/manager.js';
+import { del } from '../classes/manager.js';
 import localDevice from '../classes/local-device.js';
 
 let currentAudio;
@@ -26,13 +26,15 @@ async function playTrack(track) {
 		currentAudio = new Audio(track.url);
 		currentAudio.currentTime = track.currentTime;
 		currentAudio.addEventListener("ended", trackEndedHandler);
+		currentAudio.dataset.uuid = track.uuid;
 		await currentAudio.play();
 	} catch (error) {
 		if (error.name === "NotAllowedError") {
 			currentAudio = null;
 		} else {
 			console.error("Skipping track", error.message);
-			post("done", {track: track.url, status: error.message});
+			const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
+			await del(`v3/playlist/${playlist}/${track.uuid}?action=error`, error.message);
 		}
 	}
 }
@@ -47,8 +49,9 @@ function stopCurrentTrack(fadeTime) {
 }
 
 function trackEndedHandler(event) {
-	const url = event.currentTarget.getAttribute("src");
-	post("done", {track: url, status: "ended"});
+	const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
+	const uuid = event.currentTarget.dataset.uuid;
+	del(`v3/playlist/${playlist}/${uuid}?action=complete`);
 }
 
 

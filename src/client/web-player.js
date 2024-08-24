@@ -1,6 +1,6 @@
 import { listenExisting } from 'lucos_pubsub';
 import { getBuffer, preBufferTracks } from './buffers.js';
-import { post } from '../classes/manager.js';
+import { del } from '../classes/manager.js';
 import localDevice from '../classes/local-device.js';
 
 
@@ -43,6 +43,7 @@ async function playTrack(track, volume) {
 		gainNode.connect(globalGain);
 		source.connect(gainNode);
 		source.trackUrl = track.url;
+		source.trackUuid = track.uuid;
 
 		currentAudio = {
 			source,
@@ -55,7 +56,8 @@ async function playTrack(track, volume) {
 		currentAudio.startTime = audioContext.currentTime - track.currentTime;
 	} catch (error) {
 		console.error("Skipping track", error.message);
-		post("done", {track: track.url, status: error.message});
+		const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
+		await del(`v3/playlist/${playlist}/${track.uuid}?action=error`, error.message);
 	}
 }
 
@@ -71,8 +73,9 @@ function stopCurrentTrack(fadeTime) {
 }
 
 function trackEndedHandler(event) {
-	const url = event.currentTarget.trackUrl;
-	post("done", {track: url, status: "ended"});
+	const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
+	const uuid = event.currentTarget.uuid;
+	del(`v3/playlist/${playlist}/${uuid}?action=complete`);
 }
 
 

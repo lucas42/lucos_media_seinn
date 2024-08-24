@@ -49,11 +49,6 @@ function _makeRequestToManager(endpoint, method, parameters={}) {
 	return fetch(url, {method, signal})
 }
 
-export function post(endpoint, parameters={}) {
-	console.error("Deprecated call to v2 media_manager endpoint", endpoint); // POST requests aren't idempotent, making service worker logic tricker - move to /v3 which uses PUT & DELETE
-	_makeRequestToManager(endpoint, 'post', parameters);
-}
-
 export function put(endpoint, body) {
 	if (!mediaManager) throw "making request before manager module initiated";
 	const url = mediaManager+endpoint;

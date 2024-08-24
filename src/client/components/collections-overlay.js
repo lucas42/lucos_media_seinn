@@ -1,5 +1,5 @@
 import { listenExisting } from 'lucos_pubsub';
-import { post } from '../../classes/manager.js';
+import { put } from '../../classes/manager.js';
 
 class CollectionsOverlay extends HTMLElement {
 	constructor() {
@@ -51,7 +51,7 @@ class CollectionsOverlay extends HTMLElement {
 				play.value = "▶";
 				play.title = "Play tracks from "+collection.name;
 				play.addEventListener("click", event => {
-					post("collection",{ slug: collection.slug });
+					put("v3/current-collection", collection.slug);
 				});
 				item.append(play);
 
@@ -66,9 +66,9 @@ class CollectionsOverlay extends HTMLElement {
 			const clearButton = document.createElement("input");
 			clearButton.type = "button";
 			clearButton.value = "⏹";
-			clearButton.title = "Clear current collection and play tracks from whole library";
+			clearButton.title = "Play tracks from whole library";
 			clearButton.addEventListener("click", event => {
-				post("collection",{ slug: "" });
+				put("v3/current-collection", "all");
 			});
 			clearItem.append(clearButton);
 

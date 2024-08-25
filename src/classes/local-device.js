@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { send } from 'lucos_pubsub';
 
 let uuid;
 let name;
@@ -33,7 +34,9 @@ export function isCurrent() {
 	return current;
 }
 export function setCurrent(newIsCurrent) {
+	if (current === newIsCurrent) return;
 	current = newIsCurrent;
+	send(current?'device_current':'device_notcurrent');
 }
 
 export default {getUuid, setUuid, getName, setName, isCurrent, setCurrent};

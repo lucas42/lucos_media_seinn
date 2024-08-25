@@ -1,5 +1,6 @@
 import { listenExisting } from 'lucos_pubsub';
 import { put } from '../../classes/manager.js';
+import { updateTrackStatus } from '../player.js';
 import localDevice from '../../classes/local-device.js';
 
 class DevicesOverlay extends HTMLElement {
@@ -50,6 +51,7 @@ class DevicesOverlay extends HTMLElement {
 				makeCurrent.value = "▶";
 				form.appendChild(makeCurrent);
 				makeCurrent.addEventListener("click", event => {
+					updateTrackStatus();
 					put("v3/current-device", device.uuid);
 				});
 				form.addEventListener("submit", event => {

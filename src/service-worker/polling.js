@@ -120,6 +120,18 @@ async function enactAction(action) {
 							device.isCurrent = (device.uuid === data);
 						});
 						break;
+					case "playlist":
+						if (pathparts.length === 6 && pathparts[5] == "current-time") {
+							const playlist = pathparts[3]; // Unused for now
+							const uuid = pathparts[4];
+							pollData.tracks.forEach(track => {
+								if (track.uuid === uuid) {
+									track.currentTime = data;
+								}
+							});
+						} else {
+							console.error("Unsupported v3 playlist url", url.pathname);
+						}
 					default:
 						console.error("Unknown PUT request to endpoint", url.pathname);	
 				}

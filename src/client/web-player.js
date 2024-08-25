@@ -91,11 +91,11 @@ function getTimeElapsed() {
 }
 
 /**
- * Returns the URL of the currently playing track
+ * Returns the Uuid of the currently playing track
  */
-function getCurrentTrack() {
+function getCurrentUuid() {
 	if (!currentAudio) return undefined;
-	return currentAudio.url;
+	return currentAudio.uuid;
 }
 
 /**
@@ -109,4 +109,4 @@ function init() {
 	listenExisting("managerData", updateCurrentAudio, true);
 }
 
-export default { getTimeElapsed, getCurrentTrack, isPlaying, init };
+export default { getTimeElapsed, getCurrentUuid, isPlaying, init };

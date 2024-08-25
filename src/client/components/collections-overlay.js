@@ -16,6 +16,18 @@ class CollectionsOverlay extends HTMLElement {
 		container.addEventListener("click", event => event.stopPropagation());
 		container.addEventListener("keyup", event => event.stopPropagation());
 		shadow.append(overlay);
+
+		const title = document.createElement("h3");
+		title.append(document.createTextNode("Collections"));
+		container.append(title);
+
+		const editLink = document.createElement("a");
+		editLink.append(document.createTextNode("✎"));
+		editLink.title = "Edit Collections";
+		editLink.target = "_blank";
+		editLink.href = "https://media-metadata.l42.eu/collections";
+		title.append(editLink);
+
 		const collectionList = document.createElement("ul");
 		container.append(collectionList);
 		listenExisting("managerData", data => {
@@ -35,25 +47,11 @@ class CollectionsOverlay extends HTMLElement {
 				trackCount.classList.add("track-count");
 				item.append(trackCount);
 
-				const editForm = document.createElement("form");
-				editForm.setAttribute("target", "_blank");
-				editForm.setAttribute("method", "get");
-				editForm.setAttribute("action", collection.editurl);
-				const editSubmit = document.createElement("input");
-				editSubmit.type = "submit";
-				editSubmit.value = "✎";
-				editSubmit.title = "Edit collection "+collection.name;
-				editForm.append(editSubmit);
-				item.append(editForm);
-
-				const play = document.createElement("input");
-				play.type = "button";
-				play.value = "▶";
-				play.title = "Play tracks from "+collection.name;
-				play.addEventListener("click", event => {
-					put("v3/current-collection", collection.slug);
+				item.title = "Play tracks from "+collection.name;
+				item.addEventListener("click", async event => {
+					item.dataset.loading = "true";
+					await put("v3/current-collection", collection.slug);
 				});
-				item.append(play);
 
 				collectionList.append(item);
 			});
@@ -63,15 +61,11 @@ class CollectionsOverlay extends HTMLElement {
 			nameSpan.append(document.createTextNode("Clear Collection"));
 			clearItem.append(nameSpan);
 
-			const clearButton = document.createElement("input");
-			clearButton.type = "button";
-			clearButton.value = "⏹";
-			clearButton.title = "Play tracks from whole library";
-			clearButton.addEventListener("click", event => {
-				put("v3/current-collection", "all");
+			clearItem.title = "Play tracks from whole library";
+			clearItem.addEventListener("click", async event => {
+					clearItem.dataset.loading = "true";
+					await put("v3/current-collection", "all");
 			});
-			clearItem.append(clearButton);
-
 			collectionList.append(clearItem);
 		});
 		const style = document.createElement('style');
@@ -91,11 +85,16 @@ class CollectionsOverlay extends HTMLElement {
 			justify-content: center;
 		}
 		#overlay > div {
-			padding: 2em;
+			position: absolute;
+			top: 34px;
+			bottom: 10px;
+			padding: 1em;
 			background: rgba(255,255,255,0.9);
 			border: solid #502;
 			border-top-width: 10px;
 			border-radius: 10px;
+			overflow: auto;
+			max-width: 350px;
 		}
 		ul {
 			list-style: none;
@@ -104,6 +103,9 @@ class CollectionsOverlay extends HTMLElement {
 		}
 		li {
 			display: flex;
+			border: solid transparent 3px;
+			cursor: pointer;
+			padding: 0 0 0 3px;
 		}
 		li > span {
 			align-self: center;
@@ -111,11 +113,7 @@ class CollectionsOverlay extends HTMLElement {
 		li.clear-collection > span {
 			font-weight: bold;
 			flex-grow: 1;
-		}
-		li.clear-collection > input {
-			font-size: 19px;
-			color: #502;
-			border-color: #502;
+			line-height: 2em;
 		}
 		.track-count{
 			font-size: 10px;
@@ -124,13 +122,27 @@ class CollectionsOverlay extends HTMLElement {
 			align-self: center;
 			font-style: italic;
 		}
-		li > form >input {
-			height: 100%; // Only makes a difference if there's any multi-line items showing
+		li:hover {
+			border-color: #328cff;
 		}
 		li[data-is-current=true] {
-			border: solid #502 3px;
-			margin: 0 -4px 0 -6px;
-			padding: 0 0 0 3px;
+			border-color: #502;
+		}
+		li[data-loading=true] {
+			background: #328cff;
+		}
+		h3 {
+			margin-top: 0;
+		}
+		h3 a {
+			font-size: smaller;
+			margin-left: 0.3em;
+			vertical-align: super;
+			text-decoration: none;
+			color: #502;
+		}
+		h3 a:hover {
+			color: #328cff;
 		}
 		`;
 		shadow.prepend(style);

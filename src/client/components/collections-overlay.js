@@ -48,24 +48,29 @@ class CollectionsOverlay extends HTMLElement {
 				item.append(trackCount);
 
 				item.title = "Play tracks from "+collection.name;
-				item.addEventListener("click", async event => {
-					item.dataset.loading = "true";
-					await put("v3/current-collection", collection.slug);
-				});
+				if (!collection.isCurrent) {
+					item.addEventListener("click", async event => {
+						item.dataset.loading = "true";
+						await put("v3/current-collection", collection.slug);
+					});
+				}
 
 				collectionList.append(item);
 			});
 			const clearItem = document.createElement("li");
 			clearItem.classList.add("clear-collection");
+			clearItem.dataset.isCurrent = (data.currentCollectionSlug === "all");
 			const nameSpan = document.createElement("span");
 			nameSpan.append(document.createTextNode("Clear Collection"));
 			clearItem.append(nameSpan);
 
 			clearItem.title = "Play tracks from whole library";
-			clearItem.addEventListener("click", async event => {
+			if (data.currentCollectionSlug !== "all") {
+				clearItem.addEventListener("click", async event => {
 					clearItem.dataset.loading = "true";
 					await put("v3/current-collection", "all");
-			});
+				});
+			}
 			collectionList.append(clearItem);
 		});
 		const style = document.createElement('style');
@@ -127,6 +132,7 @@ class CollectionsOverlay extends HTMLElement {
 		}
 		li[data-is-current=true] {
 			border-color: #502;
+			cursor: default;
 		}
 		li[data-loading=true] {
 			background: #328cff;

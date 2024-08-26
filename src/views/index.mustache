@@ -30,42 +30,42 @@
 				<input type='hidden'/>
 				<input
 					type='submit'
-					value="{{#isPlaying}}Pause{{/isPlaying}}{{^isPlaying}}Play{{/isPlaying}}"/>
+					value="{{#isPlaying}}⏸ Pause{{/isPlaying}}{{^isPlaying}}⏵ Play{{/isPlaying}}"/>
 			</form>
 		</li>
 		<li>
 			<form method="post" action="/v3/next" id='next' is="next-form">
 				<input type='hidden'/>
-				<input type='submit' value="Skip to the Next Track" id='next-submit'/>
+				<input type='submit' value="⏭ Skip to the Next Track" id='next-submit'/>
 			</form>
 		</li>
 		<li>
 			<volume-control>
 				<form method="post" action="/v3/volume?volume={{volumeUp}}" id='volume-up'>
 					<input type='hidden'/>
-					<input type='submit' value="Increase Volume" id='volume-up-submit'/>
+					<input type='submit' value="↑ Increase Volume" id='volume-up-submit'/>
 				</form>
 				/
 				<form method="post" action="/v3/volume?volume={{volumeDown}}" id='volume-down'>
 					<input type='hidden'/>
-					<input type='submit' value="Decrease Volume" id='volume-down-submit'/>
+					<input type='submit' value="↓ Decrease Volume" id='volume-down-submit'/>
 				</form>
 			</volume-control>
 		</li>
 		<li>
 			<form method="get" action="{{now.metadata.editurl}}" id='edit' target='_blank' is="edit-form">
-				<input type='submit' value="Edit Track Metadata" id='edit-submit'/>
+				<input type='submit' value="✎ Edit Track Metadata" id='edit-submit'/>
+			</form>
+		</li>
+		<li>
+			<form method="get" action="https://media-metadata.l42.eu/search" id='search' target='_blank'>
+				<input type='submit' value="🔍 Search Library" id='search-submit'/>
 			</form>
 		</li>
 		<li>
 			<form method="get" action="/v3" id='refresh' is="refresh-form">
 				<input type='hidden'/>
-				<input type='submit' value="Refresh" id='refresh-submit'/>
-			</form>
-		</li>
-		<li>
-			<form method="get" action="https://media-metadata.l42.eu/search" id='search' target='_blank'>
-				<input type='submit' value="Search Library" id='search-submit'/>
+				<input type='submit' value="↻ Refresh" id='refresh-submit'/>
 			</form>
 		</li>
 	</ul>

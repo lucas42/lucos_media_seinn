@@ -10,15 +10,15 @@ class PlayPauseForm extends HTMLFormElement {
 
 		listenExisting("managerData", data => {
 			if (data.isPlaying) {
-				submit.value = "Pause"
+				submit.value = "⏸ Pause"
 			} else {
-				submit.value = "Play"
+				submit.value = "⏵ Play"
 			}
 		}, true);
 
 		this.addEventListener('submit', async event => {
 			event.preventDefault();
-			if (submit.value == "Play") {
+			if (submit.value == "⏵ Play") {
 				await put("v3/is-playing", "true");
 			} else {
 				await put("v3/is-playing", "false");

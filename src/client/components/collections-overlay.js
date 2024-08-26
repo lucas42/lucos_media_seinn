@@ -35,6 +35,22 @@ class CollectionsOverlay extends HTMLElement {
 				collectionList.removeChild(collectionList.lastChild);
 			}
 
+			const clearItem = document.createElement("li");
+			clearItem.classList.add("clear-collection");
+			clearItem.dataset.isCurrent = (data.currentCollectionSlug === "all");
+			const nameSpan = document.createElement("span");
+			nameSpan.append(document.createTextNode("🌐 All Tracks"));
+			clearItem.append(nameSpan);
+
+			clearItem.title = "Play tracks from whole library";
+			if (data.currentCollectionSlug !== "all") {
+				clearItem.addEventListener("click", async event => {
+					clearItem.dataset.loading = "true";
+					await put("v3/current-collection", "all");
+				});
+			}
+			collectionList.append(clearItem);
+
 			data.collections.forEach(collection => {
 				const item = document.createElement("li");
 				item.dataset.slug = collection.slug;
@@ -57,21 +73,6 @@ class CollectionsOverlay extends HTMLElement {
 
 				collectionList.append(item);
 			});
-			const clearItem = document.createElement("li");
-			clearItem.classList.add("clear-collection");
-			clearItem.dataset.isCurrent = (data.currentCollectionSlug === "all");
-			const nameSpan = document.createElement("span");
-			nameSpan.append(document.createTextNode("Clear Collection"));
-			clearItem.append(nameSpan);
-
-			clearItem.title = "Play tracks from whole library";
-			if (data.currentCollectionSlug !== "all") {
-				clearItem.addEventListener("click", async event => {
-					clearItem.dataset.loading = "true";
-					await put("v3/current-collection", "all");
-				});
-			}
-			collectionList.append(clearItem);
 		});
 		const style = document.createElement('style');
 		style.textContent = `

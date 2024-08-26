@@ -1,4 +1,5 @@
 import { updateTrackStatus } from './player.js';
+import { abortAllRequests } from '../classes/manager.js';
 const statusChannel = new BroadcastChannel("lucos_status");
 try {
 	if (!('serviceWorker' in navigator)) throw "no service worker support";
@@ -21,9 +22,10 @@ try {
 		updateTrackStatus();
 		window.location.reload();
 	});
-	statusChannel.addEventListener("message", function statusMessage(event) {
+	statusChannel.addEventListener("message", async function statusMessage(event) {
 		if (event.data == "service-worker-skip-waiting") {
-			updateTrackStatus();
+			await updateTrackStatus();
+			abortAllRequests("Shutting down old service worker");
 			registration.active?.postMessage('abort-connections');
 			registration.waiting?.postMessage('skip-waiting');
 		}

@@ -1,4 +1,5 @@
 import { listenExisting } from 'lucos_pubsub';
+import { updateTrackStatus } from '../player.js';
 import { put } from '../../classes/manager.js';
 
 class PlayPauseForm extends HTMLFormElement {
@@ -18,6 +19,7 @@ class PlayPauseForm extends HTMLFormElement {
 
 		this.addEventListener('submit', async event => {
 			event.preventDefault();
+			updateTrackStatus();
 			if (submit.value == "⏵ Play") {
 				await put("v3/is-playing", "true");
 			} else {

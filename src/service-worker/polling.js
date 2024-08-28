@@ -132,6 +132,7 @@ async function enactAction(action) {
 						} else {
 							console.error("Unsupported v3 playlist url", url.pathname);
 						}
+						break;
 					default:
 						console.error("Unknown PUT request to endpoint", url.pathname);	
 				}

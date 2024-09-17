@@ -6,6 +6,7 @@ services:
     ports: 
       - "3001:3001"
     environment:
-      MEDIA_MANAGER: null
+      - MEDIA_MANAGER_URL=https://ceol.l42.eu/
+      - KEY_LUCOS_MEDIA_MANAGER
     image: lucas42/lucos_media_seinn
     restart: always

@@ -1,15 +1,22 @@
 import express from 'express';
+import * as manager from '../classes/manager.js';
+import fs from 'node:fs/promises';
+
 const router = express.Router();
 
-const mediaManager = process.env.MEDIA_MANAGER || "https://ceol.l42.eu/";
+const mediaManager = process.env.MEDIA_MANAGER_URL || (() => { throw "MEDIA_MANAGER_URL Environment Variable not set" })();
+const apiKey = process.env.KEY_LUCOS_MEDIA_MANAGER || (() => { throw "KEY_LUCOS_MEDIA_MANAGER Environment Variable not set" })();
+manager.init(mediaManager, apiKey);
+const clientVariables = JSON.stringify({
+	mediaManager,
+	apiKey,
+});
 
 router.get('/', async (req, res) => {
-	const data = await fetch(mediaManager+"v3/poll").then(resp => resp.json());
+	const data = await manager.get("v3/poll").then(resp => resp.json());
 	const now = data.tracks.shift();
 	res.render("index", {
-		clientVariables: JSON.stringify({
-			mediaManager,
-		}),
+		clientVariables,
 		now,
 		playlist: data.tracks,
 		isPlaying: data.isPlaying,
@@ -19,19 +26,19 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/play', async (req,res) => {
-	await fetch(mediaManager+"v3/is-playing", {method: 'PUT', body: "true"});
+	await manager.put("v3/is-playing", "true");
 	res.redirect(`${req.protocol}://${req.headers.host}/`);
 });
 router.post('/pause', async (req,res) => {
-	await fetch(mediaManager+"v3/is-playing", {method: 'PUT', body: "false"});
+	await manager.put("v3/is-playing", "false");
 	res.redirect(`${req.protocol}://${req.headers.host}/`);
 });
 router.post('/next', async (req,res) => {
-	await fetch(mediaManager+"v3/skip-track", {method: 'POST'});
+	await manager.post("v3/skip-track");
 	res.redirect(`${req.protocol}://${req.headers.host}/`);
 });
 router.post('/volume', async (req,res) => {
-	await fetch(mediaManager+"v3/volume", {method: 'PUT', body: req.query.volume});
+	await manager.put("v3/volume", req.query.volume);
 	res.redirect(`${req.protocol}://${req.headers.host}/`);
 });
 router.get('/_info', async (req,res) => {
@@ -52,7 +59,7 @@ router.get('/_info', async (req,res) => {
 		show_on_homepage: true,
 	};
 	try {
-		const pollResp = await fetch(mediaManager+"v3/poll");
+		const pollResp = await manager.get("v3/poll");
 		if (!pollResp.ok) throw new Error(`Error from media-manager: ${pollResp.statusText}`);
 		await pollResp.json();
 		info.checks["media-manager"].ok = true;
@@ -61,6 +68,12 @@ router.get('/_info', async (req,res) => {
 		info.checks["media-manager"].debug = error.message;
 	}
 	res.json(info);
+});
+
+router.get('/serviceworker-v3.js', async (req, res) => {
+	const baseServiceWorker = await fs.readFile('./src/resources/serviceworker-v3.js', { encoding: 'utf8' });
+	res.set('Content-Type', 'text/javascript');
+	res.send(`const clientVariables = ${clientVariables};\n${baseServiceWorker}`);
 });
 
 export default router;

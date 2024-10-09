@@ -18,7 +18,7 @@ A media player for the lucos media system.
 `nice -19 docker-compose up -d --no-build`
 
 ## Building
-The build is configured to run in Dockerhub when a commit is pushed to the master branch in github.
+The build is configured to run in Dockerhub when a commit is pushed to the `main` branch in github.
 
 ## Media Manager
 Use environment variable MEDIA_MANAGER to set baseurl of media manager.  Defaults to "https://ceol.l42.eu/".

@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "folder-hash": "^4.0.4",
-    "lucos_navbar": "^2.0.2",
+    "lucos_navbar": "^2.0.4",
     "lucos_pubsub": "^1.0.2",
     "restful-queue": "^1.0.11",
     "uuid": "^11.0.3",

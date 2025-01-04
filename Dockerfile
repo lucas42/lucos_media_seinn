@@ -10,7 +10,7 @@ COPY src src
 
 ## Run the build step and delete everything only used for build afterwards
 RUN npm run build
-RUN npm prune --production
+RUN npm prune --omit=dev
 RUN rm -rf client
 RUN rm -rf service-worker
 

@@ -26,7 +26,7 @@ lucos-navbar {
 #controls {
 	text-align: center;
 	clear: both;
-	padding-top: 0.5em;
+	padding: 0.5em;
 	background:#502;
 	color: #fff;
 	height: 1.8em;
@@ -47,6 +47,7 @@ lucos-navbar {
 #controls input {
 	background: white;
 	color: black;
+	line-height: 1.5em;
 }
 
 

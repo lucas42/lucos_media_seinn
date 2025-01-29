@@ -21,10 +21,10 @@ export function post(endpoint, body) {
 	return fetchFromManager(endpoint, 'POST', body);
 }
 
-function fetchFromManager(endpoint, method, body) {
+async function fetchFromManager(endpoint, method, body) {
 	if (!mediaManager) throw "making request before manager module initiated";
 	const url = mediaManager+endpoint;
-	return fetch(url, {
+	const response = await fetch(url, {
 		method,
 		headers: {
 			Authorization: `Key ${apiKey}`,
@@ -32,6 +32,8 @@ function fetchFromManager(endpoint, method, body) {
 		body,
 		signal,
 	});
+	if (!response.ok) throw new Error(`Unexpected response code ${response.status}.  ${await response.text()}`);
+	return response
 }
 
 export function abortAllRequests(reason) {

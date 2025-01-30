@@ -19,12 +19,14 @@ class PlayPauseForm extends HTMLFormElement {
 
 		this.addEventListener('submit', async event => {
 			event.preventDefault();
+			this.classList.add('loading');
 			updateTrackStatus();
 			if (submit.value == "⏵ Play") {
 				await put("v3/is-playing", "true");
 			} else {
 				await put("v3/is-playing", "false");
 			}
+			this.classList.remove('loading');
 		});
 	}
 }

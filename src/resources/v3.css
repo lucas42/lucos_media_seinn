@@ -49,6 +49,15 @@ lucos-navbar {
 	color: black;
 	line-height: 1.5em;
 }
+#controls .loading input {
+	animation: 1.5s linear infinite backgroundScroll;
+	background: linear-gradient(-55deg, #555 0%, #555 20%, #888 40%, #7e8888 55%, #555 80%);
+	background-size: 200%;
+}
+@keyframes backgroundScroll {
+	0% { background-position:  100%; }
+	100% { background-position: -100%; }
+}
 
 
 @media (min-width: 20cm) {

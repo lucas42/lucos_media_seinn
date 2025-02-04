@@ -32,7 +32,7 @@
     "folder-hash": "^4.1.1",
     "lucos_navbar": "^2.0.4",
     "lucos_pubsub": "^1.0.2",
-    "restful-queue": "^1.0.11",
+    "restful-queue": "^1.0.12",
     "uuid": "^11.0.5",
     "webpack-cli": "^6.0.1"
   }

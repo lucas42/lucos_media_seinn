@@ -16,11 +16,12 @@ class PlayHereForm extends HTMLFormElement {
 		super();
 		const submit = document.createElement("input");
 		submit.type = "submit";
-		submit.value = "Play Here";
+		submit.value = "Play All Here";
 		this.append(submit);
 		this.addEventListener('submit', async event => {
 			event.preventDefault();
 			await put("v3/current-device", localDevice.getUuid());
+			await put("v3/current-collection", "all");
 			await put("v3/is-playing", "true");
 		});
 		listenExisting("managerData", data => {

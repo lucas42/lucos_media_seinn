@@ -10,7 +10,7 @@ async function updateCurrentAudio(data) {
 	if (shouldPlay) {
 		if (!currentAudio) {
 			await playTrack(now);
-		} else if (currentAudio.getAttribute("src") !== now.url) {
+		} else if (currentAudio.dataset.uuid !== now.uuid) {
 			stopCurrentTrack(3); // Fade out the current track
 			await playTrack(now);
 		}

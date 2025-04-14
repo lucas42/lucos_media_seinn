@@ -13,16 +13,23 @@ const clientVariables = JSON.stringify({
 });
 
 router.get('/', async (req, res) => {
-	const data = await manager.get("v3/poll").then(resp => resp.json());
-	const now = data.tracks.shift();
-	res.render("index", {
-		clientVariables,
-		now,
-		playlist: data.tracks,
-		isPlaying: data.isPlaying,
-		volumeUp: Math.min(1, data.volume+0.1),
-		volumeDown: Math.max(0, data.volume-0.1),
-	});
+	try {
+		const data = await manager.get("v3/poll").then(resp => resp.json());
+		const now = data.tracks.shift();
+		res.render("index", {
+			clientVariables,
+			now,
+			playlist: data.tracks,
+			isPlaying: data.isPlaying,
+			volumeUp: Math.min(1, data.volume+0.1),
+			volumeDown: Math.max(0, data.volume-0.1),
+		});
+	} catch (exception) {
+		console.warn("Failed to fetch poll from the server", exception);
+		res.render("index", {
+			clientVariables,
+		});
+	}
 });
 
 router.post('/play', async (req,res) => {

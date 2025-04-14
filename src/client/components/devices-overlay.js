@@ -71,17 +71,21 @@ class DevicesOverlay extends HTMLElement {
 			left: 0;
 			right: 0;
 			background: rgba(100, 100, 100, 0.7);
+			color: #000;
 			z-index: 5000;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 		}
 		#overlay > div {
-			padding: 2em;
+			padding: 1.5em;
 			background: rgba(255,255,255,0.9);
 			border: solid #502;
 			border-top-width: 10px;
 			border-radius: 10px;
+			overflow: auto;
+			max-width: 350px;
+			max-height:88%;
 		}
 		#overlay form {
 			padding: 5px;

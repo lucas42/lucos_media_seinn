@@ -70,7 +70,6 @@ class CollectionsOverlay extends HTMLElement {
 						await put("v3/current-collection", collection.slug);
 					});
 				}
-
 				collectionList.append(item);
 			});
 		});
@@ -91,16 +90,14 @@ class CollectionsOverlay extends HTMLElement {
 			justify-content: center;
 		}
 		#overlay > div {
-			position: absolute;
-			top: 34px;
-			bottom: 10px;
-			padding: 1em;
+			padding: 1.5em;
 			background: rgba(255,255,255,0.9);
 			border: solid #502;
 			border-top-width: 10px;
 			border-radius: 10px;
 			overflow: auto;
 			max-width: 350px;
+			max-height:88%;
 		}
 		ul {
 			list-style: none;

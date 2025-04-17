@@ -14,5 +14,6 @@ export async function refresh() {
 		await cache.addAll(localUrls);
 	} catch (error) {
 		console.error("Failed to cache resources:", error.message);
+		throw error;
 	}
 }

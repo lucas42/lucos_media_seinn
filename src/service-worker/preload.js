@@ -1,5 +1,6 @@
 import { send, listenExisting } from 'lucos_pubsub';
 const TRACK_CACHE = 'tracks-v1';
+const TRACK_METADATA_CACHE = 'track-metadata-v1';
 const IMG_CACHE = 'images-v1';
 const fetchingTracks = {};
 const erroringTracks = {};
@@ -15,6 +16,18 @@ function preloadTracks(tracks) {
 		if (!fromTrackCache && !(trackRequest.url in fetchingTracks)) {
 			fetchingTracks[trackRequest.url] = fetchTrack(trackCache, trackRequest);
 			send('trackStateChange', {url: trackRequest.url});
+		}
+
+		// Add metadata about the track into the metadata cache
+		if (track.metadata.trackid) {
+			const metadataCache = await caches.open(TRACK_METADATA_CACHE);
+			const metadataRequest = new Request('/offline/track-data/'+track.metadata.trackid);
+			const metadataResponse = new Response(JSON.stringify({
+				url:track.url,
+				metadata: track.metadata,
+			}));
+			// Always update the cache, even if an entry exists, as the track metadata may have changed
+			metadataCache.put(metadataRequest, metadataResponse);
 		}
 
 		// Add the track's image into the image cache.

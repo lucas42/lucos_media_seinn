@@ -2,17 +2,22 @@ import { listen, listenExisting } from 'lucos_pubsub';
 import { getOutstandingRequests } from 'restful-queue';
 import '../classes/poll.js';
 import { getTrackState } from './preload.js';
+import { getOfflineCollection } from './offline-collection.js';
 
 
 const POLL_CACHE = 'polls-v1';
 // This isn't a valid request, but it never hits the network, so the only
 // thing that matters is consistency when reading and writing from cache
 const pollRequest = new Request("POLL");
+const offlinePollRequest = new Request("/offline/poll");
 
 let listeners = [];
 let pollData = { unloaded: true };
 
 listenExisting("managerData", async serverData => {
+	const pollCache = await caches.open(POLL_CACHE);
+	const inOfflineMode = !!(await pollCache.match(offlinePollRequest));
+	if (inOfflineMode) return dataChanged();
 	pollData = serverData;
 	const outstandingRequests = await getOutstandingRequests();
 	for (const request of outstandingRequests) {
@@ -37,15 +42,16 @@ listenExisting("trackStateChange", async ({url}) => {
  * Iterates through any long polls waiting and returns the latest data
  * Also stores the data in cache to allow for service wokrer restarts
  */
-function dataChanged() {
+async function dataChanged() {
 	let resolve;
 	while (resolve = listeners.shift()) {
-		resolve(getCurrentResponse());
+		resolve(await getCurrentResponse());
 	}
-	saveToCache(getCurrentResponse());
+	if (!pollData.playOfflineCollection) saveToCache(await getCurrentResponse());
 }
 
-function getCurrentResponse() {
+async function getCurrentResponse() {
+	pollData.offlineCollectionAvailable = true; // Lets the client know to add the offline collection to the collections-overlay component
 	const body = JSON.stringify(pollData);
 	const blob = new Blob([body]);
 	return new Response(blob, {status: 200, type : 'application/json'});
@@ -56,9 +62,9 @@ function getCurrentResponse() {
  * Either returns the current response (if the hashcode is out-of-date)
  * Or waits for a change in data before returning a response with the latest data
  */
-export function getPoll(hashcode) {
+export async function getPoll(hashcode) {
 	if (hashcode !== pollData.hashcode) {
-		return getCurrentResponse();
+		return await getCurrentResponse();
 	}
 	return new Promise(resolve => {
 		listeners.push(resolve);
@@ -79,7 +85,7 @@ async function saveToCache(pollResponse) {
  **/
 async function loadFromCache() {
 	const pollCache = await caches.open(POLL_CACHE);
-	const pollResponse = await pollCache.match(pollRequest);
+	const pollResponse = await pollCache.match(offlinePollRequest) || await pollCache.match(pollRequest);
 	if (!pollResponse) return;
 	const cacheData = await pollResponse.json();
 	if (!pollData.unloaded) return;
@@ -154,6 +160,39 @@ async function enactAction(action) {
 			default:
 				console.error("Unsupported method for v3 endpoint", url.method, url.pathname);
 		}
+	} else if (url.pathname.startsWith("/offline/")) {
+		const pathparts = url.pathname.split('/');
+		const params = new URLSearchParams(url.search);
+		switch (action.method) {
+			case 'PUT':
+				const data = await action.text();
+				switch (pathparts[2]) {
+					case "play-collection":
+						const pollCache = await caches.open(POLL_CACHE);
+						const inOfflineMode = !!(await pollCache.match(offlinePollRequest));
+						const updatedValue = (data.toLowerCase() === "true");
+						if (inOfflineMode == updatedValue) return; // No need to do anything if already in the correct state
+						if (updatedValue) {
+							const body = JSON.stringify(Object.assign(pollData, {
+								tracks: await getOfflineCollection(),
+								playOfflineCollection: true,
+							}));
+							const blob = new Blob([body]);
+							const pollResponse = new Response(blob, {status: 200, type : 'application/json'});
+							await pollCache.put(offlinePollRequest, pollResponse);
+						} else {
+							// DEBUG: whilst the deletion does happen, the `await` doesn't seem to be making it synchronous
+							await pollCache.delete(offlinePollRequest);
+						}
+						loadFromCache();
+						break;
+					default:
+						console.error("Unknown PUT request to endpoint", url.pathname);
+				}
+				break;
+			default:
+				console.error("Unsupported method for offline endpoint", url.method, url.pathname);
+		}
 	} else {
 		console.error("Service Worker handling deprecated call to v2 media_manager endpoint", url.pathname);
 		const params = new URLSearchParams(url.search);
@@ -218,10 +257,10 @@ export async function modifyPollData(action) {
  * Service Worker won't shut down while there are polls open
  * Go through anything still listening, and resolve them
  */
-export function freeUpConnections() {
+export async function freeUpConnections() {
 	let resolve;
 	while (resolve = listeners.shift()) {
-		resolve(getCurrentResponse());
+		resolve(await getCurrentResponse());
 	}
 }
 

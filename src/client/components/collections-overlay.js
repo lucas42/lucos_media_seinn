@@ -37,24 +37,28 @@ class CollectionsOverlay extends HTMLElement {
 
 			const clearItem = document.createElement("li");
 			clearItem.classList.add("clear-collection");
-			clearItem.dataset.isCurrent = (data.currentCollectionSlug === "all");
+			clearItem.dataset.isCurrent = (data.currentCollectionSlug === "all") && !data.playOfflineCollection;
 			const nameSpan = document.createElement("span");
 			nameSpan.append(document.createTextNode("🌐 All Tracks"));
 			clearItem.append(nameSpan);
 
 			clearItem.title = "Play tracks from whole library";
-			if (data.currentCollectionSlug !== "all") {
+			if (data.currentCollectionSlug !== "all" && !data.playOfflineCollection) {
 				clearItem.addEventListener("click", async event => {
 					clearItem.dataset.loading = "true";
 					await put("v3/current-collection", "all");
 				});
+				clearItem.dataset.clickable = true;
+				if (clearItem.dataset.isCurrent == "true") {
+					clearItem.scrollIntoViewIfNeeded();
+				}
 			}
 			collectionList.append(clearItem);
 
 			data.collections.forEach(collection => {
 				const item = document.createElement("li");
 				item.dataset.slug = collection.slug;
-				item.dataset.isCurrent = collection.isCurrent;
+				item.dataset.isCurrent = collection.isCurrent && !data.playOfflineCollection;
 				const nameSpan = document.createElement("span");
 				nameSpan.append(document.createTextNode(collection.name));
 				item.append(nameSpan);
@@ -64,14 +68,44 @@ class CollectionsOverlay extends HTMLElement {
 				item.append(trackCount);
 
 				item.title = "Play tracks from "+collection.name;
-				if (!collection.isCurrent) {
+				if (!collection.isCurrent && !data.playOfflineCollection) {
 					item.addEventListener("click", async event => {
 						item.dataset.loading = "true";
 						await put("v3/current-collection", collection.slug);
 					});
+					item.dataset.clickable = true;
 				}
 				collectionList.append(item);
+				if (item.dataset.isCurrent == "true") {
+					item.scrollIntoViewIfNeeded();
+				}
 			});
+
+			if (data.offlineCollectionAvailable) {
+				const item = document.createElement("li");
+				item.dataset.isCurrent = !!data.playOfflineCollection;
+				const nameSpan = document.createElement("span");
+				nameSpan.append(document.createTextNode("⛓️‍💥 Offline Collection"));
+				item.append(nameSpan);
+
+				item.title = "Play tracks already cached on device";
+				if (data.playOfflineCollection) {
+					item.addEventListener("click", async event => {
+						item.dataset.loading = "true";
+						await put("offline/play-collection", false);
+					});
+				} else {
+					item.addEventListener("click", async event => {
+						item.dataset.loading = "true";
+						await put("offline/play-collection", true);
+					});
+				}
+				item.dataset.clickable = true;
+				collectionList.append(item);
+				if (item.dataset.isCurrent == "true") {
+					item.scrollIntoViewIfNeeded();
+				}
+			}
 		});
 		const style = document.createElement('style');
 		style.textContent = `
@@ -107,7 +141,6 @@ class CollectionsOverlay extends HTMLElement {
 		li {
 			display: flex;
 			border: solid transparent 3px;
-			cursor: pointer;
 			padding: 0 0 0 3px;
 		}
 		li > span {
@@ -125,15 +158,20 @@ class CollectionsOverlay extends HTMLElement {
 			align-self: center;
 			font-style: italic;
 		}
-		li:hover {
+		li[data-clickable=true] {
+			cursor: pointer;
+		}
+		li[data-clickable=true]:hover {
 			border-color: #328cff;
 		}
 		li[data-is-current=true] {
 			border-color: #502;
-			cursor: default;
 		}
 		li[data-loading=true] {
 			background: #328cff;
+		}
+		li:not([data-clickable=true]):not([data-is-current=true]) {
+			opacity: 0.2;
 		}
 		h3 {
 			margin-top: 0;

@@ -16,6 +16,11 @@ async function handleRequest(request) {
 	if (params.has("device")) localDevice.setUuid(params.get("device"));
 	if (["POST", "PUT", "DELETE"].includes(request.method)) {
 		await modifyPollData(request.clone());
+
+		// Offline requests shouldn't be sent to the server, so return a response now.
+		if (url.pathname.startsWith("/offline/")) {
+			return new Response(new Blob(), {status: 201, statusText: "Actioned"});
+		}
 		return queueAndAttemptRequest(request);
 	}
 	if (url.pathname === "/_info") {
@@ -26,7 +31,7 @@ async function handleRequest(request) {
 	}
 	if (url.pathname === "/v3/poll") {
 		const hashcode = parseInt(params.get("hashcode"));
-		return getPoll(hashcode);
+		return await getPoll(hashcode);
 	}
 	const cachedResponse = await caches.match(request);
 	if (cachedResponse) return cachedResponse;

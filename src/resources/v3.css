@@ -41,7 +41,7 @@ lucos-navbar {
 	margin: 0;
 	padding: 0;
 }
-#controls form {
+#controls form, #controls .control-group {
 	display: inline;
 }
 #controls input {
@@ -49,10 +49,29 @@ lucos-navbar {
 	color: black;
 	line-height: 1.5em;
 }
+#controls .control-group {
+	display: inline-block;
+}
+#controls .control-group.hide {
+	display: none;
+}
+#controls .control-group input.show-more {
+	border-left: groove;
+}
+#controls .control-group .primary-control {
+	border-right: none;
+}
 #controls .loading input {
 	animation: 1.5s linear infinite backgroundScroll;
 	background: linear-gradient(-55deg, #555 0%, #555 20%, #888 40%, #7e8888 55%, #555 80%);
 	background-size: 200%;
+}
+#controls .control-group .extra-controls {
+	position: absolute;
+	margin-top: 25px;
+}
+#controls .control-group:not([data-expanded=true]) .extra-controls {
+	display: none;
 }
 @keyframes backgroundScroll {
 	0% { background-position:  100%; }
@@ -75,8 +94,18 @@ lucos-navbar {
 		list-style-type: none;
 		padding: 0;
 	}
-	#controls input {
+	#controls :not(.control-group):not(.extra-controls) > input, #controls .control-group {
 		width: 90%;
 		margin: 0.5em 5%;
+	}
+	#controls .control-group {
+		display: flex;
+	}
+	#controls .control-group .show-more {
+		flex-grow: 0.1;
+		padding-right: 40px;
+	}
+	#controls .control-group .primary-control {
+		flex: 1;
 	}
 }

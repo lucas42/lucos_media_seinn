@@ -65,7 +65,8 @@ class Playlist extends HTMLElement {
 
 		function updatePlaylist(data) {
 			const tracks = data.tracks.slice(1); // Ignore first track as that's used by `now`
-			while (list.firstChild) {
+			while (list.lastChild) {
+				if (typeof list.lastChild.removeCustomListeners == 'function') list.lastChild.removeCustomListeners();
 				list.removeChild(list.lastChild);
 			}
 			tracks.forEach(track => {
@@ -133,6 +134,18 @@ function listenForPress(playlist, node, options) {
 			node.setAttribute("expanded", "true");
 			toggle.firstChild.textContent = "-";
 		}
+	}
+
+	// Create single function to remove all the event listeners, to help clean up the node on removal and avoid memory leaks
+	node.removeCustomListeners = () => {
+		node.removeEventListener("mousedown", startPress, {passive: true});
+		node.removeEventListener("touchstart", startPress, {passive: true});
+		node.removeEventListener("mouseup", stopPress, {passive: true});
+		node.removeEventListener("mouseleave", stopPress, {passive: true});
+		node.removeEventListener("touchend", stopPress, {passive: true});
+		node.removeEventListener("contextmenu", stopPress, {passive: true});
+		playlist.removeEventListener("scroll", stopPress, {passive: true});
+		toggle.removeEventListener("click", pressed, {passive: true});
 	}
 }
 

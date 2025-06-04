@@ -1,5 +1,5 @@
 import { getState as getBufferState } from '../buffers.js';
-import { listenExisting } from 'lucos_pubsub';
+import { listenExisting, unlisten } from 'lucos_pubsub';
 import player from '../player.js';
 import localDevice from '../../classes/local-device.js';
 
@@ -36,11 +36,12 @@ class TrackState extends HTMLElement {
 				}
 			`;
 			stateNode.nodeValue = state;
-		}
-		listenExisting("trackStateChange", ({url}) => {
+		};
+		component.trackStateChange = ({url}) => {
 			if (url !== component.getAttribute("url")) return;
 			component.updateState();
-		}, true);
+		};
+		listenExisting("trackStateChange", component.trackStateChange, true);
 		component.updateState();
 	}
 	attributeChangedCallback(name, oldValue, newValue) {
@@ -50,6 +51,9 @@ class TrackState extends HTMLElement {
 				this.updateState();
 				break;	
 		}
+	}
+	disconnectedCallback() {
+		unlisten("trackStateChange", this.trackStateChange);
 	}
 }
 

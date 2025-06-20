@@ -13,25 +13,20 @@ const TRACK_CACHE = 'tracks-v1';
 export async function getOfflineCollection() {
 	const metadataCache = await caches.open(TRACK_METADATA_CACHE);
 	const trackCache = await caches.open(TRACK_CACHE);
-
-	// For now, hackily use the trackCache as the metadata cache won't be populated on most devices
-	// TODO: once metadata cache is established, read from it.  (Might want to double check against the track cache too though)
-	const availableTracks = await trackCache.keys();
-
+	const availableTracks = await metadataCache.keys();
 	const tracks = [];
+
+	// TODO: check that the track also appears in trackCache
 	while(tracks.length < 10) {
 		const randomKey = Math.floor(Math.random() * availableTracks.length);
-		const request  = availableTracks[randomKey];
+		const request  = await metadataCache.match(availableTracks[randomKey]);
+		console.log(availableTracks[randomKey], request);
+		const trackData = await request.json();
 		const title = decodeURIComponent(request.url.split("/").pop().split(".").shift());
 
-		// TODO: When switching to metadata cache, can use the `url` and `metadata` fields direct from there
 		tracks.push({
-			url: request.url,
-			metadata: {
-				title,
-				img: "https://staticmedia.l42.eu/music-pic.png",
-				thumb: "https://staticmedia.l42.eu/music-pic.png",
-			},
+			url: trackData.url,
+			metadata: trackData.metadata,
 			currentTime: 0,
 			uuid: uuidv4(),
 		})

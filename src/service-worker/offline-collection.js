@@ -20,7 +20,6 @@ export async function getOfflineCollection() {
 	while(tracks.length < 10) {
 		const randomKey = Math.floor(Math.random() * availableTracks.length);
 		const request  = await metadataCache.match(availableTracks[randomKey]);
-		console.log(availableTracks[randomKey], request);
 		const trackData = await request.json();
 		const title = decodeURIComponent(request.url.split("/").pop().split(".").shift());
 
@@ -32,4 +31,16 @@ export async function getOfflineCollection() {
 		})
 	}
 	return tracks;
+}
+
+export async function topupTracks(pollData) {
+	if (pollData.tracks.length < 10) {
+		console.log("Adding tracks to playlist from offline collection")
+		const extraTracks = await getOfflineCollection();
+
+		// There's definitely a more concise way to write this, but I'm on a plane so can't look it up
+		extraTracks.forEach(track => {
+			pollData.tracks.push(track);
+		});
+	}
 }

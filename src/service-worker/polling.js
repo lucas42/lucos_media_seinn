@@ -2,7 +2,7 @@ import { listen, listenExisting } from 'lucos_pubsub';
 import { getOutstandingRequests } from 'restful-queue';
 import '../classes/poll.js';
 import { getTrackState } from './preload.js';
-import { getOfflineCollection } from './offline-collection.js';
+import { getOfflineCollection, topupTracks } from './offline-collection.js';
 
 
 const POLL_CACHE = 'polls-v1';
@@ -47,7 +47,7 @@ async function dataChanged() {
 	while (resolve = listeners.shift()) {
 		resolve(await getCurrentResponse());
 	}
-	if (!pollData.playOfflineCollection) saveToCache(await getCurrentResponse());
+	await saveToCache(await getCurrentResponse());
 }
 
 async function getCurrentResponse() {
@@ -76,7 +76,8 @@ export async function getPoll(hashcode) {
  **/
 async function saveToCache(pollResponse) {
 	const pollCache = await caches.open(POLL_CACHE);
-	await pollCache.put(pollRequest, pollResponse)
+	if (pollData.playOfflineCollection) await pollCache.put(offlinePollRequest, pollResponse);
+	else await pollCache.put(pollRequest, pollResponse);
 }
 /**
  * Updates the pollData based on waht's currently in the cache
@@ -89,6 +90,12 @@ async function loadFromCache() {
 	if (!pollResponse) return;
 	const cacheData = await pollResponse.json();
 	if (!pollData.unloaded) return;
+
+	// If the offline collection is playing, ensure there's enough tracks in the playlist
+	// (If it's not the offline collection, then this is the server's responsibility)
+	if (cacheData.playOfflineCollection) {
+		await topupTracks(cacheData);
+	}
 	pollData = cacheData;
 	dataChanged();
 }
@@ -150,6 +157,11 @@ async function enactAction(action) {
 						const uuid = pathparts[4];
 						const action = params.get("action"); // Not needed by service worker
 						pollData.tracks = pollData.tracks.filter(track => track.uuid !== uuid);
+
+						// TODO: would be better to derive this from the `playlist` var above, once that's populated
+						if (pollData.playOfflineCollection) {
+							await topupTracks(pollData);
+						}
 					} else {
 						console.error("Unsupported v3 playlist url", url.pathname);
 					}

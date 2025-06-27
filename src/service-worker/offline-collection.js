@@ -2,6 +2,7 @@
  * Logic for playing music which has already been cached on the device, regardless of server-driven playlist.
  */
 import { v4 as uuidv4 } from 'uuid';
+import { send } from 'lucos_pubsub';
 const TRACK_METADATA_CACHE = 'track-metadata-v1';
 const TRACK_CACHE = 'tracks-v1';
 
@@ -10,7 +11,7 @@ const TRACK_CACHE = 'tracks-v1';
  * Returns an array tracks in the same format as `tracks` field in the /v3/poll endpoint.
  * All tracks returned should already be playable on the current device without any further network connectivity.
  */
-export async function getOfflineCollection() {
+async function getOfflineCollection() {
 	const metadataCache = await caches.open(TRACK_METADATA_CACHE);
 	const trackCache = await caches.open(TRACK_CACHE);
 	const availableTracks = await metadataCache.keys();
@@ -42,5 +43,6 @@ export async function topupTracks(pollData) {
 		extraTracks.forEach(track => {
 			pollData.tracks.push(track);
 		});
+		send("offlineTracksAdded", pollData);
 	}
 }

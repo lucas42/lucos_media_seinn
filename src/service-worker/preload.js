@@ -13,10 +13,10 @@ function preloadTracks(tracks) {
 		const trackCache = await caches.open(TRACK_CACHE);
 		const trackRequest = new Request(track.url);
 		const fromTrackCache = await trackCache.match(trackRequest);
-		if (!fromTrackCache && !(trackRequest.url in fetchingTracks)) {
-			fetchingTracks[trackRequest.url] = fetchTrack(trackCache, trackRequest);
-			send('trackStateChange', {url: trackRequest.url});
+		if (!fromTrackCache && !(track.url in fetchingTracks)) {
+			fetchingTracks[track.url] = fetchTrack(track.url, trackCache, trackRequest);
 		}
+		send('trackStateChange', {url: track.url});
 
 		// Add metadata about the track into the metadata cache
 		if (track.metadata.trackid) {
@@ -40,7 +40,7 @@ function preloadTracks(tracks) {
 	});
 }
 
-async function fetchTrack (trackCache, trackRequest) {
+async function fetchTrack (trackUrl, trackCache, trackRequest) {
 	try {
 		const trackResponse = await fetch(trackRequest);
 		if (trackResponse.status !== 200) throw new Error("non-200 response");
@@ -48,17 +48,17 @@ async function fetchTrack (trackCache, trackRequest) {
 			await trackCache.put(trackRequest, trackResponse)
 		} catch (error) {
 			console.error("Failed to cache track:", error.message);
-			erroringTracks[trackRequest.url] = error.message;
+			erroringTracks[trackUrl] = error.message;
 		}
 
 	// If the track wasn't reachable, tell the server, which should skip that one out
 	} catch (error) {
-		console.error("Failed to preload track:", error.message)
+		console.error("Failed to preload track:", error.message, trackRequest.url);
 		// TODO: skip track in any playlist it's currently queued in
-		erroringTracks[trackRequest.url] = error.message;
+		erroringTracks[trackUrl] = error.message;
 	}
-	delete fetchingTracks[trackRequest.url];
-	send('trackStateChange', {url: trackRequest.url});
+	delete fetchingTracks[trackUrl];
+	send('trackStateChange', {url: trackUrl});
 }
 async function fetchImage (cache, request) {
 	try {
@@ -80,6 +80,9 @@ async function fetchImage (cache, request) {
 listenExisting("managerData", data => {
 	preloadTracks(data.tracks);
 });
+listenExisting("offlineTracksAdded", data => {
+	preloadTracks(data.tracks);
+})
 
 export async function getTrackState(trackUrl) {
 	if (trackUrl in fetchingTracks) return "fetching";

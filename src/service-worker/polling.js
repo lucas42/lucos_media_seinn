@@ -2,7 +2,7 @@ import { listen, listenExisting } from 'lucos_pubsub';
 import { getOutstandingRequests } from 'restful-queue';
 import '../classes/poll.js';
 import { getTrackState } from './preload.js';
-import { getOfflineCollection, topupTracks } from './offline-collection.js';
+import { topupTracks } from './offline-collection.js';
 
 
 const POLL_CACHE = 'polls-v1';
@@ -186,9 +186,10 @@ async function enactAction(action) {
 						if (inOfflineMode == updatedValue) return; // No need to do anything if already in the correct state
 						if (updatedValue) {
 							const body = JSON.stringify(Object.assign(pollData, {
-								tracks: await getOfflineCollection(),
+								tracks: [],
 								playOfflineCollection: true,
 							}));
+							await topupTracks(body);
 							const blob = new Blob([body]);
 							const pollResponse = new Response(blob, {status: 200, type : 'application/json'});
 							await pollCache.put(offlinePollRequest, pollResponse);

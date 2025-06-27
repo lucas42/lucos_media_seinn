@@ -98,9 +98,12 @@ class NowPlaying extends HTMLElement {
 				delete lyricButton.dataset.hasLyrics;
 			}
 			lyricViewer.setAttribute("lyrics", metadata.lyrics || "");
-			component.setAttribute("uuid", now.uuid);
-			component.setAttribute("url", now.url);
-			state.setAttribute("url", now.url);
+			if (component.getAttribute("uuid") != now.uuid || component.getAttribute("url") != now.url) {
+				component.setAttribute("uuid", now.uuid);
+				component.setAttribute("url", now.url);
+				state.setAttribute("url", now.url);
+				send('currentTrackUpdated', now);
+			}
 			if (now.state) state.setAttribute("service-worker-state", now.state);
 			if (data.isPlaying !== component.isPlaying) {
 				component.isPlaying = data.isPlaying;

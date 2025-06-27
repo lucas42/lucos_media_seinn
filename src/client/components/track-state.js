@@ -41,7 +41,8 @@ class TrackState extends HTMLElement {
 			if (url !== component.getAttribute("url")) return;
 			component.updateState();
 		};
-		listenExisting("trackStateChange", component.trackStateChange, true);
+		listenExisting('trackStateChange', component.trackStateChange, true);
+		listenExisting('currentTrackUpdated', component.updateState, true);
 		component.updateState();
 	}
 	attributeChangedCallback(name, oldValue, newValue) {

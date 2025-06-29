@@ -71,6 +71,9 @@ class LyricViewer extends HTMLElement {
 				lyricText.nodeValue = "No lyrics available for this track";
 				component.hidden = true;
 			}
+
+			// Replace the lyricNode in the DOM to reset scroll position (even works when node is hidden, unlike setting .scrollTop)
+			shadow.replaceChild(lyricNode, lyricNode);
 		}
 
 		// Close the component when escape button is pressed
@@ -82,7 +85,7 @@ class LyricViewer extends HTMLElement {
 	attributeChangedCallback(name, oldValue, newValue) {
 		switch (name) {
 			case "lyrics":
-				this.setLyrics(newValue);
+				if (oldValue != newValue) this.setLyrics(newValue);
 				break;
 		}
 	}

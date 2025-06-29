@@ -25,6 +25,7 @@ export default async () => {
 				extractComments: false,
 			})],
 		},
+		devtool: 'source-map',
 		mode: 'production',
 	};
 };

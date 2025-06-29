@@ -99,6 +99,11 @@ class DevicesOverlay extends HTMLElement {
 
 		`;
 		shadow.prepend(style);
+
+		// Close the overlay when escape button is pressed
+		document.addEventListener('keyup', e => {
+			if (e.key === "Escape") component.style.display = "none";
+		}, false);
 	}
 }
 

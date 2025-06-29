@@ -16,7 +16,10 @@ function preloadTracks(tracks) {
 		if (!fromTrackCache && !(track.url in fetchingTracks)) {
 			fetchingTracks[track.url] = fetchTrack(track.url, trackCache, trackRequest);
 		}
-		send('trackStateChange', {url: track.url});
+		send('trackStateChange', {
+			url: track.url,
+			state: await getTrackState(track.url),
+		});
 
 		// Add metadata about the track into the metadata cache
 		if (track.metadata.trackid) {
@@ -58,7 +61,11 @@ async function fetchTrack (trackUrl, trackCache, trackRequest) {
 		erroringTracks[trackUrl] = error.message;
 	}
 	delete fetchingTracks[trackUrl];
-	send('trackStateChange', {url: trackUrl});
+
+	send('trackStateChange', {
+		url: trackUrl,
+		state: await getTrackState(trackUrl),
+	});
 }
 async function fetchImage (cache, request) {
 	try {

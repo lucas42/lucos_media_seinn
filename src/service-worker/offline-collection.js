@@ -35,6 +35,10 @@ async function getOfflineCollection() {
 }
 
 export async function topupTracks(pollData) {
+	// Filter out any tracks which have failed to load
+	pollData.tracks = pollData.tracks.filter(track => (track.state != "failed"));
+
+	// If there's fewer than 10 tracks remaining, add some more
 	if (pollData.tracks.length < 10) {
 		console.log("Adding tracks to playlist from offline collection")
 		const extraTracks = await getOfflineCollection();

@@ -29,10 +29,13 @@ listenExisting("managerData", async serverData => {
 	dataChanged();
 });
 
-listenExisting("trackStateChange", async ({url}) => {
-	const state = await getTrackState(url);
+listenExisting("trackStateChange", async ({url, state}) => {
 	for (const track of pollData.tracks) {
 		if (track.url === url) track.state = state;
+	}
+	if (pollData.playOfflineCollection && state == "failed") {
+		debugger;
+		await topupTracks(pollData);
 	}
 	dataChanged();
 });

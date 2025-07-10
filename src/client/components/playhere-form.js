@@ -11,7 +11,7 @@ import { listenExisting } from 'lucos_pubsub';
 import { put } from '../../classes/manager.js';
 import localDevice from '../../classes/local-device.js';
 
-class PlayHereForm extends HTMLFormElement {
+export default class PlayHereForm extends HTMLFormElement {
 	constructor() {
 		super();
 		const group = document.createElement("div");
@@ -71,14 +71,3 @@ class PlayHereForm extends HTMLFormElement {
 }
 
 customElements.define('playhere-form', PlayHereForm, { extends: "form" });
-
-function addToControls() {
-	const controls = document.getElementById('controls');
-	const li = document.createElement("li");
-	const form = new PlayHereForm();
-	li.append(form);
-
-	// Should be the 2nd control (straight after playpause)
-	controls.firstElementChild.after(li);
-}
-addToControls();

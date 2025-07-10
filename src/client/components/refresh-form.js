@@ -7,7 +7,7 @@ class RefreshForm extends HTMLFormElement {
 	constructor() {
 		super();
 		const li = this.parentNode;
-		li.parentNode.removeChild(li);
+		if (li) li.parentNode.removeChild(li);
 	}
 }
 

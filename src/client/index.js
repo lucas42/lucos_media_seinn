@@ -6,7 +6,7 @@ import './media-session.js';
 import './player.js';
 import './track-status-update.js';
 import 'lucos_navbar';
-import './components/volume.js';
+import './components/volume-control.js';
 import './components/devices-overlay.js';
 import './components/playlist.js';
 import './components/now-playing.js';

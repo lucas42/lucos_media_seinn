@@ -69,11 +69,11 @@ class VolumeControl extends HTMLElement {
 			return put("v3/volume", newVolume);
 		}
 
-		component.querySelector("#volume-up").addEventListener('submit', async event => {
+		component.querySelector("#volume-up")?.addEventListener('submit', async event => {
 			event.preventDefault();
 			updateVolume(Math.min(1, currentVolume+0.1),);
 		});
-		component.querySelector("#volume-down").addEventListener('submit', async event => {
+		component.querySelector("#volume-down")?.addEventListener('submit', async event => {
 			event.preventDefault();
 			updateVolume(Math.max(0, currentVolume-0.1),);
 		});

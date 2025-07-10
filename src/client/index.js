@@ -8,7 +8,7 @@ import './track-status-update.js';
 import 'lucos_navbar';
 import './components/volume-control.js';
 import './components/devices-overlay.js';
-import './components/playlist.js';
+import './components/track-playlist.js';
 import './components/now-playing.js';
 import './components/edit-form.js';
 import './components/playpause-form.js';

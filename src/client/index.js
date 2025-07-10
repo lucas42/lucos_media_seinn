@@ -4,6 +4,7 @@ import './local-device-updates.js';
 import './keyboard.js';
 import './media-session.js';
 import './player.js';
+import './track-status-update.js';
 import 'lucos_navbar';
 import './components/volume.js';
 import './components/devices-overlay.js';

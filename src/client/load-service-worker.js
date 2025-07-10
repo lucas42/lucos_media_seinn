@@ -1,4 +1,4 @@
-import { updateTrackStatus } from './player.js';
+import { updateTrackStatus } from './track-status-update.js';
 import { abortAllRequests } from '../classes/manager.js';
 const statusChannel = new BroadcastChannel("lucos_status");
 try {

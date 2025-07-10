@@ -1,6 +1,3 @@
-import { put } from '../classes/manager.js';
-import { listenExisting } from 'lucos_pubsub';
-
 /**
  * Currently there are 2 different players included, both with a consistent API:
  * `web-player` - uses the Web Audio API.  Allows for buffering & cross-fading for a more polished sound.  However, currently doesn't support mediaSession API and stutters when playing an inactive tab over a bluetooth headset on my phone.
@@ -13,23 +10,4 @@ const { getTimeElapsed, getCurrentUuid, isPlaying, init } = audioElementPlayer;
 
 init();
 
-export async function updateTrackStatus() {
-	const timeElapsed = getTimeElapsed();
-	const currentUuid = getCurrentUuid();
-	if (!currentUuid) return;
-
-	const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
-	await put(`v3/playlist/${playlist}/${currentUuid}/current-time`, timeElapsed);
-}
-
-// Aside from any event triggers to updating tracks status, automatically update it every 30 seconds at the very least
-function periodicStatusUpdate() {
-	updateTrackStatus();
-	setTimeout(periodicStatusUpdate, 30*1000);
-}
-periodicStatusUpdate();
-
-// If playback is moving from this device to another, ensure the latest track status is sent to the server
-listenExisting('device_notcurrent', updateTrackStatus);
-
-export default { isPlaying };
+export default { isPlaying, getTimeElapsed, getCurrentUuid };

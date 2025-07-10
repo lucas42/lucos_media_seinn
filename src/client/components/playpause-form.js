@@ -5,8 +5,11 @@ class PlayPauseForm extends HTMLFormElement {
 	constructor() {
 		super();
 
-		const submit = this.querySelector("input[type=submit]");
-		if (!submit) throw new Error("PlayPause form missing submit button");
+		let submit = this.querySelector("input[type=submit]");
+		if (!submit) {
+			submit = document.createElement('input');
+			submit.type = 'submit';
+		}
 
 		listenExisting("managerData", data => {
 			if (data.isPlaying) {

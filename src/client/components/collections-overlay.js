@@ -197,17 +197,3 @@ class CollectionsOverlay extends HTMLElement {
 }
 
 customElements.define('collections-overlay', CollectionsOverlay);
-
-const overlay = document.createElement("collections-overlay");
-overlay.style.display = "none";
-const showOverlay = document.createElement("input");
-showOverlay.type = "button";
-showOverlay.value = "Collections";
-showOverlay.addEventListener("click", event => {
-	event.stopPropagation();
-	overlay.style.display = "block";
-});
-const control = document.createElement("li");
-control.appendChild(showOverlay);
-document.getElementById('controls').appendChild(control);
-document.body.append(overlay);

@@ -16,6 +16,7 @@ import './components/playhere-form.js';
 import './components/next-form.js';
 import './components/refresh-form.js';
 import './components/collections-overlay.js';
+import './setup-overlays.js';
 import './load-service-worker.js';
 
 const statusChannel = new BroadcastChannel("lucos_status");

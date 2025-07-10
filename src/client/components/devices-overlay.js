@@ -107,17 +107,3 @@ class DevicesOverlay extends HTMLElement {
 }
 
 customElements.define('devices-overlay', DevicesOverlay);
-
-const overlay = document.createElement("devices-overlay");
-overlay.style.display = "none";
-const showOverlay = document.createElement("input");
-showOverlay.type = "button";
-showOverlay.value = "Devices";
-showOverlay.addEventListener("click", event => {
-	event.stopPropagation();
-	overlay.style.display = "block";
-});
-const control = document.createElement("li");
-control.appendChild(showOverlay);
-document.getElementById('controls').appendChild(control);
-document.body.append(overlay);

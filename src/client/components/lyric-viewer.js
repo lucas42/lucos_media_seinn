@@ -47,7 +47,7 @@ class LyricViewer extends HTMLElement {
 		hideButton.classList.add("hideButton");
 		hideButton.addEventListener("click", event => {
 			event.stopPropagation();
-			component.hidden = true;
+			event.currentTarget.parentNode.parentNode.host.hidden = true;
 		});
 		hideButton.append(document.createTextNode("Hide"));
 		topBar.append(hideButton);
@@ -75,12 +75,6 @@ class LyricViewer extends HTMLElement {
 			// Replace the lyricNode in the DOM to reset scroll position (even works when node is hidden, unlike setting .scrollTop)
 			shadow.replaceChild(lyricNode, lyricNode);
 		}
-
-		// Close the component when escape button is pressed
-		document.addEventListener('keyup', e => {
-			if (e.key === "Escape") component.hidden = true;
-			if (e.key === "l") component.hidden = !component.hidden;
-		}, false);
 	}
 	attributeChangedCallback(name, oldValue, newValue) {
 		switch (name) {

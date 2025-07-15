@@ -77,6 +77,12 @@ class NowPlaying extends HTMLElement {
 		lyricViewer.hidden = true;
 		shadow.appendChild(lyricViewer);
 
+		// Close the lyricViewer when escape button is pressed
+		document.addEventListener('keyup', e => {
+			if (e.key === "Escape") lyricViewer.hidden = true;
+			if (e.key === "l") lyricViewer.hidden = !lyricViewer.hidden;
+		}, false);
+
 		const lyricButton = document.createElement("button");
 		lyricButton.classList.add("lyricButton");
 		lyricButton.addEventListener("click", event => {

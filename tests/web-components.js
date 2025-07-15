@@ -57,7 +57,6 @@ describe("Web Component Garbage Collection Test", function () {
 	this.timeout((1 + gcLimitInSeconds)*1000); // Allow enough time for module import and Garbage Collection
 
 	for (const tag of componentTags) {
-		if (tag == "now-playing") continue;
 		it(`Should allow <${tag}> to be garbage collected`, done => {
 			let timeoutId;
 			(async () => {

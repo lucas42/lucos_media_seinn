@@ -7,7 +7,7 @@
  * Clicking the button is idempotent, though it hides itself when the local device is already the current one
  **/
 
-import { listenExisting } from 'lucos_pubsub';
+import { listenExisting, unlisten } from 'lucos_pubsub';
 import { put } from '../../classes/manager.js';
 import localDevice from '../../classes/local-device.js';
 
@@ -45,7 +45,9 @@ export default class PlayHereForm extends HTMLFormElement {
 		showmore.type = "button";
 		showmore.value = "↓";
 		showmore.classList.add("show-more");
-		showmore.addEventListener("click", () => {
+		showmore.addEventListener("click", event => {
+			const showmore = event.currentTarget;
+			const group = showmore.parentNode;
 			if (group.dataset.expanded == "true") {
 				delete group.dataset.expanded;
 				showmore.value = "↓";
@@ -55,18 +57,26 @@ export default class PlayHereForm extends HTMLFormElement {
 			}
 		})
 		group.append(showmore);
-		listenExisting("managerData", data => {
-			if (localDevice.isCurrent()) {
-				group.classList.add("hide");
-			} else {
-				group.classList.remove("hide");
-			}
-		});
 		const style = document.createElement('style');
 		style.textContent = `
 		`;
 		this.append(style);
 		this.append(group);
+	}
+
+	connectedCallback() {
+		const group = this.lastChild;
+		const showHide = data => {
+			if (localDevice.isCurrent()) {
+				group.classList.add("hide");
+			} else {
+				group.classList.remove("hide");
+			}
+		}
+		listenExisting("managerData", showHide);
+		this.disconnectedCallback = () => {
+			unlisten("managerData", showHide);
+		}
 	}
 }
 

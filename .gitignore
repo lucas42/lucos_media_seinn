@@ -1,4 +1,5 @@
 .env
+.DS_Store
 node_modules
 src/resources/v3.js
 src/resources/serviceworker-v3.js

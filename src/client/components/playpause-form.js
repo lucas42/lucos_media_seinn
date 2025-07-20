@@ -1,35 +1,42 @@
-import { listenExisting, send } from 'lucos_pubsub';
+import { listenExisting, unlisten, send } from 'lucos_pubsub';
 import { put } from '../../classes/manager.js';
 
 class PlayPauseForm extends HTMLFormElement {
 	constructor() {
 		super();
 
-		let submit = this.querySelector("input[type=submit]");
-		if (!submit) {
-			submit = document.createElement('input');
+		if (!this.querySelector("input[type=submit]")) {
+			const submit = document.createElement('input');
 			submit.type = 'submit';
+			this.appendChild(submit);
 		}
-
-		listenExisting("managerData", data => {
-			if (data.isPlaying) {
-				submit.value = "⏸ Pause"
-			} else {
-				submit.value = "⏵ Play"
-			}
-		}, true);
 
 		this.addEventListener('submit', async event => {
 			event.preventDefault();
-			this.classList.add('loading');
+			const submit = event.currentTarget.querySelector("input[type=submit]");
+			event.currentTarget.classList.add('loading');
 			send('playpause_changing');
 			if (submit.value == "⏵ Play") {
 				await put("v3/is-playing", "true");
 			} else {
 				await put("v3/is-playing", "false");
 			}
-			this.classList.remove('loading');
+			event.currentTarget.classList.remove('loading');
 		});
+	}
+	connectedCallback() {
+		const playPause = data => {
+			const submit = this.querySelector("input[type=submit]");
+			if (data.isPlaying) {
+				submit.value = "⏸ Pause"
+			} else {
+				submit.value = "⏵ Play"
+			}
+		}
+		listenExisting("managerData", playPause);
+		this.disconnectedCallback = () => {
+			unlisten("managerData", playPause);
+		}
 	}
 }
 

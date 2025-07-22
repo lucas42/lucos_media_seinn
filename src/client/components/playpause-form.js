@@ -13,15 +13,15 @@ class PlayPauseForm extends HTMLFormElement {
 
 		this.addEventListener('submit', async event => {
 			event.preventDefault();
-			const submit = event.currentTarget.querySelector("input[type=submit]");
-			event.currentTarget.classList.add('loading');
+			const submit = this.querySelector("input[type=submit]");
+			this.classList.add('loading');
 			send('playpause_changing');
 			if (submit.value == "⏵ Play") {
 				await put("v3/is-playing", "true");
 			} else {
 				await put("v3/is-playing", "false");
 			}
-			event.currentTarget.classList.remove('loading');
+			this.classList.remove('loading');
 		});
 	}
 	connectedCallback() {

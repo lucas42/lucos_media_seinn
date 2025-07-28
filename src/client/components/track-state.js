@@ -41,9 +41,6 @@ class TrackState extends HTMLElement {
 			if (url !== component.getAttribute("url")) return;
 			component.updateState();
 		};
-		listenExisting('trackStateChange', component.trackStateChange, true);
-		listenExisting('currentTrackUpdated', component.updateState, true);
-		component.updateState();
 	}
 	attributeChangedCallback(name, oldValue, newValue) {
 		switch (name) {
@@ -53,8 +50,14 @@ class TrackState extends HTMLElement {
 				break;	
 		}
 	}
+	connectedCallback() {
+		listenExisting("trackStateChange", this.trackStateChange);
+		listenExisting("currentTrackUpdated", this.updateState);
+		this.updateState();
+	}
 	disconnectedCallback() {
 		unlisten("trackStateChange", this.trackStateChange);
+		unlisten("currentTrackUpdated", this.updateState);
 	}
 }
 

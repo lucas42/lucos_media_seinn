@@ -1,4 +1,4 @@
-import { listenExisting } from 'lucos_pubsub';
+import { listenExisting, unlisten } from 'lucos_pubsub';
 import { put } from '../../classes/manager.js';
 
 class CollectionsOverlay extends HTMLElement {
@@ -11,7 +11,7 @@ class CollectionsOverlay extends HTMLElement {
 		const container = document.createElement("div");
 		overlay.append(container);
 		overlay.addEventListener("click", event => {
-			component.style.display = "none";
+			this.style.display = "none";
 		});
 		container.addEventListener("click", event => event.stopPropagation());
 		container.addEventListener("keyup", event => event.stopPropagation());
@@ -30,7 +30,7 @@ class CollectionsOverlay extends HTMLElement {
 
 		const collectionList = document.createElement("ul");
 		container.append(collectionList);
-		listenExisting("managerData", data => {
+		this.updateData = data => {
 			while (collectionList.firstChild) {
 				collectionList.removeChild(collectionList.lastChild);
 			}
@@ -45,7 +45,7 @@ class CollectionsOverlay extends HTMLElement {
 			clearItem.title = "Play tracks from whole library";
 			if (data.currentCollectionSlug !== "all" && !data.playOfflineCollection) {
 				clearItem.addEventListener("click", async event => {
-					clearItem.dataset.loading = "true";
+					event.currentTarget.dataset.loading = "true";
 					await put("v3/current-collection", "all");
 				});
 				clearItem.dataset.clickable = true;
@@ -70,8 +70,8 @@ class CollectionsOverlay extends HTMLElement {
 				item.title = "Play tracks from "+collection.name;
 				if (!collection.isCurrent && !data.playOfflineCollection) {
 					item.addEventListener("click", async event => {
-						item.dataset.loading = "true";
-						await put("v3/current-collection", collection.slug);
+						event.currentTarget.dataset.loading = "true";
+						await put("v3/current-collection", event.currentTarget.dataset.slug);
 					});
 					item.dataset.clickable = true;
 				}
@@ -91,12 +91,12 @@ class CollectionsOverlay extends HTMLElement {
 				item.title = "Play tracks already cached on device";
 				if (data.playOfflineCollection) {
 					item.addEventListener("click", async event => {
-						item.dataset.loading = "true";
+						event.currentTarget.dataset.loading = "true";
 						await put("offline/play-collection", false);
 					});
 				} else {
 					item.addEventListener("click", async event => {
-						item.dataset.loading = "true";
+						event.currentTarget.dataset.loading = "true";
 						await put("offline/play-collection", true);
 					});
 				}
@@ -106,7 +106,7 @@ class CollectionsOverlay extends HTMLElement {
 					item.scrollIntoViewIfNeeded();
 				}
 			}
-		});
+		};
 		const style = document.createElement('style');
 		style.textContent = `
 
@@ -190,9 +190,17 @@ class CollectionsOverlay extends HTMLElement {
 		shadow.prepend(style);
 
 		// Close the overlay when escape button is pressed
-		document.addEventListener('keyup', e => {
+		this.keyup = e => {
 			if (e.key === "Escape") component.style.display = "none";
-		}, false);
+		};
+	}
+	connectedCallback() {
+		listenExisting("managerData", this.updateData);
+		document.addEventListener('keyup', this.keyup, false);
+	}
+	disconnectedCallback() {
+		unlisten("managerData", this.updateData);
+		document.removeEventListener('keyup', this.keyup);
 	}
 }
 

@@ -60,16 +60,20 @@ describe("Web Component Garbage Collection Test", function () {
 		it(`Should allow <${tag}> to be garbage collected`, done => {
 			let timeoutId;
 			(async () => {
+				let resolveDone;
+				const waitUntilDone = new Promise(r => resolveDone = r); // Use of a promise here, rather than relying on timeouts keeps node in an idle state, so garbage collection has a better chance to run
+
 				const modulePath = path.resolve(componentsDir, `${tag}.js`);
 				await import(pathToFileURL(modulePath).href);
 
 				const registry = new FinalizationRegistry(() => {
 						clearTimeout(timeoutId);
+						resolveDone();
 						done();
 				});
 				const constructor = customElements.get(tag);
 				if (!constructor) throw new Error(`Can't get constructor for element <${tag}>`);
-        let element = new constructor();
+        		let element = new constructor();
 
 				registry.register(element, tag);
 	
@@ -81,8 +85,10 @@ describe("Web Component Garbage Collection Test", function () {
 				// Remove reference
 				element = null;
 
-				// Force garbage collection and wait
-				global.gc();
+				setTimeout(() => {
+					global.gc();
+				}, 0);
+				await waitUntilDone;
 			})().catch(error => {
 				if (timeoutId) clearTimeout(timeoutId);
 				done(error);

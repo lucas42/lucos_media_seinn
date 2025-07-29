@@ -186,7 +186,10 @@ async function enactAction(action) {
 						const pollCache = await caches.open(POLL_CACHE);
 						const inOfflineMode = !!(await pollCache.match(offlinePollRequest));
 						const updatedValue = (data.toLowerCase() === "true");
-						if (inOfflineMode == updatedValue) return; // No need to do anything if already in the correct state
+						if (inOfflineMode == updatedValue) { // No need to do anything if already in the correct state
+							console.warn(`Offline mode already ${updatedValue}, taking no action`);
+							return;
+						}
 						if (updatedValue) {
 							const body = JSON.stringify(Object.assign(pollData, {
 								tracks: [],

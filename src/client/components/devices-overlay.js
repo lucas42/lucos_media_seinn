@@ -1,4 +1,4 @@
-import { listenExisting, send } from 'lucos_pubsub';
+import { listenExisting, unlisten, send } from 'lucos_pubsub';
 import { put } from '../../classes/manager.js';
 import localDevice from '../../classes/local-device.js';
 
@@ -12,14 +12,14 @@ class DevicesOverlay extends HTMLElement {
 		const container = document.createElement("div");
 		overlay.append(container);
 		overlay.addEventListener("click", event => {
-			component.style.display = "none";
+			this.style.display = "none";
 		});
 		container.addEventListener("click", event => event.stopPropagation());
 		container.addEventListener("keyup", event => event.stopPropagation());
 		shadow.append(overlay);
 		const deviceList = document.createElement("div");
 		container.append(deviceList);
-		listenExisting("managerData", data => {
+		this.updateData = data => {
 			while (deviceList.firstChild) {
 				deviceList.removeChild(deviceList.lastChild);
 			}
@@ -50,16 +50,19 @@ class DevicesOverlay extends HTMLElement {
 				makeCurrent.value = "▶";
 				form.appendChild(makeCurrent);
 				makeCurrent.addEventListener("click", event => {
-					send('device_changing', { new_uuid: device.uuid });
-					put("v3/current-device", device.uuid);
+					const new_uuid = event.currentTarget.parentNode.dataset.uuid;
+					send('device_changing', { new_uuid });
+					put("v3/current-device", new_uuid);
 				});
 				form.addEventListener("submit", event => {
 					event.preventDefault();
-					put(`v3/device-names/${device.uuid}`, nameField.value);
+					const uuid = event.currentTarget.dataset.uuid;
+					const name = event.currentTarget.firstChild.value;
+					put(`v3/device-names/${uuid}`, name);
 				});
 				deviceList.appendChild(form);
 			})
-		});
+		};
 		const style = document.createElement('style');
 		style.textContent = `
 
@@ -100,9 +103,18 @@ class DevicesOverlay extends HTMLElement {
 		shadow.prepend(style);
 
 		// Close the overlay when escape button is pressed
-		document.addEventListener('keyup', e => {
+		this.keyup = e => {
 			if (e.key === "Escape") component.style.display = "none";
-		}, false);
+		};
+
+	}
+	connectedCallback() {
+		listenExisting("managerData", this.updateData);
+		document.addEventListener('keyup', this.keyup, false);
+	}
+	disconnectedCallback() {
+		unlisten("managerData", this.updateData);
+		document.removeEventListener('keyup', this.keyup);
 	}
 }
 

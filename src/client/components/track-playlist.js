@@ -1,6 +1,6 @@
 import './track-state.js';
 import './track-options.js';
-import { listenExisting } from 'lucos_pubsub';
+import { listenExisting, unlisten } from 'lucos_pubsub';
 
 class Playlist extends HTMLElement {
 	constructor() {
@@ -63,7 +63,7 @@ class Playlist extends HTMLElement {
 		list.start = 2;
 		shadow.append(list);
 
-		function updatePlaylist(data) {
+		this.updatePlaylist = data => {
 			const tracks = data.tracks.slice(1); // Ignore first track as that's used by `now`
 			while (list.lastChild) {
 				if (typeof list.lastChild.removeCustomListeners == 'function') list.lastChild.removeCustomListeners();
@@ -96,8 +96,13 @@ class Playlist extends HTMLElement {
 				listenForPress(component, li, options);
 				list.appendChild(li);
 			});
-		}
-		listenExisting("managerData", updatePlaylist, true);
+		};
+	}
+	connectedCallback() {
+		listenExisting("managerData", this.updatePlaylist);
+	}
+	disconnectedCallback() {
+		unlisten("managerData", this.updatePlaylist);
 	}
 }
 

@@ -1,6 +1,6 @@
 import './track-state.js';
 import './lyric-viewer.js';
-import { listenExisting, send } from 'lucos_pubsub';
+import { listenExisting, send, unlisten } from 'lucos_pubsub';
 
 class NowPlaying extends HTMLElement {
 	constructor() {
@@ -78,10 +78,10 @@ class NowPlaying extends HTMLElement {
 		shadow.appendChild(lyricViewer);
 
 		// Close the lyricViewer when escape button is pressed
-		document.addEventListener('keyup', e => {
+		this.keyup = e => {
 			if (e.key === "Escape") lyricViewer.hidden = true;
 			if (e.key === "l") lyricViewer.hidden = !lyricViewer.hidden;
-		}, false);
+		};
 
 		const lyricButton = document.createElement("button");
 		lyricButton.classList.add("lyricButton");
@@ -92,7 +92,7 @@ class NowPlaying extends HTMLElement {
 		lyricButton.appendChild(document.createTextNode("Lyrics"));
 		shadow.appendChild(lyricButton);
 
-		listenExisting("managerData", data => {
+		this.updateData = data => {
 			const now = data.tracks[0] || {};
 			const metadata = now.metadata || {};
 			title.nodeValue = metadata.title;
@@ -120,11 +120,19 @@ class NowPlaying extends HTMLElement {
 			} else {
 				shadow.host.classList.remove("new-track");
 			}
-		}, true);
+		};
 
 		component.addEventListener("click", event => {
 			document.getElementById("playpause").requestSubmit();
 		});
+	}
+	connectedCallback() {
+		listenExisting("managerData", this.updateData);
+		document.addEventListener('keyup', this.keyup, false);
+	}
+	disconnectedCallback() {
+		unlisten("managerData", this.updateData);
+		document.removeEventListener('keyup', this.keyup);
 	}
 }
 

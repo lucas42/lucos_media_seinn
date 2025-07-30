@@ -75,6 +75,7 @@ class NowPlaying extends HTMLElement {
 
 		const lyricViewer = document.createElement("lyric-viewer");
 		lyricViewer.hidden = true;
+		lyricViewer.addEventListener("click", event => event.stopPropagation(), true); // Prevent clicks on lyric viewer being handled as play/pause
 		shadow.appendChild(lyricViewer);
 
 		// Close the lyricViewer when escape button is pressed

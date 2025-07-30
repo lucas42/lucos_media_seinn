@@ -1,4 +1,4 @@
-import { listenExisting } from 'lucos_pubsub';
+import { listenExisting, unlisten } from 'lucos_pubsub';
 import { put } from '../../classes/manager.js';
 
 class VolumeControl extends HTMLElement {
@@ -78,11 +78,17 @@ class VolumeControl extends HTMLElement {
 			updateVolume(Math.max(0, currentVolume-0.1),);
 		});
 
-		listenExisting("managerData", data => {
+		this.updateData = data => {
 			currentVolume = data.volume;
 			const height = self.innerHeight * currentVolume;
 			vol.style.height = height + "px";
-		}, true);
+		};
+	}
+	connectedCallback() {
+		listenExisting("managerData", this.updateData);
+	}
+	disconnectedCallback() {
+		unlisten("managerData", this.updateData);
 	}
 }
 

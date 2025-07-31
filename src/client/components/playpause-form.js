@@ -23,9 +23,7 @@ class PlayPauseForm extends HTMLFormElement {
 			}
 			this.classList.remove('loading');
 		});
-	}
-	connectedCallback() {
-		const playPause = data => {
+		this.playPause = data => {
 			const submit = this.querySelector("input[type=submit]");
 			if (data.isPlaying) {
 				submit.value = "⏸ Pause"
@@ -33,10 +31,12 @@ class PlayPauseForm extends HTMLFormElement {
 				submit.value = "⏵ Play"
 			}
 		}
-		listenExisting("managerData", playPause);
-		this.disconnectedCallback = () => {
-			unlisten("managerData", playPause);
-		}
+	}
+	connectedCallback() {
+		listenExisting("managerData", this.playPause);
+	}
+	disconnectedCallback() {
+		unlisten("managerData", this.playPause);
 	}
 }
 

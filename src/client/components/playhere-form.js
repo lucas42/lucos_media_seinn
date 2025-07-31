@@ -62,21 +62,20 @@ export default class PlayHereForm extends HTMLFormElement {
 		`;
 		this.append(style);
 		this.append(group);
-	}
-
-	connectedCallback() {
-		const group = this.lastChild;
-		const showHide = data => {
+		this.showHide = data => {
 			if (localDevice.isCurrent()) {
 				group.classList.add("hide");
 			} else {
 				group.classList.remove("hide");
 			}
 		}
-		listenExisting("managerData", showHide);
-		this.disconnectedCallback = () => {
-			unlisten("managerData", showHide);
-		}
+	}
+
+	connectedCallback() {
+		listenExisting("managerData", this.showHide);
+	}
+	disconnectedCallback() {
+		unlisten("managerData", this.showHide);
 	}
 }
 

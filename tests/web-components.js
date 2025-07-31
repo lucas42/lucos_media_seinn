@@ -74,7 +74,9 @@ describe("Web Component Garbage Collection Test", function () {
 				});
 				const constructor = customElements.get(tag);
 				if (!constructor) throw new Error(`Can't get constructor for element <${tag}>`);
-        		let element = new constructor();
+				let element = new constructor();
+				document.body.appendChild(element);
+				document.body.removeChild(element);
 
 				registry.register(element, tag);
 	

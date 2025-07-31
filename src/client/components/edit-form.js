@@ -1,15 +1,18 @@
 import { listenExisting, unlisten } from 'lucos_pubsub';
 
 class EditForm extends HTMLFormElement {
-	connectedCallback() {
+	constructor() {
+		super();
 		const component = this;
-		const updateAction = data => {
+		this.updateAction = data => {
 			component.action = data.tracks[0]?.metadata?.editurl;
 		}
-		listenExisting("managerData", updateAction);
-		this.disconnectedCallback = () => {
-			unlisten("managerData", updateAction);
-		}
+	}
+	connectedCallback() {
+		listenExisting("managerData", this.updateAction);
+	}
+	disconnectedCallback() {
+		unlisten("managerData", this.updateAction);
 	}
 }
 

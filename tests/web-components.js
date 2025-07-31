@@ -4,6 +4,7 @@ import { describe, it } from 'mocha';
 import fs from "fs";
 import path from "path";
 import { pathToFileURL, fileURLToPath } from "url";
+import jsdomutils from "jsdom/lib/jsdom/living/generated/utils.js"
 
 // Required for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -81,6 +82,13 @@ describe("Web Component Garbage Collection Test", function () {
 						done(new Error(`<${tag}> element was not garbage collected in ${gcLimitInSeconds} seconds`));
 				}, gcLimitInSeconds*1000);
 
+				/* Hacky workaround for components which call `querySelector`.
+					Some references to the object are left due to jsdom's internal implementation.
+					Manualy remove the references, to give garbarge collection the opportunity to tidy them up.
+					This may break without warning in future versions of jsdom. */
+				delete element.ownerDocument[jsdomutils.implSymbol]._nwsapi;
+				element.ownerDocument[jsdomutils.implSymbol]._eventListeners.mouseout = [];
+				element.ownerDocument[jsdomutils.implSymbol]._eventListeners.mouseover = [];
 
 				// Remove reference
 				element = null;

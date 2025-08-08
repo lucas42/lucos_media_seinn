@@ -1,12 +1,16 @@
 let mediaManager;
-let apiKey;
+let headers;
 
 const controller = new AbortController();
 const signal = controller.signal;
 
-export function init(mediaManagerValue, apiKeyValue) {
+export function init(mediaManagerValue, apiKey, userAgent) {
 	mediaManager = mediaManagerValue;
-	apiKey = apiKeyValue;
+	headers = new Headers();
+	headers.set("Authorization", `Key ${apiKey}`);
+	if (userAgent) {
+		headers.set("User-Agent", userAgent);
+	}
 }
 export function get(endpoint) {
 	return fetchFromManager(endpoint, 'GET', null);
@@ -26,9 +30,7 @@ async function fetchFromManager(endpoint, method, body) {
 	const url = mediaManager+endpoint;
 	const response = await fetch(url, {
 		method,
-		headers: {
-			Authorization: `Key ${apiKey}`,
-		},
+		headers,
 		body,
 		signal,
 	});

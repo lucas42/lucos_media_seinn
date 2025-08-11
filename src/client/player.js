@@ -6,7 +6,7 @@
 import webPlayer from './web-player.js';
 import audioElementPlayer from './audio-element-player.js';
 
-const { getTimeElapsed, getCurrentUuid, isPlaying, init } = audioElementPlayer;
+const { getTimeElapsed, getCurrentUuid, isPlaying, init } = webPlayer;
 
 init();
 

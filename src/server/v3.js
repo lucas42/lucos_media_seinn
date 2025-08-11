@@ -1,8 +1,10 @@
 import express from 'express';
 import * as manager from '../classes/manager.js';
 import fs from 'node:fs/promises';
+import { middleware as authMiddleware } from './auth.js';
 
 const router = express.Router();
+router.auth = authMiddleware;
 
 const mediaManager = process.env.MEDIA_MANAGER_URL || (() => { throw "MEDIA_MANAGER_URL Environment Variable not set" })();
 const apiKey = process.env.KEY_LUCOS_MEDIA_MANAGER || (() => { throw "KEY_LUCOS_MEDIA_MANAGER Environment Variable not set" })();
@@ -12,6 +14,16 @@ const clientVariables = JSON.stringify({
 	apiKey,
 });
 
+
+// Endpoint that's purely for authentication purposes (which won't be handled by the service worker)
+router.get('/login', (req, res) => {
+	// Check the redirect query to avoid open redirect vulnerabilities
+	if (!req.query.redirect_path?.startsWith("/")) {
+		throw new ValidationError("Invalid redirect_path parameter");
+	}
+	res.redirect(req.query.redirect_path);
+});
+router.use((req, res, next) => router.auth(req, res, next));
 router.get('/', async (req, res) => {
 	try {
 		const data = await manager.get("v3/poll").then(resp => resp.json());

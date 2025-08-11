@@ -23,6 +23,34 @@ router.get('/login', (req, res) => {
 	}
 	res.redirect(req.query.redirect_path);
 });
+router.get('/_info', async (req,res) => {
+	const info = {
+		"system": "lucos_media_seinn",
+		"checks": {
+			"media-manager": {
+				"techDetail": "Can fetch data from media manager",
+			}
+		},
+		"metrics": {},
+		"ci": {
+			"circle": "gh/lucas42/lucos_media_seinn"
+		},
+		icon: "/logo.jpg",
+		network_only: false,
+		title: "Play Music",
+		show_on_homepage: true,
+	};
+	try {
+		const pollResp = await manager.get("v3/poll");
+		if (!pollResp.ok) throw new Error(`Error from media-manager: ${pollResp.statusText}`);
+		await pollResp.json();
+		info.checks["media-manager"].ok = true;
+	} catch (error) {
+		info.checks["media-manager"].ok = false;
+		info.checks["media-manager"].debug = error.message;
+	}
+	res.json(info);
+});
 router.use((req, res, next) => router.auth(req, res, next));
 router.get('/', async (req, res) => {
 	try {
@@ -59,34 +87,6 @@ router.post('/next', async (req,res) => {
 router.post('/volume', async (req,res) => {
 	await manager.put("v3/volume", req.query.volume);
 	res.redirect(`${req.protocol}://${req.headers.host}/`);
-});
-router.get('/_info', async (req,res) => {
-	const info = {
-		"system": "lucos_media_seinn",
-		"checks": {
-			"media-manager": {
-				"techDetail": "Can fetch data from media manager",
-			}
-		},
-		"metrics": {},
-		"ci": {
-			"circle": "gh/lucas42/lucos_media_seinn"
-		},
-		icon: "/logo.jpg",
-		network_only: false,
-		title: "Play Music",
-		show_on_homepage: true,
-	};
-	try {
-		const pollResp = await manager.get("v3/poll");
-		if (!pollResp.ok) throw new Error(`Error from media-manager: ${pollResp.statusText}`);
-		await pollResp.json();
-		info.checks["media-manager"].ok = true;
-	} catch (error) {
-		info.checks["media-manager"].ok = false;
-		info.checks["media-manager"].debug = error.message;
-	}
-	res.json(info);
 });
 
 router.get('/serviceworker-v3.js', async (req, res) => {

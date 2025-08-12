@@ -9,6 +9,20 @@ let globalGain = audioContext.createGain();
 globalGain.connect(audioContext.destination);
 let currentAudio;
 
+/**
+ * Media Session API only works when there's an audio/video element playing on the page; an AudioContext isn't enough on its own.
+ * Therefore, create a dummy audio element to make the browser think there's music playing
+ * This limitation is addressed by the audio session API, but that isn't yet widely supported
+ */
+const dummyaudio = (function _audiosessionworkaround() {
+	const dummyaudio = document.createElement("audio");
+	dummyaudio.src = "data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA=="; // a short silent clip
+	dummyaudio.loop = true;
+	dummyaudio.style.display = "none";
+	document.body.appendChild(dummyaudio);
+	return dummyaudio;
+})();
+
 async function updateCurrentAudio(data) {
 	preBufferTracks(data.tracks, 2);  // Pre-buffer the first 2 tracks, so they'll play quicker later when needed
 
@@ -54,6 +68,7 @@ async function playTrack(track, volume) {
 		source.buffer = await getBuffer(track.url);
 		source.start(0, track.currentTime);
 		currentAudio.startTime = audioContext.currentTime - track.currentTime;
+		dummyaudio.play();
 	} catch (error) {
 		console.error("Skipping track", error.message);
 		const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.

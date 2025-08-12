@@ -89,7 +89,7 @@ function stopCurrentTrack(fadeTime) {
 
 function trackEndedHandler(event) {
 	const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
-	const uuid = event.currentTarget.uuid;
+	const uuid = event.currentTarget.trackUuid;
 	del(`v3/playlist/${playlist}/${uuid}?action=complete`);
 }
 

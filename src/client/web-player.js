@@ -17,7 +17,6 @@ let currentAudio;
 const dummyaudio = (function _audiosessionworkaround() {
 	const dummyaudio = document.createElement("audio");
 	dummyaudio.src = "data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA=="; // a short silent clip
-	dummyaudio.loop = true;
 	dummyaudio.style.display = "none";
 	document.body.appendChild(dummyaudio);
 	return dummyaudio;

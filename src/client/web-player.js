@@ -1,7 +1,7 @@
 import { listenExisting } from 'lucos_pubsub';
 import { getBuffer, preBufferTracks } from './buffers.js';
-import { del, put } from '../classes/manager.js';
-import localDevice from '../classes/local-device.js';
+import { del, put } from '../utils/manager.js';
+import localDevice from '../utils/local-device.js';
 
 
 const audioContext = new AudioContext();

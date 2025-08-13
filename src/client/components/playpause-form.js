@@ -1,5 +1,5 @@
 import { listenExisting, unlisten, send } from 'lucos_pubsub';
-import { put } from '../../classes/manager.js';
+import { put } from '../../utils/manager.js';
 
 class PlayPauseForm extends HTMLFormElement {
 	constructor() {

@@ -1,5 +1,5 @@
 import { updateTrackStatus } from './track-status-update.js';
-import { abortAllRequests } from '../classes/manager.js';
+import { abortAllRequests } from '../utils/manager.js';
 const statusChannel = new BroadcastChannel("lucos_status");
 try {
 	if (!('serviceWorker' in navigator)) throw "no service worker support";

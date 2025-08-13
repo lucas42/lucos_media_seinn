@@ -1,4 +1,4 @@
-import { del } from '../../classes/manager.js';
+import { del } from '../../utils/manager.js';
 class TrackOptions extends HTMLElement {
 	static get observedAttributes() {
 		return ['url', 'uuid', 'editurl'];

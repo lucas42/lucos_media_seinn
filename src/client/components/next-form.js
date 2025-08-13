@@ -1,4 +1,4 @@
-import { del } from '../../classes/manager.js';
+import { del } from '../../utils/manager.js';
 
 class NextForm extends HTMLFormElement {
 	constructor() {

@@ -1,5 +1,5 @@
 import express from 'express';
-import * as manager from '../classes/manager.js';
+import * as manager from '../utils/manager.js';
 import fs from 'node:fs/promises';
 import { middleware as authMiddleware } from './auth.js';
 

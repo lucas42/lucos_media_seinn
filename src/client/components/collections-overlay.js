@@ -1,5 +1,5 @@
 import { listenExisting, unlisten } from 'lucos_pubsub';
-import { put } from '../../classes/manager.js';
+import { put } from '../../utils/manager.js';
 
 class CollectionsOverlay extends HTMLElement {
 	constructor() {

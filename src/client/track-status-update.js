@@ -1,5 +1,5 @@
 import player from './player.js';
-import { put } from '../classes/manager.js';
+import { put } from '../utils/manager.js';
 import { listenExisting } from 'lucos_pubsub';
 
 

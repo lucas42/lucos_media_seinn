@@ -1,6 +1,6 @@
-import localDevice from '../classes/local-device.js';
+import localDevice from '../utils/local-device.js';
 import { listenExisting } from 'lucos_pubsub';
-import { put } from '../classes/manager.js';
+import { put } from '../utils/manager.js';
 
 function updatelocalDevice(data) {
 	const device = data.devices.find(device => device.uuid === localDevice.getUuid());

@@ -1,4 +1,4 @@
-import { init } from '../classes/manager.js';
+import { init } from '../utils/manager.js';
 
 /**
  * Client variables are added dynamically to the service worker file by the server

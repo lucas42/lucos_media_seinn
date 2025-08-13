@@ -1,7 +1,7 @@
 import { getState as getBufferState } from '../buffers.js';
 import { listenExisting, unlisten } from 'lucos_pubsub';
 import player from '../player.js';
-import localDevice from '../../classes/local-device.js';
+import localDevice from '../../utils/local-device.js';
 
 
 class TrackState extends HTMLElement {

@@ -1,6 +1,6 @@
 import { listenExisting } from 'lucos_pubsub';
-import { del } from '../classes/manager.js';
-import localDevice from '../classes/local-device.js';
+import { del } from '../utils/manager.js';
+import localDevice from '../utils/local-device.js';
 
 let currentAudio;
 

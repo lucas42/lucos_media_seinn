@@ -3,7 +3,7 @@ import {refresh} from './static-resources.js';
 import { queueAndAttemptRequest } from 'restful-queue';
 import { getPoll, modifyPollData } from './polling.js';
 import './preload.js';
-import localDevice from '../classes/local-device.js';
+import localDevice from '../utils/local-device.js';
 import './update.js';
 
 self.addEventListener('install', event => {

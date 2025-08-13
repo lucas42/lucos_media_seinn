@@ -1,6 +1,6 @@
 import { listenExisting, unlisten, send } from 'lucos_pubsub';
-import { put } from '../../classes/manager.js';
-import localDevice from '../../classes/local-device.js';
+import { put } from '../../utils/manager.js';
+import localDevice from '../../utils/local-device.js';
 
 class DevicesOverlay extends HTMLElement {
 	constructor() {

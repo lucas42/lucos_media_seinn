@@ -1,4 +1,4 @@
-import { init } from '../classes/manager.js';
+import { init } from '../utils/manager.js';
 
 /**
  * Client variables are set by the server and included in a script tag

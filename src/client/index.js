@@ -1,5 +1,5 @@
 import './init-manager.js'; // Initiate the manager first so other modules can use it immediately
-import '../classes/poll.js';
+import '../utils/poll.js';
 import './local-device-updates.js';
 import './keyboard.js';
 import './media-session.js';

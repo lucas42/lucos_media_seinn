@@ -1,4 +1,4 @@
-import { abortAllRequests } from '../classes/manager.js';
+import { abortAllRequests } from '../utils/manager.js';
 import { freeUpConnections } from './polling.js';
 self.addEventListener("message", function serviceWorkerMessage(event) {
 	switch (event.data) {

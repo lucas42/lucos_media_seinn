@@ -1,5 +1,5 @@
 import { listenExisting } from 'lucos_pubsub';
-import { put } from '../classes/manager.js';
+import { put } from '../utils/manager.js';
 
 /**
  * Handles actions triggered outside the browser, for example buttons on a bluetooth headset

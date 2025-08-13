@@ -1,6 +1,6 @@
 import { listen, listenExisting } from 'lucos_pubsub';
 import { getOutstandingRequests } from 'restful-queue';
-import '../classes/poll.js';
+import '../utils/poll.js';
 import { getTrackState } from './preload.js';
 import { topupTracks } from './offline-collection.js';
 

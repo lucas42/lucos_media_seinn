@@ -1,5 +1,5 @@
 import { send } from 'lucos_pubsub';
-
+import { getMediaHeaders } from '../utils/media-headers.js';
 
 const buffers = {};
 const audioContext = new AudioContext();
@@ -16,7 +16,7 @@ export function getBuffer(url) {
 	}
 	async function bufferTrack() {
 		setState("fetching");
-		const rawtrack = await fetch(url);
+		const rawtrack = await fetch(url, { headers: getMediaHeaders() });
 		setState("buffering");
 		const arrayBuffer = await rawtrack.arrayBuffer();
 		setState("decoding");

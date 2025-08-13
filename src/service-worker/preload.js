@@ -1,4 +1,5 @@
 import { send, listenExisting } from 'lucos_pubsub';
+import { getMediaHeaders } from '../utils/media-headers.js';
 const TRACK_CACHE = 'tracks-v1';
 const TRACK_METADATA_CACHE = 'track-metadata-v1';
 const IMG_CACHE = 'images-v1';
@@ -45,7 +46,7 @@ function preloadTracks(tracks) {
 
 async function fetchTrack (trackUrl, trackCache, trackRequest) {
 	try {
-		const trackResponse = await fetch(trackRequest);
+		const trackResponse = await fetch(trackRequest, { headers: getMediaHeaders() });
 		if (trackResponse.status !== 200) throw new Error("non-200 response");
 		try {
 			await trackCache.put(trackRequest, trackResponse)

@@ -19,6 +19,9 @@ try {
 	navigator.mediaSession.setActionHandler('nexttrack', () => {
 		document.getElementById("next").requestSubmit();
 	});
+	navigator.mediaSession.setPositionState({
+		duration: Infinity, // Mask the duration because we're using a looped silent track to trick the mediaSession API into thinking there's music playing (as it doesn't see the actual AudioContext)
+	});
 
 	listenExisting("managerData", data => {
 		const metadata = data.tracks[0]?.metadata || {};

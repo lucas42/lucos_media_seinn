@@ -1,6 +1,6 @@
 import { listenExisting } from 'lucos_pubsub';
 import { getBuffer, preBufferTracks } from './buffers.js';
-import { del } from '../classes/manager.js';
+import { del, put } from '../classes/manager.js';
 import localDevice from '../classes/local-device.js';
 
 
@@ -67,11 +67,17 @@ async function playTrack(track, volume) {
 		source.buffer = await getBuffer(track.url);
 		source.start(0, track.currentTime);
 		currentAudio.startTime = audioContext.currentTime - track.currentTime;
-		dummyaudio.play();
+		await dummyaudio.play().catch(() => {});
 	} catch (error) {
 		console.error("Skipping track", error.message);
 		const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
 		await del(`v3/playlist/${playlist}/${track.uuid}?action=error`, error.message);
+	}
+
+	// Some browsers insist on users interacting with the page before playing audio
+	// In this case, treat the audio as paused to prompt the user to press play
+	if (audioContext.state === 'suspended') {
+		await put("v3/is-playing", "false");
 	}
 }
 
@@ -91,9 +97,6 @@ function trackEndedHandler(event) {
 	const uuid = event.currentTarget.trackUuid;
 	del(`v3/playlist/${playlist}/${uuid}?action=complete`);
 }
-
-
-
 
 /**
  * Calculates how far into the current track playback is

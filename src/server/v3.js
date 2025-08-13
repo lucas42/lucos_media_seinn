@@ -9,12 +9,13 @@ router.auth = authMiddleware;
 const mediaManager = process.env.MEDIA_MANAGER_URL || (() => { throw "MEDIA_MANAGER_URL Environment Variable not set" })();
 const apiKey = process.env.KEY_LUCOS_MEDIA_MANAGER || (() => { throw "KEY_LUCOS_MEDIA_MANAGER Environment Variable not set" })();
 const mediaPassword = process.env.KEY_LUCOS_PRIVATE || (() => { throw "KEY_LUCOS_PRIVATE Environment Variable not set" })();
+const environment = process.env.ENVIRONMENT || (() => { throw "ENVIRONMENT Environment Variable not set" })();
 manager.init(mediaManager, apiKey, 'lucos_media_seinn');
 const clientVariables = JSON.stringify({
 	mediaManager,
 	apiKey,
 	mediaCreds: {
-		user: 'lucos_media_seinn',
+		user: `lucos_media_seinn-${environment}`,
 		password: mediaPassword,
 	},
 });

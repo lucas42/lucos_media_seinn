@@ -8,5 +8,6 @@ services:
       - MEDIA_MANAGER_URL=https://ceol.l42.eu/
       - KEY_LUCOS_MEDIA_MANAGER
       - KEY_LUCOS_PRIVATE
+      - ENVIRONMENT
     image: lucas42/lucos_media_seinn
     restart: always

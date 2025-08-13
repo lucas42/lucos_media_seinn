@@ -53,6 +53,16 @@ global.AudioContext = class {
 	}
 };
 
+// Specify some mock client variables as some components rely on them being defined
+global.clientVariables = {
+	mediaManager: '__url__',
+	apiKey: '__apiKey__',
+	mediaCreds: {
+		user: '__username__',
+		password: '__password__',
+	},
+};
+
 describe("Web Component Garbage Collection Test", function () {
 	const gcLimitInSeconds = 3;
 	this.timeout((1 + gcLimitInSeconds)*1000); // Allow enough time for module import and Garbage Collection

@@ -23,9 +23,6 @@ listenExisting("managerData", async serverData => {
 	for (const request of outstandingRequests) {
 		await enactAction(request);
 	}
-	for (const track of pollData.tracks) {
-		track.state = await getTrackState(track.url);
-	}
 	dataChanged();
 });
 
@@ -55,6 +52,9 @@ async function dataChanged() {
 
 async function getCurrentResponse() {
 	pollData.offlineCollectionAvailable = true; // Lets the client know to add the offline collection to the collections-overlay component
+	for (const track of pollData.tracks) {
+		track.state = await getTrackState(track.url);
+	}
 	const body = JSON.stringify(pollData);
 	const blob = new Blob([body]);
 	return new Response(blob, {status: 200, type : 'application/json'});

@@ -1,4 +1,4 @@
-import { listenExisting } from 'lucos_pubsub';
+import { listenExisting, send } from 'lucos_pubsub';
 import { getBuffer, preBufferTracks } from './buffers.js';
 import { del, put } from '../utils/manager.js';
 import localDevice from '../utils/local-device.js';
@@ -69,16 +69,22 @@ async function playTrack(track, volume) {
 		source.start(0, track.currentTime);
 		currentAudio.startTime = audioContext.currentTime - track.currentTime;
 		await dummyaudio.play().catch(() => {});
+
+		// Some browsers insist on users interacting with the page before playing audio
+		// In this case, treat the audio as paused to prompt the user to press play
+		if (audioContext.state === 'suspended') {
+			await put("v3/is-playing", "false");
+			return;
+		}
+
+		send("playbackInit", {
+			duration: source.buffer.duration,
+			position: getTimeElapsed(),
+		});
 	} catch (error) {
 		console.error("Skipping track", error.message);
 		const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
 		await del(`v3/playlist/${playlist}/${track.uuid}?action=error`, error.message);
-	}
-
-	// Some browsers insist on users interacting with the page before playing audio
-	// In this case, treat the audio as paused to prompt the user to press play
-	if (audioContext.state === 'suspended') {
-		await put("v3/is-playing", "false");
 	}
 }
 

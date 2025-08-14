@@ -1,4 +1,4 @@
-import { listenExisting } from 'lucos_pubsub';
+import { listenExisting, send } from 'lucos_pubsub';
 import { put } from '../utils/manager.js';
 
 /**
@@ -8,12 +8,15 @@ try {
 	if (!('mediaSession' in navigator)) throw "Browser doesn't support mediaSession";
 
 	navigator.mediaSession.setActionHandler('play', () => {
+		send('playpause_changing');
 		put("v3/is-playing", "true");
 	});
 	navigator.mediaSession.setActionHandler('pause', () => {
+		send('playpause_changing');
 		put("v3/is-playing", "false");
 	});
 	navigator.mediaSession.setActionHandler('stop', () => {
+		send('playpause_changing');
 		put("v3/is-playing", "false");
 	});
 	navigator.mediaSession.setActionHandler('nexttrack', () => {
@@ -22,7 +25,6 @@ try {
 	navigator.mediaSession.setPositionState({
 		duration: Infinity, // Mask the duration because we're using a looped silent track to trick the mediaSession API into thinking there's music playing (as it doesn't see the actual AudioContext)
 	});
-
 	listenExisting("managerData", data => {
 		const metadata = data.tracks[0]?.metadata || {};
 		navigator.mediaSession.playbackState = data.isPlaying ? "playing" : "paused";
@@ -33,6 +35,10 @@ try {
 			album: metadata.album,
 			artwork,
 		});
+	});
+	listenExisting("playbackInit", data => {
+		const { duration, position } = data;
+		navigator.mediaSession.setPositionState({ duration, position});
 	});
 } catch (error) {
 	console.error('mediaSession loading failed: ' + error);

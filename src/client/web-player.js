@@ -91,8 +91,6 @@ function stopCurrentTrack(fadeTime) {
 	currentAudio = undefined;
 
 	dummyaudio.pause();
-
-	// TODO: tell server timestamp of current track, so can resume later
 }
 
 function trackEndedHandler(event) {
@@ -115,7 +113,7 @@ function getTimeElapsed() {
  */
 function getCurrentUuid() {
 	if (!currentAudio) return undefined;
-	return currentAudio.uuid;
+	return currentAudio.source.trackUuid;
 }
 
 /**

@@ -1,8 +1,10 @@
-if (!clientVariables) throw "Can't find `clientVariables` in global scope";
-const { mediaCreds } = clientVariables;
-const mediaHeaders = new Headers();
-mediaHeaders.set('Authorization', `Basic ${btoa(`${mediaCreds.user}:${mediaCreds.password}`)}`);
+const { promise, resolve } = Promise.withResolvers();
+export function init(mediaCreds) {
+	const mediaHeaders = new Headers();
+	mediaHeaders.set('Authorization', `Basic ${btoa(`${mediaCreds.user}:${mediaCreds.password}`)}`);
+	resolve(mediaHeaders);
+}
 
 export function getMediaHeaders() {
-	return mediaHeaders;
+	return promise;
 }

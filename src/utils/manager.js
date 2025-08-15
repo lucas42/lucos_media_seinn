@@ -1,6 +1,8 @@
 let mediaManager;
 let headers;
 
+const { promise, resolve } = Promise.withResolvers();
+
 const controller = new AbortController();
 const signal = controller.signal;
 
@@ -11,6 +13,7 @@ export function init(mediaManagerValue, apiKey, userAgent) {
 	if (userAgent) {
 		headers.set("User-Agent", userAgent);
 	}
+	resolve();
 }
 export function get(endpoint) {
 	return fetchFromManager(endpoint, 'GET', null);
@@ -26,7 +29,7 @@ export function post(endpoint, body) {
 }
 
 async function fetchFromManager(endpoint, method, body) {
-	if (!mediaManager) throw "making request before manager module initiated";
+	await promise;
 	const url = mediaManager+endpoint;
 	const response = await fetch(url, {
 		method,

@@ -16,7 +16,7 @@ export function getBuffer(url) {
 	}
 	async function bufferTrack() {
 		setState("fetching");
-		const rawtrack = await fetch(url, { headers: getMediaHeaders() });
+		const rawtrack = await fetch(url, { headers: await getMediaHeaders() });
 		setState("buffering");
 		const arrayBuffer = await rawtrack.arrayBuffer();
 		setState("decoding");

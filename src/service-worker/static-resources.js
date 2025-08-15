@@ -6,6 +6,7 @@ const localUrls = [
 	'/v3.js',
 	'/logo.jpg',
 	'/manifest.json',
+	'/client-variables.json',
 ];
 export async function refresh() {
 	try {

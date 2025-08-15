@@ -9,11 +9,11 @@ const port = process.env.PORT || 3000;
 app.engine('mustache', mustacheExpress());
 app.set('view engine', 'mustache');
 app.set('views', `./src/views`);
+app.use(express.static('./src/resources', {extensions: ['json']}));
 
 app.use('/v3', v3);
 app.use('/', v3);
 
-app.use(express.static('./src/resources', {extensions: ['json']}));
 app.listen(port, function () {
   console.log('App listening on port ' + port);
 });

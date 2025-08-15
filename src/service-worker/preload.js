@@ -46,7 +46,7 @@ function preloadTracks(tracks) {
 
 async function fetchTrack (trackUrl, trackCache, trackRequest) {
 	try {
-		const trackResponse = await fetch(trackRequest, { headers: getMediaHeaders() });
+		const trackResponse = await fetch(trackRequest, { headers: await getMediaHeaders() });
 		if (trackResponse.status !== 200) throw new Error("non-200 response");
 		try {
 			await trackCache.put(trackRequest, trackResponse)

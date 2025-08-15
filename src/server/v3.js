@@ -11,15 +11,6 @@ const apiKey = process.env.KEY_LUCOS_MEDIA_MANAGER || (() => { throw "KEY_LUCOS_
 const mediaPassword = process.env.KEY_LUCOS_PRIVATE || (() => { throw "KEY_LUCOS_PRIVATE Environment Variable not set" })();
 const environment = process.env.ENVIRONMENT || (() => { throw "ENVIRONMENT Environment Variable not set" })();
 manager.init(mediaManager, apiKey, 'lucos_media_seinn');
-const clientVariables = JSON.stringify({
-	mediaManager,
-	apiKey,
-	mediaCreds: {
-		user: `lucos_media_seinn-${environment}`,
-		password: mediaPassword,
-	},
-});
-
 
 // Endpoint that's purely for authentication purposes (which won't be handled by the service worker)
 router.get('/login', (req, res) => {
@@ -63,7 +54,6 @@ router.get('/', async (req, res) => {
 		const data = await manager.get("v3/poll").then(resp => resp.json());
 		const now = data.tracks.shift();
 		res.render("index", {
-			clientVariables,
 			now,
 			playlist: data.tracks,
 			isPlaying: data.isPlaying,
@@ -72,9 +62,7 @@ router.get('/', async (req, res) => {
 		});
 	} catch (exception) {
 		console.warn("Failed to fetch poll from the server", exception);
-		res.render("index", {
-			clientVariables,
-		});
+		res.render("index", {});
 	}
 });
 
@@ -95,10 +83,15 @@ router.post('/volume', async (req,res) => {
 	res.redirect(`${req.protocol}://${req.headers.host}/`);
 });
 
-router.get('/serviceworker-v3.js', async (req, res) => {
-	const baseServiceWorker = await fs.readFile('./src/resources/serviceworker-v3.js', { encoding: 'utf8' });
-	res.set('Content-Type', 'text/javascript');
-	res.send(`const clientVariables = ${clientVariables};\n${baseServiceWorker}`);
+router.get('/client-variables.json', async (req, res) => {
+	res.json({
+		mediaManager,
+		apiKey,
+		mediaCreds: {
+			user: `lucos_media_seinn-${environment}`,
+			password: mediaPassword,
+		},
+	});
 });
 
 export default router;

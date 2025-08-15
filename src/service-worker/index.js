@@ -1,4 +1,4 @@
-import './init-manager.js'; // Initiate the manager first so other modules can use it immediately
+import '../utils/init-variables.js';
 import {refresh} from './static-resources.js';
 import { queueAndAttemptRequest } from 'restful-queue';
 import { getPoll, modifyPollData } from './polling.js';

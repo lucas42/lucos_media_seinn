@@ -35,7 +35,7 @@ async function handleRequest(request) {
 	}
 	const cachedResponse = await caches.match(request);
 	if (cachedResponse) return cachedResponse;
-	console.error("Request not in cache", url.pathname, url.method, url.origin, url.search);
+	console.warn("Request not in cache", url.pathname, url.method, url.origin, url.search);
 	return await fetch(request);
 }
 

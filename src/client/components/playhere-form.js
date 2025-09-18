@@ -57,10 +57,6 @@ export default class PlayHereForm extends HTMLFormElement {
 			}
 		})
 		group.append(showmore);
-		const style = document.createElement('style');
-		style.textContent = `
-		`;
-		this.append(style);
 		this.append(group);
 		this.showHide = data => {
 			if (localDevice.isCurrent()) {

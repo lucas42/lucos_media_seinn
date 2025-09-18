@@ -38,6 +38,13 @@ global.customElements = bootstrapDOM.window.customElements;
 global.Node = bootstrapDOM.window.Node;
 global.Event = bootstrapDOM.window.Event;
 
+/**
+ * Hacky workaround for components which call `querySelector`
+ * JSDom's implementation of `querySelector` persists various references under the hood, so replace it with a no-op function
+ **/
+global.window.Element.prototype.querySelector = () => null;
+global.window.Document.prototype.querySelector = () => null;
+
 // Stub AudioContext to prevent ReferenceError
 global.AudioContext = class {
 	constructor() {
@@ -83,14 +90,6 @@ describe("Web Component Garbage Collection Test", function () {
 				timeoutId = setTimeout(() => {
 						done(new Error(`<${tag}> element was not garbage collected in ${gcLimitInSeconds} seconds`));
 				}, gcLimitInSeconds*1000);
-
-				/* Hacky workaround for components which call `querySelector`.
-					Some references to the object are left due to jsdom's internal implementation.
-					Manualy remove the references, to give garbarge collection the opportunity to tidy them up.
-					This may break without warning in future versions of jsdom. */
-				delete element.ownerDocument[jsdomutils.implSymbol]._nwsapi;
-				element.ownerDocument[jsdomutils.implSymbol]._eventListeners.mouseout = [];
-				element.ownerDocument[jsdomutils.implSymbol]._eventListeners.mouseover = [];
 
 				// Remove reference
 				element = null;

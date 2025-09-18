@@ -14,7 +14,7 @@ class TrackState extends HTMLElement {
 		const component = this;
 		const shadow = component.attachShadow({mode: 'closed'});
 		const style = document.createElement('style');
-		shadow.append(style);
+
 		const stateNode = document.createTextNode("");
 		shadow.append(stateNode);
 
@@ -36,6 +36,7 @@ class TrackState extends HTMLElement {
 				}
 			`;
 			stateNode.nodeValue = state;
+			if (!style.parentNode) shadow.append(style);
 		};
 		component.trackStateChange = ({url}) => {
 			if (url !== component.getAttribute("url")) return;

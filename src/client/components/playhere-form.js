@@ -31,16 +31,6 @@ export default class PlayHereForm extends HTMLFormElement {
 			await put("v3/current-device", localDevice.getUuid());
 			await put("v3/is-playing", "true");
 		});
-		const playallhere = document.createElement("input");
-		playallhere.type = "button";
-		playallhere.value = "Play All Here";
-		extracontrols.append(playallhere);
-		playallhere.addEventListener('click', async event => {
-			event.preventDefault();
-			await put("v3/current-device", localDevice.getUuid());
-			await put("v3/current-collection", "all");
-			await put("v3/is-playing", "true");
-		});
 		const showmore = document.createElement("input");
 		showmore.type = "button";
 		showmore.value = "↓";
@@ -55,8 +45,19 @@ export default class PlayHereForm extends HTMLFormElement {
 				group.dataset.expanded = "true";
 				showmore.value = "ꜛ";
 			}
-		})
+		});
 		group.append(showmore);
+		const playallhere = document.createElement("input");
+		playallhere.type = "button";
+		playallhere.value = "Play All Here";
+		extracontrols.append(playallhere);
+		playallhere.addEventListener('click', async event => {
+			event.preventDefault();
+			await put("v3/current-device", localDevice.getUuid());
+			await put("v3/current-collection", "all");
+			await put("v3/is-playing", "true");
+			showmore.dispatchEvent(event); // Also click on the showmore button, to hide it.
+		});
 		this.append(group);
 		this.showHide = data => {
 			if (localDevice.isCurrent()) {

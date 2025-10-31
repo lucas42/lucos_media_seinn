@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "folder-hash": "^4.1.1",
-    "jsdom": "^27.0.1",
+    "jsdom": "^27.1.0",
     "lucos_navbar": "^2.0.15",
     "lucos_pubsub": "^1.0.7",
     "mocha": "^11.7.4",

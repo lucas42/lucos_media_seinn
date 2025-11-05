@@ -12,7 +12,7 @@ const pollRequest = new Request("POLL");
 const offlinePollRequest = new Request("/offline/poll");
 
 let listeners = [];
-let pollData = { unloaded: true };
+let pollData = { unloaded: true, tracks: [], devices: [] };
 
 listenExisting("managerData", async serverData => {
 	const pollCache = await caches.open(POLL_CACHE);

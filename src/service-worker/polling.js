@@ -85,14 +85,14 @@ async function saveToCache(pollResponse) {
 /**
  * Updates the pollData based on waht's currently in the cache
  * Note: as this function is asynchronous it's possbible (though unlikely) that data from the server
- * is returned before the cache data.  Therefore, only modifes anything if pollData hasn't been populated yet.
+ * is returned before the cache data.  Therefore, only modifes anything if pollData hasn't been populated yet, unless `replaceExisting` is true
  **/
-async function loadFromCache() {
+async function loadFromCache(replaceExisting) {
 	const pollCache = await caches.open(POLL_CACHE);
 	const pollResponse = await pollCache.match(offlinePollRequest) || await pollCache.match(pollRequest);
 	if (!pollResponse) return;
 	const cacheData = await pollResponse.json();
-	if (!pollData.unloaded) return;
+	if (!pollData.unloaded && !replaceExisting) return;
 
 	// If the offline collection is playing, ensure there's enough tracks in the playlist
 	// (If it's not the offline collection, then this is the server's responsibility)
@@ -191,19 +191,18 @@ async function enactAction(action) {
 							return;
 						}
 						if (updatedValue) {
-							const body = JSON.stringify(Object.assign(pollData, {
+							const body = Object.assign(pollData, {
 								tracks: [],
 								playOfflineCollection: true,
-							}));
+							});
 							await topupTracks(body);
-							const blob = new Blob([body]);
+							const blob = new Blob([JSON.stringify(body)]);
 							const pollResponse = new Response(blob, {status: 200, type : 'application/json'});
 							await pollCache.put(offlinePollRequest, pollResponse);
 						} else {
-							// DEBUG: whilst the deletion does happen, the `await` doesn't seem to be making it synchronous
 							await pollCache.delete(offlinePollRequest);
 						}
-						loadFromCache();
+						await loadFromCache(true);
 						break;
 					default:
 						console.error("Unknown PUT request to endpoint", url.pathname);
@@ -302,4 +301,4 @@ statusChannel.addEventListener('message', function statusMessageReceived(event) 
 });
 
 
-loadFromCache();
+loadFromCache(false);

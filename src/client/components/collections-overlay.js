@@ -60,7 +60,7 @@ class CollectionsOverlay extends HTMLElement {
 				item.dataset.slug = collection.slug;
 				item.dataset.isCurrent = collection.isCurrent && !data.playOfflineCollection;
 				const nameSpan = document.createElement("span");
-				nameSpan.append(document.createTextNode(collection.name));
+				nameSpan.append(document.createTextNode(`${collection.icon} ${collection.name}`));
 				item.append(nameSpan);
 				const trackCount = document.createElement("span");
 				trackCount.append(document.createTextNode("["+collection.totalTracks+" tracks]"));

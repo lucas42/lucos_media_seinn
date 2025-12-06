@@ -1,4 +1,5 @@
 import PlayHereForm from './components/playhere-form.js';
+import { listenExisting } from 'lucos_pubsub';
 
 const controls = document.getElementById('controls');
 if (!controls) throw new Error("No #controls element found");
@@ -17,6 +18,16 @@ if (!controls) throw new Error("No #controls element found");
 	control.appendChild(showOverlay);
 	controls.appendChild(control);
 	document.body.append(overlay);
+
+	// Set the collection control to include the icon of the current collection on the label
+	if (type == 'collections') {
+		listenExisting("managerData", data => {
+			let icon = data.collections.find(collection => collection.isCurrent)?.icon || "";
+			if (data.currentCollectionSlug == "all") icon = "🌐";
+			if (data.playOfflineCollection) icon = "⛓️‍💥";
+			showOverlay.value = `${icon} Collections`;
+		});
+	}
 });
 
 

@@ -34,7 +34,7 @@
     "lucos_navbar": "^2.0.20",
     "lucos_pubsub": "^1.0.8",
     "mocha": "^11.7.5",
-    "restful-queue": "^1.0.34",
+    "restful-queue": "^1.0.35",
     "uuid": "^13.0.0",
     "webpack-cli": "^6.0.1"
   }

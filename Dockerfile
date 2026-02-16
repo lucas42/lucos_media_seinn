@@ -4,7 +4,7 @@ WORKDIR /usr/src/app
 COPY package* ./
 COPY webpack.config.js ./
 
-RUN npm install
+RUN npm ci
 
 COPY src src
 
@@ -12,7 +12,7 @@ COPY src src
 RUN npm run build
 
 RUN rm -rf node_modules client service-worker webpack*
-RUN npm install --omit=dev
+RUN npm ci --omit=dev
 
 ENV NODE_ENV production
 

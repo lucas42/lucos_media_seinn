@@ -4,7 +4,6 @@ import { describe, it } from 'mocha';
 import fs from "fs";
 import path from "path";
 import { pathToFileURL, fileURLToPath } from "url";
-import jsdomutils from "jsdom/lib/jsdom/living/generated/utils.js"
 
 // Required for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);

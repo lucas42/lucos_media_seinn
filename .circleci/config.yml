@@ -5,7 +5,7 @@ orbs:
 jobs:
   test:
     docker:
-      - image: node:25
+      - image: node:24
     steps:
       - checkout
       - run:

@@ -4,7 +4,7 @@
   "description": "Music Player",
   "type": "module",
   "scripts": {
-    "test": "node --expose-gc --input-type=module node_modules/mocha/bin/mocha tests",
+    "test": "node --expose-gc --input-type=module --localstorage-file=/tmp/node-localStorage-tests node_modules/mocha/bin/mocha tests && rm /tmp/node-localStorage-tests",
     "start": "node src/server/index.js",
     "build": "webpack"
   },

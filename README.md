@@ -15,7 +15,7 @@ A media player for the lucos media system.
 * Web Audio API
 
 ## Running
-`nice -19 docker-compose up -d --no-build`
+`nice -19 docker compose up -d --no-build`
 
 ## Building
 The build is configured to run in Dockerhub when a commit is pushed to the `main` branch in github.

@@ -38,7 +38,7 @@ router.get('/_info', async (req,res) => {
 		show_on_homepage: true,
 	};
 	try {
-		const pollResp = await manager.get("v3/poll");
+		const pollResp = await manager.get("v3/poll", { signal: AbortSignal.timeout(800) });
 		if (!pollResp.ok) throw new Error(`Error from media-manager: ${pollResp.statusText}`);
 		await pollResp.json();
 		info.checks["media-manager"].ok = true;

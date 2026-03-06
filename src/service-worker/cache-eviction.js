@@ -240,6 +240,8 @@ async function _evictIfOverBudget() {
  * This is called after every successful track write.
  */
 export function evictIfOverBudget() {
-	evictionLock = evictionLock.then(() => _evictIfOverBudget());
+	evictionLock = evictionLock
+		.then(() => _evictIfOverBudget())
+		.catch(err => console.error('Cache eviction failed:', err));
 	return evictionLock;
 }

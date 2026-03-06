@@ -5,6 +5,7 @@ import { getPoll, modifyPollData } from './polling.js';
 import './preload.js';
 import localDevice from '../utils/local-device.js';
 import './update.js';
+import { updateLRUTimestamp } from './cache-eviction.js';
 
 self.addEventListener('install', event => {
 	event.waitUntil(refresh());
@@ -27,6 +28,8 @@ async function handleRequest(request) {
 		return await fetch(request);
 	}
 	if (url.hostname === "am.l42.eu") {
+		// Update LRU timestamp so frequently played tracks stay warm in cache
+		updateLRUTimestamp(request.url).catch(() => {}); // fire-and-forget; don't block playback
 		return await fetch(request);
 	}
 	if (url.pathname === "/v3/poll") {

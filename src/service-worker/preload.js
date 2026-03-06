@@ -1,5 +1,6 @@
 import { send, listenExisting } from 'lucos_pubsub';
 import { getMediaHeaders } from '../utils/media-headers.js';
+import { updateLRUTimestamp, evictIfOverBudget } from './cache-eviction.js';
 const TRACK_CACHE = 'tracks-v1';
 const TRACK_METADATA_CACHE = 'track-metadata-v1';
 const IMG_CACHE = 'images-v1';
@@ -49,7 +50,9 @@ async function fetchTrack (trackUrl, trackCache, trackRequest) {
 		const trackResponse = await fetch(trackRequest, { headers: await getMediaHeaders() });
 		if (trackResponse.status !== 200) throw new Error("non-200 response");
 		try {
-			await trackCache.put(trackRequest, trackResponse)
+			await trackCache.put(trackRequest, trackResponse);
+			await updateLRUTimestamp(trackUrl);
+			await evictIfOverBudget();
 		} catch (error) {
 			console.error("Failed to cache track:", error.message);
 			erroringTracks[trackUrl] = error.message;

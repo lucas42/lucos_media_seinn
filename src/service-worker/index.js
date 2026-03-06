@@ -28,9 +28,19 @@ async function handleRequest(request) {
 		return await fetch(request);
 	}
 	if (url.hostname === "am.l42.eu") {
-		// Update LRU timestamp so frequently played tracks stay warm in cache
+		// Audio tracks are played via new Audio(url), which triggers a fetch event here.
+		// Strategy: try the network first (to get the freshest stream), then fall back to
+		// the tracks-v1 cache for offline playback.  Either way, update the LRU timestamp
+		// so frequently played tracks stay warm and are less likely to be evicted.
 		updateLRUTimestamp(request.url).catch(() => {}); // fire-and-forget; don't block playback
-		return await fetch(request);
+		try {
+			return await fetch(request);
+		} catch {
+			// Network unavailable — serve from cache if we have it
+			const cached = await caches.match(request);
+			if (cached) return cached;
+			throw new Error(`Track not available offline: ${request.url}`);
+		}
 	}
 	if (url.pathname === "/v3/poll") {
 		const hashcode = parseInt(params.get("hashcode"));

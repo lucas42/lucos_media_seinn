@@ -51,22 +51,32 @@ export async function updateLRUTimestamp(trackUrl) {
 // ─── Size helpers ─────────────────────────────────────────────────────────────
 
 /**
- * Returns the total byte size of all responses currently stored in a cache.
- * Uses Response#arrayBuffer() to measure each entry individually because the
- * Cache Storage API doesn't expose sizes directly.
+ * Returns the total byte size of all responses currently stored in a cache,
+ * along with a per-URL size map for use during eviction.
+ *
+ * Note: the Cache Storage API does not expose sizes directly, so we must
+ * read each response body via arrayBuffer() to measure it.  This is
+ * memory-intensive for a large cache — but it's unavoidable.  To keep
+ * the cost contained, evictIfOverBudget() calls this once upfront and
+ * then adjusts the total cumulatively rather than re-measuring after each
+ * eviction.
+ *
+ * @returns {{ total: number, sizes: Map<string, number> }}
  */
-async function getCacheSize(cacheName) {
+async function getCacheSizeWithMap(cacheName) {
 	const cache = await caches.open(cacheName);
 	const requests = await cache.keys();
 	let total = 0;
+	const sizes = new Map();
 	for (const request of requests) {
 		const response = await cache.match(request);
 		if (response) {
 			const buffer = await response.arrayBuffer();
+			sizes.set(request.url, buffer.byteLength);
 			total += buffer.byteLength;
 		}
 	}
-	return total;
+	return { total, sizes };
 }
 
 // ─── Eviction ─────────────────────────────────────────────────────────────────
@@ -165,27 +175,30 @@ async function evictTrack(trackUrl, timestamps) {
  * Checks whether the total size of tracks-v1 exceeds CACHE_BUDGET_BYTES.
  * If it does, removes LRU entries one at a time until we're back under budget.
  *
+ * Cache size is measured once upfront (unavoidably via arrayBuffer() reads —
+ * the Cache Storage API exposes no cheaper size API).  After each eviction the
+ * running total is decremented by the evicted entry's known size rather than
+ * re-reading the whole cache, keeping the memory cost bounded to a single pass.
+ *
  * This is called after every successful track write.
  */
 export async function evictIfOverBudget() {
-	let totalSize = await getCacheSize(TRACK_CACHE);
+	const { total, sizes } = await getCacheSizeWithMap(TRACK_CACHE);
+	let totalSize = total;
 	if (totalSize <= CACHE_BUDGET_BYTES) return;
 
 	const timestamps = await readTimestamps();
 
-	// Get the list of actually-cached track URLs so we can cross-reference
-	const trackCache = await caches.open(TRACK_CACHE);
-	const cachedRequests = await trackCache.keys();
-	const cachedUrls = new Set(cachedRequests.map(r => r.url));
-
-	// Sort ascending by lastAccessedAt (oldest first = LRU candidates)
+	// Sort ascending by lastAccessedAt (oldest first = LRU candidates).
+	// Only consider URLs that are actually present in the cache.
 	const sorted = Object.entries(timestamps)
-		.filter(([url]) => cachedUrls.has(url))
+		.filter(([url]) => sizes.has(url))
 		.sort(([, a], [, b]) => a - b);
 
 	for (const [url] of sorted) {
 		if (totalSize <= CACHE_BUDGET_BYTES) break;
+		const evictedSize = sizes.get(url) ?? 0;
 		await evictTrack(url, timestamps);
-		totalSize = await getCacheSize(TRACK_CACHE);
+		totalSize -= evictedSize;
 	}
 }

@@ -81,6 +81,14 @@ async function getCacheSizeWithMap(cacheName) {
 
 // ─── Eviction ─────────────────────────────────────────────────────────────────
 
+// Mutex to serialise concurrent evictIfOverBudget() calls.
+// preloadTracks uses forEach(async …), so multiple fetchTrack calls can finish
+// at around the same time and each call evictIfOverBudget().  Without the lock,
+// each call independently reads the cache size, each independently decides
+// eviction is needed, and the combined effect is over-eviction.  Chaining onto
+// a shared promise ensures only one eviction pass runs at a time.
+let evictionLock = Promise.resolve();
+
 /**
  * Returns the image URL recorded in the track metadata cache for a given
  * track URL, or null if the metadata entry doesn't exist.
@@ -172,6 +180,9 @@ async function evictTrack(trackUrl, timestamps) {
 }
 
 /**
+ * Inner implementation of evictIfOverBudget — called exclusively through the
+ * exported wrapper which serialises concurrent calls via evictionLock.
+ *
  * Checks whether the total size of tracks-v1 exceeds CACHE_BUDGET_BYTES.
  * If it does, removes LRU entries one at a time until we're back under budget.
  *
@@ -180,19 +191,33 @@ async function evictTrack(trackUrl, timestamps) {
  * running total is decremented by the evicted entry's known size rather than
  * re-reading the whole cache, keeping the memory cost bounded to a single pass.
  *
- * This is called after every successful track write.
+ * As a side effect, any orphaned timestamp entries (URLs that are in the store
+ * but not present in tracks-v1) are pruned to prevent the store growing without
+ * bound from failed or erroring track fetches.
  */
-export async function evictIfOverBudget() {
+async function _evictIfOverBudget() {
 	const { total, sizes } = await getCacheSizeWithMap(TRACK_CACHE);
 	let totalSize = total;
-	if (totalSize <= CACHE_BUDGET_BYTES) return;
 
 	const timestamps = await readTimestamps();
+
+	// Prune orphaned entries: remove timestamps for URLs that are no longer in
+	// tracks-v1 (e.g. tracks that were fetched but failed to cache, or that were
+	// evicted without the timestamp being cleaned up).
+	let pruned = false;
+	for (const url of Object.keys(timestamps)) {
+		if (!sizes.has(url)) {
+			delete timestamps[url];
+			pruned = true;
+		}
+	}
+	if (pruned) await writeTimestamps(timestamps);
+
+	if (totalSize <= CACHE_BUDGET_BYTES) return;
 
 	// Sort ascending by lastAccessedAt (oldest first = LRU candidates).
 	// Only consider URLs that are actually present in the cache.
 	const sorted = Object.entries(timestamps)
-		.filter(([url]) => sizes.has(url))
 		.sort(([, a], [, b]) => a - b);
 
 	for (const [url] of sorted) {
@@ -201,4 +226,20 @@ export async function evictIfOverBudget() {
 		await evictTrack(url, timestamps);
 		totalSize -= evictedSize;
 	}
+}
+
+/**
+ * Serialised wrapper around _evictIfOverBudget.
+ *
+ * preloadTracks fires multiple concurrent fetchTrack calls via forEach(async …).
+ * Without serialisation, each call could independently measure the cache as
+ * over-budget and evict a track, causing more evictions than necessary.  This
+ * wrapper chains each call onto a shared promise so only one eviction pass runs
+ * at a time.
+ *
+ * This is called after every successful track write.
+ */
+export function evictIfOverBudget() {
+	evictionLock = evictionLock.then(() => _evictIfOverBudget());
+	return evictionLock;
 }

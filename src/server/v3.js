@@ -16,7 +16,8 @@ manager.init(mediaManager, apiKey, 'lucos_media_seinn');
 router.get('/login', (req, res) => {
 	// Check the redirect query to avoid open redirect vulnerabilities
 	if (!req.query.redirect_path?.startsWith("/")) {
-		throw new ValidationError("Invalid redirect_path parameter");
+		res.status(400).send("Invalid redirect_path parameter");
+		return;
 	}
 	res.redirect(req.query.redirect_path);
 });

@@ -1,7 +1,7 @@
 services:
   seinn:
     build: .
-    container_name: seinn
+    container_name: lucos_media_seinn
     ports: 
       - $PORT:$PORT
     environment:

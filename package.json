@@ -32,7 +32,7 @@
     "folder-hash": "^4.1.2",
     "jsdom": "^29.0.1",
     "lucos_navbar": "^2.1.25",
-    "lucos_pubsub": "^1.0.20",
+    "lucos_pubsub": "^1.0.22",
     "mocha": "^11.7.5",
     "restful-queue": "^1.0.45",
     "uuid": "^13.0.0",

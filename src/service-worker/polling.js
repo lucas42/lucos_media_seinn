@@ -145,6 +145,15 @@ async function enactAction(action) {
 									track.currentTime = data;
 								}
 							});
+						} else if (pathparts.length === 6 && pathparts[5] == "position") {
+							const uuid = pathparts[4];
+							const targetIndex = parseInt(data);
+							const trackIndex = pollData.tracks.findIndex(track => track.uuid === uuid);
+							if (trackIndex !== -1) {
+								const [track] = pollData.tracks.splice(trackIndex, 1);
+								const insertAt = Math.min(targetIndex, pollData.tracks.length);
+								pollData.tracks.splice(insertAt, 0, track);
+							}
 						} else {
 							console.error("Unsupported v3 playlist url", url.pathname);
 						}

@@ -2,6 +2,7 @@ import express from 'express';
 import * as manager from '../utils/manager.js';
 import fs from 'node:fs/promises';
 import { middleware as authMiddleware } from './auth.js';
+import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
 router.auth = authMiddleware;
@@ -15,7 +16,8 @@ manager.init(mediaManager, apiKey, 'lucos_media_seinn');
 // Endpoint that's purely for authentication purposes (which won't be handled by the service worker)
 router.get('/login', (req, res) => {
 	// Check the redirect query to avoid open redirect vulnerabilities
-	if (!req.query.redirect_path?.startsWith("/")) {
+	// Must start with "/" but not "//" (which would be a protocol-relative external URL)
+	if (!req.query.redirect_path?.startsWith("/") || req.query.redirect_path?.startsWith("//")) {
 		res.status(400).send("Invalid redirect_path parameter");
 		return;
 	}
@@ -49,6 +51,7 @@ router.get('/_info', async (req,res) => {
 	}
 	res.json(info);
 });
+router.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 20 }));
 router.use((req, res, next) => router.auth(req, res, next));
 router.get('/', async (req, res) => {
 	try {

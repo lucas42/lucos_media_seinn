@@ -12,10 +12,10 @@ export async function updateTrackStatus() {
 	await put(`v3/playlist/${playlist}/${currentUuid}/current-time`, timeElapsed);
 }
 
-// Aside from any event triggers to updating tracks status, automatically update it every 30 seconds at the very least
+// Aside from any event triggers to updating tracks status, automatically update it every 10 seconds at the very least
 function periodicStatusUpdate() {
 	updateTrackStatus();
-	setTimeout(periodicStatusUpdate, 30*1000);
+	setTimeout(periodicStatusUpdate, 10*1000);
 }
 periodicStatusUpdate();
 

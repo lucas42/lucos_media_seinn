@@ -69,7 +69,7 @@ class Playlist extends HTMLElement {
 				if (typeof list.lastChild.removeCustomListeners == 'function') list.lastChild.removeCustomListeners();
 				list.removeChild(list.lastChild);
 			}
-			tracks.forEach(track => {
+			tracks.forEach((track, i) => {
 				const li = document.createElement("li");
 
 				const state = document.createElement("track-state");
@@ -86,6 +86,8 @@ class Playlist extends HTMLElement {
 				options.setAttribute("url", track.url);
 				options.setAttribute("uuid", track.uuid);
 				options.setAttribute("editurl", track.metadata.editurl);
+				options.setAttribute("position", i + 1); // position in full playlist (0 is currently playing)
+				options.setAttribute("total-tracks", tracks.length + 1); // +1 to include the now-playing track
 				li.append(options);
 
 				// Identify new tracks

@@ -29,6 +29,7 @@ router.get('/_info', async (req,res) => {
 		"checks": {
 			"media-manager": {
 				"techDetail": "Can fetch data from media manager",
+				"dependsOn": "lucos_media_manager",
 			}
 		},
 		"metrics": {},

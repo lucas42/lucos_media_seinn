@@ -1,4 +1,6 @@
 FROM node:25
+ARG VERSION
+ENV VERSION=$VERSION
 
 WORKDIR /usr/src/app
 COPY package* ./

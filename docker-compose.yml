@@ -10,7 +10,7 @@ services:
       - KEY_LUCOS_PRIVATE
       - ENVIRONMENT
       - PORT
-    image: lucas42/lucos_media_seinn
+    image: lucas42/lucos_media_seinn:${VERSION:-latest}
     restart: always
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:${PORT}/_info"]

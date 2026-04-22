@@ -14,6 +14,7 @@ const environment = process.env.ENVIRONMENT || (() => { throw "ENVIRONMENT Envir
 manager.init(mediaManager, apiKey, 'lucos_media_seinn');
 
 function isSafeRedirectPath(path) {
+	if (typeof path !== 'string') return false;
 	try {
 		const url = new URL(path, 'https://dummy.invalid');
 		return url.host === 'dummy.invalid';

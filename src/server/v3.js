@@ -13,11 +13,19 @@ const mediaPassword = process.env.KEY_LUCOS_PRIVATE || (() => { throw "KEY_LUCOS
 const environment = process.env.ENVIRONMENT || (() => { throw "ENVIRONMENT Environment Variable not set" })();
 manager.init(mediaManager, apiKey, 'lucos_media_seinn');
 
+function isSafeRedirectPath(path) {
+	if (typeof path !== 'string') return false;
+	try {
+		const url = new URL(path, 'https://dummy.invalid');
+		return url.host === 'dummy.invalid';
+	} catch {
+		return false;
+	}
+}
+
 // Endpoint that's purely for authentication purposes (which won't be handled by the service worker)
 router.get('/login', (req, res) => {
-	// Check the redirect query to avoid open redirect vulnerabilities
-	// Must start with "/" but not "//" (which would be a protocol-relative external URL)
-	if (!req.query.redirect_path?.startsWith("/") || req.query.redirect_path?.startsWith("//")) {
+	if (!isSafeRedirectPath(req.query.redirect_path)) {
 		res.status(400).send("Invalid redirect_path parameter");
 		return;
 	}

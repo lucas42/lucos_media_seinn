@@ -26,16 +26,16 @@
   "homepage": "https://github.com/lucas42/lucos_media_seinn",
   "dependencies": {
     "express": "^5.2.1",
-    "express-rate-limit": "^8.4.0",
+    "express-rate-limit": "^8.4.1",
     "mustache-express": "^1.3.2"
   },
   "devDependencies": {
     "folder-hash": "^4.1.2",
-    "jsdom": "^29.0.2",
-    "lucos_navbar": "^2.1.60",
-    "lucos_pubsub": "^1.0.39",
+    "jsdom": "^29.1.0",
+    "lucos_navbar": "^2.1.61",
+    "lucos_pubsub": "^1.0.40",
     "mocha": "^11.7.5",
-    "restful-queue": "^1.0.93",
+    "restful-queue": "^1.0.94",
     "uuid": "^14.0.0",
     "webpack-cli": "^7.0.2"
   },

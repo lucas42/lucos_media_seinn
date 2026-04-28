@@ -32,10 +32,10 @@
   "devDependencies": {
     "folder-hash": "^4.1.2",
     "jsdom": "^29.1.0",
-    "lucos_navbar": "^2.1.61",
+    "lucos_navbar": "^2.1.62",
     "lucos_pubsub": "^1.0.40",
     "mocha": "^11.7.5",
-    "restful-queue": "^1.0.94",
+    "restful-queue": "^1.0.95",
     "uuid": "^14.0.0",
     "webpack-cli": "^7.0.2"
   },

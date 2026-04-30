@@ -9,6 +9,7 @@ const port = process.env.PORT || 3000;
 app.engine('mustache', mustacheExpress());
 app.set('view engine', 'mustache');
 app.set('views', `./src/views`);
+app.set('trust proxy', 1); // seinn sits behind a single nginx hop; trust X-Forwarded-For for rate limiting
 app.use(express.static('./src/resources', {extensions: ['json']}));
 
 app.use('/v3', v3);

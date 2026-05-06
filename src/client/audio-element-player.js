@@ -31,6 +31,9 @@ async function playTrack(track) {
 		await currentAudio.play();
 		// Instrumentation hook for lucas42/lucos#126 (T4 — user-perceived audio transition).
 		// Fire-and-forget: must never interfere with playback.
+		// NOTE: audio-element-player is not currently wired up in player.js — only the
+		// web-player version of this beacon fires today.  Keeping it here so a future
+		// switch back to the audio-element player doesn't silently lose the instrumentation.
 		post(`v3/playlist/${playlist}/${track.uuid}?action=started`)
 			.catch(() => { /* instrumentation must never break playback */ });
 	} catch (error) {

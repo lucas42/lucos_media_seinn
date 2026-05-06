@@ -1,5 +1,5 @@
 import { listenExisting } from 'lucos_pubsub';
-import { del } from '../utils/manager.js';
+import { del, post } from '../utils/manager.js';
 import localDevice from '../utils/local-device.js';
 
 let currentAudio;
@@ -22,18 +22,22 @@ async function updateCurrentAudio(data) {
 	}
 }
 async function playTrack(track) {
+	const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
 	try {
 		currentAudio = new Audio(track.url);
 		currentAudio.currentTime = track.currentTime;
 		currentAudio.addEventListener("ended", trackEndedHandler);
 		currentAudio.dataset.uuid = track.uuid;
 		await currentAudio.play();
+		// Instrumentation hook for lucas42/lucos#126 (T4 — user-perceived audio transition).
+		// Fire-and-forget: must never interfere with playback.
+		post(`v3/playlist/${playlist}/${track.uuid}?action=started`)
+			.catch(() => { /* instrumentation must never break playback */ });
 	} catch (error) {
 		if (error.name === "NotAllowedError") {
 			currentAudio = null;
 		} else {
 			console.error("Skipping track", error.message);
-			const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
 			await del(`v3/playlist/${playlist}/${track.uuid}?action=error`, error.message);
 		}
 	}

@@ -1,6 +1,7 @@
 import { listenExisting } from 'lucos_pubsub';
 import { del, post } from '../utils/manager.js';
 import localDevice from '../utils/local-device.js';
+import { getPlaylistSlug } from '../utils/playlist-slug.js';
 
 let currentAudio;
 
@@ -22,7 +23,7 @@ async function updateCurrentAudio(data) {
 	}
 }
 async function playTrack(track) {
-	const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
+	const playlist = getPlaylistSlug();
 	try {
 		currentAudio = new Audio(track.url);
 		currentAudio.currentTime = track.currentTime;
@@ -56,7 +57,7 @@ function stopCurrentTrack(fadeTime) {
 }
 
 function trackEndedHandler(event) {
-	const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
+	const playlist = getPlaylistSlug();
 	const uuid = event.currentTarget.dataset.uuid;
 	del(`v3/playlist/${playlist}/${uuid}?action=complete`);
 }

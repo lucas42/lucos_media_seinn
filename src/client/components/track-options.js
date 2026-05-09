@@ -1,4 +1,5 @@
 import { del, put } from '../../utils/manager.js';
+import { getPlaylistSlug } from '../../utils/playlist-slug.js';
 class TrackOptions extends HTMLElement {
 	static get observedAttributes() {
 		return ['url', 'uuid', 'editurl', 'position', 'total-tracks'];
@@ -39,7 +40,7 @@ class TrackOptions extends HTMLElement {
 		component.skipForm.dataset.uuid = component.getAttribute("uuid");
 		component.skipForm.addEventListener("submit", event => {
 			event.preventDefault();
-			const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
+			const playlist = getPlaylistSlug();
 			const uuid = event.currentTarget.dataset.uuid;
 			del(`v3/playlist/${playlist}/${uuid}?action=skip`);
 		});
@@ -54,7 +55,7 @@ class TrackOptions extends HTMLElement {
 		component.playNextForm.dataset.uuid = component.getAttribute("uuid");
 		component.playNextForm.addEventListener("submit", event => {
 			event.preventDefault();
-			const playlist = 'null';
+			const playlist = getPlaylistSlug();
 			const uuid = event.currentTarget.dataset.uuid;
 			put(`v3/playlist/${playlist}/${uuid}/position`, '1');
 		});
@@ -70,7 +71,7 @@ class TrackOptions extends HTMLElement {
 		component.moveUpForm.dataset.position = component.getAttribute("position");
 		component.moveUpForm.addEventListener("submit", event => {
 			event.preventDefault();
-			const playlist = 'null';
+			const playlist = getPlaylistSlug();
 			const uuid = event.currentTarget.dataset.uuid;
 			const position = parseInt(event.currentTarget.dataset.position);
 			put(`v3/playlist/${playlist}/${uuid}/position`, String(position - 1));
@@ -87,7 +88,7 @@ class TrackOptions extends HTMLElement {
 		component.moveDownForm.dataset.position = component.getAttribute("position");
 		component.moveDownForm.addEventListener("submit", event => {
 			event.preventDefault();
-			const playlist = 'null';
+			const playlist = getPlaylistSlug();
 			const uuid = event.currentTarget.dataset.uuid;
 			const position = parseInt(event.currentTarget.dataset.position);
 			put(`v3/playlist/${playlist}/${uuid}/position`, String(position + 1));

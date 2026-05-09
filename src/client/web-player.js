@@ -2,6 +2,7 @@ import { listenExisting, send } from 'lucos_pubsub';
 import { getBuffer, preBufferTracks } from './buffers.js';
 import { del, post, put } from '../utils/manager.js';
 import localDevice from '../utils/local-device.js';
+import { getPlaylistSlug } from '../utils/playlist-slug.js';
 
 
 const audioContext = new AudioContext();
@@ -48,7 +49,7 @@ function updateVolume(volume, fadeTime=0) {
 }
 async function playTrack(track, volume) {
 	if (currentAudio) throw "trying to play track while another is playing";
-	const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
+	const playlist = getPlaylistSlug();
 	try {
 		const source = audioContext.createBufferSource();
 		source.addEventListener("ended", trackEndedHandler);
@@ -105,7 +106,7 @@ function stopCurrentTrack(fadeTime) {
 }
 
 function trackEndedHandler(event) {
-	const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
+	const playlist = getPlaylistSlug();
 	const uuid = event.currentTarget.trackUuid;
 	del(`v3/playlist/${playlist}/${uuid}?action=complete`);
 }

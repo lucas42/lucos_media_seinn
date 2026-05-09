@@ -1,4 +1,5 @@
 import { del } from '../../utils/manager.js';
+import { getPlaylistSlug } from '../../utils/playlist-slug.js';
 
 class NextForm extends HTMLFormElement {
 	constructor() {
@@ -8,7 +9,7 @@ class NextForm extends HTMLFormElement {
 			event.preventDefault();
 			this.classList.add('loading');
 			const currentTrack = document.querySelector("now-playing").getAttribute("uuid");
-			const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
+			const playlist = getPlaylistSlug();
 			await del(`v3/playlist/${playlist}/${currentTrack}?action=skip`);
 			this.classList.remove('loading');
 		});

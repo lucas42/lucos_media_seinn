@@ -1,6 +1,7 @@
 import player from './player.js';
 import { put } from '../utils/manager.js';
 import { listenExisting } from 'lucos_pubsub';
+import { getPlaylistSlug } from '../utils/playlist-slug.js';
 
 
 export async function updateTrackStatus() {
@@ -8,7 +9,7 @@ export async function updateTrackStatus() {
 	const currentUuid = player.getCurrentUuid();
 	if (!currentUuid) return;
 
-	const playlist = 'null'; // For now, the playlist slug isn't used (but needs to be part of the url).  Set it to null until there's an easier way to derive it.
+	const playlist = getPlaylistSlug();
 	await put(`v3/playlist/${playlist}/${currentUuid}/current-time`, timeElapsed);
 }
 

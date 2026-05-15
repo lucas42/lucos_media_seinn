@@ -50,12 +50,15 @@ router.get('/_info', async (req,res) => {
 		title: "Play Music",
 		show_on_homepage: true,
 	};
+	const probeStart = Date.now();
 	try {
 		const pollResp = await manager.get("v3/poll", { signal: AbortSignal.timeout(800) });
 		if (!pollResp.ok) throw new Error(`Error from media-manager: ${pollResp.statusText}`);
 		await pollResp.json();
 		info.checks["media-manager"].ok = true;
 	} catch (error) {
+		const probeMs = Date.now() - probeStart;
+		console.warn(`media-manager probe failed after ${probeMs}ms (target: ${mediaManager}): ${error.message}`);
 		info.checks["media-manager"].ok = false;
 		info.checks["media-manager"].debug = error.message;
 	}

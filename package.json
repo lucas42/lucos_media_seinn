@@ -26,7 +26,7 @@
   "homepage": "https://github.com/lucas42/lucos_media_seinn",
   "dependencies": {
     "express": "^5.2.1",
-    "express-rate-limit": "^8.5.1",
+    "express-rate-limit": "^8.5.2",
     "mustache-express": "^1.3.2"
   },
   "devDependencies": {

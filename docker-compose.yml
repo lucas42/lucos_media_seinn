@@ -5,6 +5,7 @@ services:
     ports: 
       - $PORT:$PORT
     environment:
+      - MEDIA_MANAGER_URL
       - MEDIA_MANAGER_URL=https://ceol.l42.eu/
       - KEY_LUCOS_MEDIA_MANAGER
       - KEY_LUCOS_PRIVATE

@@ -8,3 +8,5 @@ name: "CodeQL configuration for lucos_media_seinn"
 query-filters:
   - exclude:
       id: js/stored-xss
+      paths:
+        - tests/**

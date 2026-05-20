@@ -38,14 +38,31 @@ async function writeTimestamps(timestamps) {
 	await lruCache.put(LRU_META_REQUEST, response);
 }
 
+// Mutex to serialise concurrent updateLRUTimestamp() calls.
+// preloadTracks uses forEach(async …) so multiple fetchTrack calls can finish
+// at around the same time and each calls updateLRUTimestamp().  Without the
+// lock, concurrent read-modify-write cycles race: two calls read the same
+// snapshot, each adds its URL, and the second write overwrites the first,
+// silently losing the earlier update.  Chaining onto a shared promise ensures
+// only one update runs at a time.
+let timestampLock = Promise.resolve();
+
 /**
  * Records (or updates) the access timestamp for a given track URL.
  * Call this on every cache write and every cache hit.
+ *
+ * Returns a promise that resolves once the update has been written.
+ * Concurrent calls are serialised — no lost updates.
  */
-export async function updateLRUTimestamp(trackUrl) {
-	const timestamps = await readTimestamps();
-	timestamps[trackUrl] = Date.now();
-	await writeTimestamps(timestamps);
+export function updateLRUTimestamp(trackUrl) {
+	timestampLock = timestampLock
+		.then(async () => {
+			const timestamps = await readTimestamps();
+			timestamps[trackUrl] = Date.now();
+			await writeTimestamps(timestamps);
+		})
+		.catch(err => console.error('updateLRUTimestamp failed:', err));
+	return timestampLock;
 }
 
 // ─── Size helpers ─────────────────────────────────────────────────────────────
@@ -196,6 +213,7 @@ async function evictTrack(trackUrl, timestamps) {
  * bound from failed or erroring track fetches.
  */
 async function _evictIfOverBudget() {
+	const evictionPassStart = Date.now();
 	const { total, sizes } = await getCacheSizeWithMap(TRACK_CACHE);
 	let totalSize = total;
 
@@ -223,6 +241,12 @@ async function _evictIfOverBudget() {
 	for (const [url] of sorted) {
 		if (totalSize <= CACHE_BUDGET_BYTES) break;
 		const evictedSize = sizes.get(url) ?? 0;
+		// Diagnostic: a timestamp newer than the start of this pass means the LRU
+		// ordering may be stale (e.g. from a prior lost-update race).  Log so that
+		// this is observable in CI / manual testing without a long-lived session.
+		if (timestamps[url] > evictionPassStart) {
+			console.warn(`Cache eviction: evicting ${url} with lastAccessedAt=${timestamps[url]} newer than pass start=${evictionPassStart} — possible LRU timestamp inconsistency`);
+		}
 		await evictTrack(url, timestamps);
 		totalSize -= evictedSize;
 	}

@@ -17,9 +17,15 @@ if (typeof global.gc !== 'function') {
 // Load tag names from file names in ../src/client/components
 const componentsDir = path.join(__dirname, "../src/client/components");
 
+// Custom element names must be lowercase, start with a letter, contain at
+// least one hyphen, and use only letters, digits, and hyphens.  Validating
+// here ensures only legitimate component names flow to document.createElement
+// further down — any non-component file accidentally placed in the directory
+// will be skipped rather than passed as an unvalidated string to a DOM API.
 const componentTags = fs.readdirSync(componentsDir)
 	.filter(f => f.endsWith(".js"))
-	.map(f => f.replace(/\.js$/, ""));
+	.map(f => f.replace(/\.js$/, ""))
+	.filter(tag => /^[a-z][a-z0-9-]*-[a-z0-9][a-z0-9-]*$/.test(tag));
 
 // Shared JSDOM instance for component registration
 const bootstrapDOM = new JSDOM(``, {

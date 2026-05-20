@@ -1,6 +1,16 @@
 import { updateTrackStatus } from './track-status-update.js';
 import { abortAllRequests } from '../utils/manager.js';
+import './components/cache-thrash-banner.js';
 const statusChannel = new BroadcastChannel("lucos_status");
+
+// Show a recovery banner when the SW cache enters a thrash state.
+// Handled at module level so it works even if SW registration fails.
+statusChannel.addEventListener("message", function handleCacheThrash(event) {
+	if (event.data !== "cache-thrash") return;
+	if (!document.querySelector('cache-thrash-banner')) {
+		document.body.prepend(document.createElement('cache-thrash-banner'));
+	}
+});
 try {
 	if (!('serviceWorker' in navigator)) throw "no service worker support";
 	const registration = await navigator.serviceWorker.register('/serviceworker-v3.js');

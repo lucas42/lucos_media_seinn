@@ -8,6 +8,7 @@ const audioContext = new AudioContext();
 let globalGain = audioContext.createGain();
 globalGain.connect(audioContext.destination);
 let currentAudio;
+let sessionErrorCount = 0;
 
 /**
  * Media Session API only works when there's an audio/video element playing on the page; an AudioContext isn't enough on its own.
@@ -89,7 +90,27 @@ async function playTrack(track, volume) {
 		});
 	} catch (error) {
 		console.error("Skipping track", error.message);
-		await del(`v3/playlist/${playlist}/${track.uuid}?action=error`, error.message);
+		sessionErrorCount++;
+		/**
+		 * Send a structured JSON envelope to the media-manager error endpoint.
+		 * Schema:
+		 *   errorMessage  — the raw error string from the Web Audio / fetch pipeline
+		 *   context.audioContextState  — 'running' | 'suspended' | 'closed'
+		 *   context.pageVisible        — whether the page was visible at the time of failure
+		 *   context.sessionErrorCount  — how many tracks have errored this session (1-indexed, includes this one)
+		 *   context.userAgent          — browser user-agent string
+		 * The manager logs the full envelope to stdout and uses errorMessage as lastErrorMessage.
+		 */
+		const errorPayload = JSON.stringify({
+			errorMessage: error.message,
+			context: {
+				audioContextState: audioContext.state,
+				pageVisible: document.visibilityState === 'visible',
+				sessionErrorCount,
+				userAgent: navigator.userAgent,
+			},
+		});
+		await del(`v3/playlist/${playlist}/${track.uuid}?action=error`, errorPayload);
 	}
 }
 

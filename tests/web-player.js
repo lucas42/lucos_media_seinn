@@ -1,0 +1,142 @@
+import assert from 'assert';
+import { describe, it, before } from 'mocha';
+
+/**
+ * Override the AudioContext stub with one that supports the web-player code paths.
+ * web-components.js sets a basic stub; we upgrade it here before web-player.js is
+ * dynamically imported so both web-player.js and buffers.js get the richer version.
+ */
+global.AudioContext = class {
+	constructor() {
+		this.state = 'running';
+		this.currentTime = 0;
+		this.destination = {};
+		this.sampleRate = 44100;
+	}
+	close() {}
+	resume() {}
+	createGain() {
+		return {
+			gain: {
+				value: 1,
+				linearRampToValueAtTime() {},
+			},
+			connect() {},
+		};
+	}
+	createBufferSource() {
+		return {
+			buffer: null,
+			connect() {},
+			start() {},
+			addEventListener() {},
+			removeEventListener() {},
+			trackUrl: null,
+			trackUuid: null,
+		};
+	}
+	// buffers.js calls decodeAudioData after fetching the audio file.
+	// Reject so that web-player.js's catch block fires.
+	decodeAudioData() {
+		return Promise.reject(new Error('Unable to decode audio data'));
+	}
+};
+
+// Ensure navigator.userAgent is accessible as a global (JSDOM sets window.navigator
+// but not global.navigator in all Node versions).
+if (!global.navigator) {
+	global.navigator = { userAgent: 'TestBrowser/1.0' };
+}
+
+describe("web-player error reporting", function () {
+	this.timeout(5000);
+
+	let captureErrorRequest;
+	let originalFetch;
+
+	before(async () => {
+		// Stub global.fetch:
+		//   - Audio resource URLs: return a mock response that lets the fetch succeed
+		//     but then decodeAudioData (on the AudioContext stub above) will reject.
+		//   - Manager DELETE requests: resolve immediately and capture the call.
+		originalFetch = global.fetch;
+		global.fetch = async (url, options = {}) => {
+			if (url && url.includes('action=error')) {
+				// Capture DELETE to the manager error endpoint
+				if (captureErrorRequest) captureErrorRequest({ url, body: options.body });
+				return { ok: true, status: 204, text: async () => '' };
+			}
+			if (url && (url.includes('test-manager') || url.includes('v3/'))) {
+				// Other manager calls (e.g. PUT is-playing, POST started)
+				return { ok: true, status: 204, text: async () => '' };
+			}
+			// Audio resource fetch — return a minimal valid response so the pipeline
+			// proceeds to decodeAudioData (which rejects on our stub).
+			return {
+				ok: true,
+				status: 200,
+				arrayBuffer: async () => new ArrayBuffer(8),
+				text: async () => '',
+			};
+		};
+
+		// Init manager so del() calls can resolve
+		const { init: initManager } = await import('../src/utils/manager.js');
+		initManager('http://test-manager/', 'test-api-key');
+
+		// Init media-headers so buffers.js's getMediaHeaders() promise resolves
+		const { init: initMediaHeaders } = await import('../src/utils/media-headers.js');
+		initMediaHeaders({ user: 'test', password: 'test' });
+
+		// Mark this device as current so web-player.js's updateCurrentAudio triggers playback
+		const { setCurrent } = await import('../src/utils/local-device.js');
+		setCurrent(true);
+
+		// Import and initialise the web player (also registers the managerData listener)
+		await import('../src/client/web-player.js');
+	});
+
+	it("sends a JSON envelope with errorMessage and context fields on playback failure", (done) => {
+		// Promise that resolves when the DELETE ?action=error fetch is captured
+		const deleteCapture = new Promise((resolve) => {
+			captureErrorRequest = resolve;
+		});
+
+		// Fire a managerData event — this triggers updateCurrentAudio → playTrack → error
+		import('../src/client/player.js').then(async ({ default: _player }) => {
+			const { send } = await import('lucos_pubsub');
+			send("managerData", {
+				tracks: [{ url: 'http://test-audio.example.com/track.mp3', uuid: 'test-uuid-abc', currentTime: 0 }],
+				isPlaying: true,
+				volume: 1,
+			});
+		});
+
+		deleteCapture.then(({ url, body }) => {
+			try {
+				assert.ok(url.includes('action=error'), `DELETE URL should include action=error, got: ${url}`);
+
+				const payload = JSON.parse(body);
+
+				// errorMessage should be the raw error string, not the full JSON
+				assert.equal(typeof payload.errorMessage, 'string', 'errorMessage should be a string');
+				assert.ok(payload.errorMessage.length > 0, 'errorMessage should not be empty');
+
+				// context fields
+				assert.ok(payload.context, 'payload should have a context object');
+				assert.ok('audioContextState' in payload.context, 'context should include audioContextState');
+				assert.ok('pageVisible' in payload.context, 'context should include pageVisible');
+				assert.ok('sessionErrorCount' in payload.context, 'context should include sessionErrorCount');
+				assert.ok('userAgent' in payload.context, 'context should include userAgent');
+
+				// sessionErrorCount should be a positive integer
+				assert.equal(typeof payload.context.sessionErrorCount, 'number');
+				assert.ok(payload.context.sessionErrorCount >= 1, 'sessionErrorCount should be at least 1');
+
+				done();
+			} catch (err) {
+				done(err);
+			}
+		}).catch(done);
+	});
+});

@@ -79,6 +79,9 @@ describe("Web Component createElement safety", function () {
 			const modulePath = path.resolve(componentsDir, `${tag}.js`);
 			await import(pathToFileURL(modulePath).href);
 			// This is the call that throws if the constructor sets attributes.
+			// codeql[js/stored-xss] - false positive: document.createElement is not an HTML sink
+			// (creates an element node, not markup injection), and the source is project-owned
+			// files in src/client/components/, not user-supplied input.
 			assert.doesNotThrow(() => document.createElement(tag));
 		});
 	}

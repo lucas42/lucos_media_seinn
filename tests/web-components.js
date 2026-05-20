@@ -59,6 +59,25 @@ global.AudioContext = class {
 	}
 };
 
+/**
+ * Regression test: custom element constructors must NOT call setAttribute,
+ * appendChild, or any other DOM-mutating method.  The Custom Elements V1 spec
+ * only permits these in connectedCallback (or later lifecycle methods).
+ * document.createElement enforces this restriction and throws
+ * "The result must not have attributes" if violated; `new Constructor()`
+ * bypasses it, so only this test catches the bug.
+ */
+describe("Web Component createElement safety", function () {
+	for (const tag of componentTags) {
+		it(`<${tag}> can be created via document.createElement without throwing`, async function () {
+			const modulePath = path.resolve(componentsDir, `${tag}.js`);
+			await import(pathToFileURL(modulePath).href);
+			// This is the call that throws if the constructor sets attributes.
+			assert.doesNotThrow(() => document.createElement(tag));
+		});
+	}
+});
+
 describe("Web Component Garbage Collection Test", function () {
 	const gcLimitInSeconds = 3;
 	this.timeout((1 + gcLimitInSeconds)*1000); // Allow enough time for module import and Garbage Collection

@@ -11,17 +11,14 @@
  *   accessibility tree correctly pierces shadow boundaries for live regions,
  *   so this works in Chrome (the primary runtime).  NVDA + Firefox has a
  *   known issue with ARIA live regions inside shadow roots; aria-live on the
- *   host element below is belt-and-suspenders coverage for other ATs.
+ *   host element is belt-and-suspenders coverage for other ATs (set in
+ *   connectedCallback, not the constructor, per Custom Elements V1).
  * - Focus is moved to the Reload button in connectedCallback so keyboard
  *   users can act immediately.
  */
 class CacheThrashBanner extends HTMLElement {
 	constructor() {
 		super();
-		// Belt-and-suspenders: expose the live region at the host level so
-		// assistive technologies that don't pierce shadow DOM pick it up too.
-		this.setAttribute('aria-live', 'assertive');
-		this.setAttribute('aria-atomic', 'true');
 		const shadow = this.attachShadow({ mode: 'closed' });
 
 		const style = document.createElement('style');
@@ -103,6 +100,13 @@ class CacheThrashBanner extends HTMLElement {
 	}
 
 	connectedCallback() {
+		// Belt-and-suspenders: expose the live region at the host level so
+		// assistive technologies that don't pierce shadow DOM pick it up too.
+		// Must be set here (not in the constructor) — Custom Elements V1 forbids
+		// setAttribute in the constructor (it would throw when the element is
+		// created via document.createElement).
+		this.setAttribute('aria-live', 'assertive');
+		this.setAttribute('aria-atomic', 'true');
 		// Move focus to the Reload button so keyboard users can act immediately.
 		this._reloadButton.focus();
 	}

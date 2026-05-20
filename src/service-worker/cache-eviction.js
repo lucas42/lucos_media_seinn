@@ -96,6 +96,57 @@ async function getCacheSizeWithMap(cacheName) {
 	return { total, sizes };
 }
 
+// ─── Thrash detection ─────────────────────────────────────────────────────────
+
+// If more than THRASH_THRESHOLD individual track evictions happen within
+// THRASH_WINDOW_MS, the cache is considered to be thrashing.  Normal steady-
+// state cadence is ~1 eviction per track play; 20 in 60 s is only reachable
+// when the cache is perpetually over-budget and fills up between plays.
+const THRASH_WINDOW_MS = 60 * 1000;  // sliding window width
+const THRASH_THRESHOLD = 20;          // individual evictions within the window
+
+const recentEvictionTimes = [];
+let thrashDetected = false; // reset only on SW restart; prevents repeated alerts
+
+/**
+ * Records a single track eviction and checks whether the thrash threshold
+ * has been crossed.  If so, fires onThrashDetected() exactly once.
+ */
+function recordEviction() {
+	const now = Date.now();
+	recentEvictionTimes.push(now);
+	const cutoff = now - THRASH_WINDOW_MS;
+	while (recentEvictionTimes.length > 0 && recentEvictionTimes[0] < cutoff) {
+		recentEvictionTimes.shift();
+	}
+	if (!thrashDetected && recentEvictionTimes.length >= THRASH_THRESHOLD) {
+		thrashDetected = true;
+		onThrashDetected().catch(err => console.error('onThrashDetected failed:', err));
+	}
+}
+
+/**
+ * Called once when the thrash threshold is crossed.
+ * Logs storage diagnostics and notifies the page via BroadcastChannel.
+ */
+async function onThrashDetected() {
+	try {
+		const estimate = await navigator.storage.estimate();
+		console.warn(
+			`Cache thrash detected: ${recentEvictionTimes.length} evictions in the last ${THRASH_WINDOW_MS / 1000}s.`,
+			`Storage: quota=${estimate.quota}, usage=${estimate.usage}`
+		);
+	} catch (err) {
+		console.warn(
+			`Cache thrash detected: ${recentEvictionTimes.length} evictions in the last ${THRASH_WINDOW_MS / 1000}s.`,
+			`(storage estimate unavailable: ${err.message})`
+		);
+	}
+	const channel = new BroadcastChannel('lucos_status');
+	channel.postMessage('cache-thrash');
+	channel.close();
+}
+
 // ─── Eviction ─────────────────────────────────────────────────────────────────
 
 // Mutex to serialise concurrent evictIfOverBudget() calls.
@@ -248,6 +299,7 @@ async function _evictIfOverBudget() {
 			console.warn(`Cache eviction: evicting ${url} with lastAccessedAt=${timestamps[url]} newer than pass start=${evictionPassStart} — possible LRU timestamp inconsistency`);
 		}
 		await evictTrack(url, timestamps);
+		recordEviction();
 		totalSize -= evictedSize;
 	}
 }

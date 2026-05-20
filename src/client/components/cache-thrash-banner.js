@@ -26,11 +26,11 @@ class CacheThrashBanner extends HTMLElement {
 			:host {
 				display: block;
 				position: fixed;
-				top: 0;
+				top: 30px;
 				left: 0;
 				right: 0;
 				z-index: 9999;
-				background: #8a0000;
+				background: #c46000;
 				color: #fff;
 				padding: 0.75em 1em;
 				text-align: center;

@@ -6,13 +6,22 @@
  * CacheStorage state.  The "Reload" button unregisters all SW registrations
  * before reloading, ensuring stale cached data is cleared.
  *
- * Accessibility: the inner container carries role="alert" so screen readers
- * announce the notification immediately on insertion.  Focus is moved to the
- * Reload button in connectedCallback so keyboard users can act right away.
+ * Accessibility notes:
+ * - role="alert" is on a <div> inside a closed shadow root.  Chrome's
+ *   accessibility tree correctly pierces shadow boundaries for live regions,
+ *   so this works in Chrome (the primary runtime).  NVDA + Firefox has a
+ *   known issue with ARIA live regions inside shadow roots; aria-live on the
+ *   host element below is belt-and-suspenders coverage for other ATs.
+ * - Focus is moved to the Reload button in connectedCallback so keyboard
+ *   users can act immediately.
  */
 class CacheThrashBanner extends HTMLElement {
 	constructor() {
 		super();
+		// Belt-and-suspenders: expose the live region at the host level so
+		// assistive technologies that don't pierce shadow DOM pick it up too.
+		this.setAttribute('aria-live', 'assertive');
+		this.setAttribute('aria-atomic', 'true');
 		const shadow = this.attachShadow({ mode: 'closed' });
 
 		const style = document.createElement('style');
@@ -28,7 +37,7 @@ class CacheThrashBanner extends HTMLElement {
 				color: #fff;
 				padding: 0.75em 1em;
 				text-align: center;
-				font-family: Geneva, Arial, sans-serif;
+				font-family: inherit;
 				box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 			}
 			p {

@@ -82,8 +82,7 @@ describe("Web Component createElement safety", function () {
 			// False positive: document.createElement is not an HTML sink (creates an element
 			// node, not markup injection), and the source is project-owned files in
 			// src/client/components/, not user-supplied input.
-			// codeql[js/stored-xss]
-			assert.doesNotThrow(() => document.createElement(tag));
+			assert.doesNotThrow(() => document.createElement(tag)); // codeql[js/stored-xss]
 		});
 	}
 });

@@ -118,6 +118,11 @@ describe('cache-eviction: eviction failure detection', function () {
 	beforeEach(() => {
 		resetCaches();
 		lastBroadcastMessage = null;
+		globalThis.BroadcastChannel = class BroadcastChannel {
+			constructor() {}
+			postMessage(msg) { lastBroadcastMessage = msg; }
+			close() {}
+		};
 		_resetDetectionStateForTest();
 	});
 

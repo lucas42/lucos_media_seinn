@@ -68,9 +68,33 @@ function resetCaches() {
 // Request, which we've already set above).
 resetCaches();
 
+// ── Additional globals required by failure-detection tests ────────────────────
+
+// BroadcastChannel: used by onEvictionFailureDetected (and onThrashDetected) to
+// notify the page.  The stub captures the last message posted so tests can assert
+// on it.  Must be set before the module is imported because the module-level code
+// doesn't reference BroadcastChannel at import time, but we set it here for
+// clarity alongside the other global stubs.
+let lastBroadcastMessage = null;
+
+globalThis.BroadcastChannel = class BroadcastChannel {
+	constructor() {}
+	postMessage(msg) { lastBroadcastMessage = msg; }
+	close() {}
+};
+
+// navigator.storage.estimate: called by onEvictionFailureDetected / onThrashDetected.
+// Node.js exposes navigator as a read-only getter on globalThis, so a plain
+// assignment throws.  We extend the existing object rather than replacing it so
+// other tests that depend on navigator.userAgent or other properties continue
+// to work.
+globalThis.navigator.storage = {
+	estimate: async () => ({ quota: 1_000_000, usage: 500_000 }),
+};
+
 // ── Import the module under test ──────────────────────────────────────────────
 
-const { updateLRUTimestamp } = await import('../src/service-worker/cache-eviction.js');
+const { updateLRUTimestamp, evictIfOverBudget, _resetDetectionStateForTest } = await import('../src/service-worker/cache-eviction.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -81,7 +105,61 @@ async function readStoredTimestamps() {
 	return response.json();
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+function makeFaultyCaches() {
+	globalThis.caches = {
+		open: async () => { throw new Error('simulated cache open failure'); },
+	};
+}
+
+// ── Failure-detection tests ───────────────────────────────────────────────────
+
+describe('cache-eviction: eviction failure detection', function () {
+
+	beforeEach(() => {
+		resetCaches();
+		lastBroadcastMessage = null;
+		_resetDetectionStateForTest();
+	});
+
+	it('does not fire the banner after a single eviction failure', async function () {
+		makeFaultyCaches();
+		await evictIfOverBudget();
+		assert.strictEqual(
+			lastBroadcastMessage, null,
+			'Banner should not fire after just one failure'
+		);
+	});
+
+	it('fires the cache-thrash banner after reaching the failure threshold (2 in window)', async function () {
+		makeFaultyCaches();
+		await evictIfOverBudget();
+		await evictIfOverBudget();
+		assert.strictEqual(
+			lastBroadcastMessage, 'cache-thrash',
+			'Banner should fire once threshold is reached'
+		);
+	});
+
+	it('fires the banner exactly once even when failures continue', async function () {
+		makeFaultyCaches();
+		let messageCount = 0;
+		globalThis.BroadcastChannel = class BroadcastChannel {
+			constructor() {}
+			postMessage() { messageCount++; }
+			close() {}
+		};
+
+		await evictIfOverBudget();
+		await evictIfOverBudget();
+		await evictIfOverBudget();
+		await evictIfOverBudget();
+
+		assert.strictEqual(messageCount, 1, 'Banner should fire exactly once regardless of subsequent failures');
+	});
+
+});
+
+// ── LRU timestamp tests ───────────────────────────────────────────────────────
 
 describe('cache-eviction: updateLRUTimestamp', function () {
 

@@ -70,9 +70,9 @@ resetCaches();
 
 // ── Additional globals required by failure-detection tests ────────────────────
 
-// BroadcastChannel: used by onEvictionFailureDetected (and onThrashDetected) to
-// notify the page.  The stub captures the last message posted so tests can assert
-// on it.  Must be set before the module is imported because the module-level code
+// BroadcastChannel: used by notifyCacheDegraded() to notify the page.
+// The stub captures the last message posted so tests can assert on it.
+// Must be set before the module is imported because the module-level code
 // doesn't reference BroadcastChannel at import time, but we set it here for
 // clarity alongside the other global stubs.
 let lastBroadcastMessage = null;

@@ -96,112 +96,90 @@ async function getCacheSizeWithMap(cacheName) {
 	return { total, sizes };
 }
 
-// ─── Thrash detection: successful evictions ───────────────────────────────────
+// ─── Thrash detection ─────────────────────────────────────────────────────────
 
-// If more than THRASH_THRESHOLD individual track evictions happen within
-// THRASH_WINDOW_MS, the cache is considered to be thrashing.  Normal steady-
-// state cadence is ~1 eviction per track play; 20 in 60 s is only reachable
-// when the cache is perpetually over-budget and fills up between plays.
-const THRASH_WINDOW_MS = 60 * 1000;  // sliding window width
-const THRASH_THRESHOLD = 20;          // individual evictions within the window
-
-const recentEvictionTimes = [];
-let thrashDetected = false; // reset only on SW restart; prevents repeated alerts
-
-/**
- * Records a single track eviction and checks whether the thrash threshold
- * has been crossed.  If so, fires onThrashDetected() exactly once.
- */
-function recordEviction() {
-	const now = Date.now();
-	recentEvictionTimes.push(now);
-	const cutoff = now - THRASH_WINDOW_MS;
-	while (recentEvictionTimes.length > 0 && recentEvictionTimes[0] < cutoff) {
-		recentEvictionTimes.shift();
-	}
-	if (!thrashDetected && recentEvictionTimes.length >= THRASH_THRESHOLD) {
-		thrashDetected = true;
-		onThrashDetected().catch(err => console.error('onThrashDetected failed:', err));
-	}
-}
-
-/**
- * Called once when the thrash threshold is crossed.
- * Logs storage diagnostics and notifies the page via BroadcastChannel.
- */
-async function onThrashDetected() {
-	try {
-		const estimate = await navigator.storage.estimate();
-		console.warn(
-			`Cache thrash detected: ${recentEvictionTimes.length} evictions in the last ${THRASH_WINDOW_MS / 1000}s.`,
-			`Storage: quota=${estimate.quota}, usage=${estimate.usage}`
-		);
-	} catch (err) {
-		console.warn(
-			`Cache thrash detected: ${recentEvictionTimes.length} evictions in the last ${THRASH_WINDOW_MS / 1000}s.`,
-			`(storage estimate unavailable: ${err.message})`
-		);
-	}
-	const channel = new BroadcastChannel('lucos_status');
-	channel.postMessage('cache-thrash');
-	channel.close();
-}
-
-// ─── Thrash detection: failed evictions ───────────────────────────────────────
-
-// If more than EVICTION_FAILURE_THRESHOLD eviction operations fail within
-// EVICTION_FAILURE_WINDOW_MS, the cache is considered to be in a degraded
-// failure state.  Steady-state failure rate is effectively zero, so the
-// threshold is intentionally low — it exists only to absorb a single
-// transient network error, not to normalise sustained failure.
-const EVICTION_FAILURE_WINDOW_MS = 60 * 1000;  // sliding window width
+// Thresholds for the two degradation detectors.
+// Normal steady-state cadence is ~1 successful eviction per track play; 20 in
+// 60 s is only reachable when the cache is perpetually over-budget.  Failed
+// eviction passes are effectively zero in steady state, so the threshold is
+// intentionally low — it exists only to absorb a single transient error.
+const THRASH_WINDOW_MS           = 60 * 1000;  // sliding window for successful evictions
+const THRASH_THRESHOLD           = 20;          // successful evictions within the window
+const EVICTION_FAILURE_WINDOW_MS = 60 * 1000;  // sliding window for failed evictions
 const EVICTION_FAILURE_THRESHOLD = 2;           // failures within the window
 
-const recentEvictionFailureTimes = [];
-let evictionFailureDetected = false; // reset only on SW restart; prevents repeated alerts
-
 /**
- * Records a single eviction-pass failure and checks whether the failure
- * threshold has been crossed.  If so, fires onEvictionFailureDetected() exactly
- * once.  Called from the evictionLock .catch handler so that failed eviction
- * passes are counted symmetrically alongside successful ones.
+ * Posts storage diagnostics to the console and notifies the page via
+ * BroadcastChannel.  Shared by both the thrash detector (successful-eviction
+ * path) and the failure detector (failed-eviction path) — the banner copy and
+ * reload action are correct for either root cause.
+ *
+ * @param {string} message - Diagnostic string describing the event.
  */
-function recordEvictionFailure() {
-	const now = Date.now();
-	recentEvictionFailureTimes.push(now);
-	const cutoff = now - EVICTION_FAILURE_WINDOW_MS;
-	while (recentEvictionFailureTimes.length > 0 && recentEvictionFailureTimes[0] < cutoff) {
-		recentEvictionFailureTimes.shift();
-	}
-	if (!evictionFailureDetected && recentEvictionFailureTimes.length >= EVICTION_FAILURE_THRESHOLD) {
-		evictionFailureDetected = true;
-		onEvictionFailureDetected().catch(err => console.error('onEvictionFailureDetected failed:', err));
-	}
-}
-
-/**
- * Called once when the eviction-failure threshold is crossed.
- * Logs diagnostics and notifies the page via the same BroadcastChannel
- * message as the thrash detector — the banner copy and reload action are
- * correct for both failure modes.
- */
-async function onEvictionFailureDetected() {
+async function notifyCacheDegraded(message) {
 	try {
 		const estimate = await navigator.storage.estimate();
-		console.warn(
-			`Cache eviction failure detected: ${recentEvictionFailureTimes.length} failures in the last ${EVICTION_FAILURE_WINDOW_MS / 1000}s.`,
-			`Storage: quota=${estimate.quota}, usage=${estimate.usage}`
-		);
+		console.warn(message, `Storage: quota=${estimate.quota}, usage=${estimate.usage}`);
 	} catch (err) {
-		console.warn(
-			`Cache eviction failure detected: ${recentEvictionFailureTimes.length} failures in the last ${EVICTION_FAILURE_WINDOW_MS / 1000}s.`,
-			`(storage estimate unavailable: ${err.message})`
-		);
+		console.warn(message, `(storage estimate unavailable: ${err.message})`);
 	}
 	const channel = new BroadcastChannel('lucos_status');
 	channel.postMessage('cache-thrash');
 	channel.close();
 }
+
+/**
+ * Creates a sliding-window threshold detector that fires a cache-degraded
+ * notification exactly once when `threshold` events occur within `windowMs`.
+ *
+ * @param {{ windowMs: number, threshold: number, label: string, unit: string }} opts
+ * @returns {{ record: Function, reset: Function }}
+ *   `record()` — call on each event occurrence.
+ *   `reset()` — clears all state; exported for test isolation only.
+ */
+function makeSlidingWindowDetector({ windowMs, threshold, label, unit }) {
+	const times = [];
+	let detected = false;
+
+	function record() {
+		const now = Date.now();
+		times.push(now);
+		const cutoff = now - windowMs;
+		while (times.length > 0 && times[0] < cutoff) times.shift();
+		if (!detected && times.length >= threshold) {
+			detected = true;
+			notifyCacheDegraded(
+				`${label}: ${times.length} ${unit} in the last ${windowMs / 1000}s.`
+			).catch(err => console.error(`${label} notification failed:`, err));
+		}
+	}
+
+	function reset() {
+		times.length = 0;
+		detected = false;
+	}
+
+	return { record, reset };
+}
+
+// Detector for runaway successful evictions (the 2026-05-19 thrash pattern).
+const thrashDetector = makeSlidingWindowDetector({
+	windowMs:  THRASH_WINDOW_MS,
+	threshold: THRASH_THRESHOLD,
+	label:     'Cache thrash detected',
+	unit:      'evictions',
+});
+
+// Detector for failed eviction passes (the 2026-05-22 failure pattern).
+const failureDetector = makeSlidingWindowDetector({
+	windowMs:  EVICTION_FAILURE_WINDOW_MS,
+	threshold: EVICTION_FAILURE_THRESHOLD,
+	label:     'Cache eviction failure detected',
+	unit:      'failures',
+});
+
+function recordEviction()        { thrashDetector.record(); }
+function recordEvictionFailure() { failureDetector.record(); }
 
 // ─── Eviction ─────────────────────────────────────────────────────────────────
 
@@ -387,9 +365,7 @@ export function evictIfOverBudget() {
  * the same ESM process; this function lets beforeEach() restore a clean slate.
  */
 export function _resetDetectionStateForTest() {
-	recentEvictionTimes.length = 0;
-	thrashDetected = false;
-	recentEvictionFailureTimes.length = 0;
-	evictionFailureDetected = false;
+	thrashDetector.reset();
+	failureDetector.reset();
 	evictionLock = Promise.resolve();
 }

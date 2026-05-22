@@ -83,7 +83,7 @@ globalThis.BroadcastChannel = class BroadcastChannel {
 	close() {}
 };
 
-// navigator.storage.estimate: called by onEvictionFailureDetected / onThrashDetected.
+// navigator.storage.estimate: called by notifyCacheDegraded().
 // Node.js exposes navigator as a read-only getter on globalThis, so a plain
 // assignment throws.  We extend the existing object rather than replacing it so
 // other tests that depend on navigator.userAgent or other properties continue

@@ -5,7 +5,7 @@ import { getPoll, modifyPollData } from './polling.js';
 import './preload.js';
 import localDevice from '../utils/local-device.js';
 import './update.js';
-import { updateLRUTimestamp } from './cache-eviction.js';
+import { recordCacheHit } from './cache-eviction.js';
 
 self.addEventListener('install', event => {
 	event.waitUntil(refresh());
@@ -44,7 +44,7 @@ async function handleRequest(request) {
 		// Update the LRU timestamp whenever a track is served from cache, so
 		// that frequently accessed tracks stay warm and are less likely to be
 		// evicted from tracks-v1 by the eviction logic in cache-eviction.js.
-		updateLRUTimestamp(request.url).catch(() => {}); // fire-and-forget; don't block response
+		recordCacheHit(request.url).catch(() => {}); // fire-and-forget; don't block response
 		return cachedResponse;
 	}
 	console.warn("Request not in cache", url.pathname, url.method, url.origin, url.search);

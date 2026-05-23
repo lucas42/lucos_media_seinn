@@ -3,8 +3,7 @@
  */
 import { v4 as uuidv4 } from 'uuid';
 import { send } from 'lucos_pubsub';
-const TRACK_METADATA_CACHE = 'track-metadata-v1';
-const TRACK_CACHE = 'tracks-v1';
+import { TRACK_CACHE, TRACK_METADATA_CACHE } from './cache-names.js';
 
 
 /**

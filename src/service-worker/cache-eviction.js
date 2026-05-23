@@ -363,8 +363,12 @@ async function _evictIfOverBudget() {
  * eviction paths to prevent lost updates and over-eviction.
  */
 export function recordCacheWrite(trackUrl) {
-	recordCacheHit(trackUrl);
+	const afterHit = recordCacheHit(trackUrl);   // returns updated timestampLock
+	// Chain eviction onto the eviction lock AND onto the timestamp write for this
+	// call, so _evictIfOverBudget() cannot start reading timestamps until after
+	// the recordCacheHit write for this URL has landed.
 	evictionLock = evictionLock
+		.then(() => afterHit)                    // wait for timestamp write to complete
 		.then(() => _evictIfOverBudget())
 		.catch(err => {
 			console.error('Cache eviction failed:', err);

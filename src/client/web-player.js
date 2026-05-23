@@ -89,6 +89,13 @@ async function playTrack(track, volume) {
 			position: getTimeElapsed(),
 		});
 	} catch (error) {
+		// Reset playback state so getCurrentUuid() / getTimeElapsed() correctly
+		// report "nothing playing" after a failed getBuffer call.  Without this,
+		// currentAudio has source.trackUuid set but no startTime, causing every
+		// subsequent updateTrackStatus() to PUT an empty time and get 400s from
+		// ceol until the manager externally pushes a new track (Window B in #471).
+		currentAudio = undefined;
+		dummyaudio.pause();
 		console.error("Skipping track", error.message);
 		sessionErrorCount++;
 		/**

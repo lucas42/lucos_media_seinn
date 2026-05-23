@@ -94,7 +94,7 @@ globalThis.navigator.storage = {
 
 // ── Import the module under test ──────────────────────────────────────────────
 
-const { updateLRUTimestamp, evictIfOverBudget, _resetDetectionStateForTest } = await import('../src/service-worker/cache-eviction.js');
+const { recordCacheHit, recordCacheWrite, _resetDetectionStateForTest } = await import('../src/service-worker/cache-eviction.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -128,7 +128,7 @@ describe('cache-eviction: eviction failure detection', function () {
 
 	it('does not fire the banner after a single eviction failure', async function () {
 		makeFaultyCaches();
-		await evictIfOverBudget();
+		await recordCacheWrite('https://media.example.com/track.mp3');
 		assert.strictEqual(
 			lastBroadcastMessage, null,
 			'Banner should not fire after just one failure'
@@ -137,8 +137,8 @@ describe('cache-eviction: eviction failure detection', function () {
 
 	it('fires the cache-thrash banner after reaching the failure threshold (2 in window)', async function () {
 		makeFaultyCaches();
-		await evictIfOverBudget();
-		await evictIfOverBudget();
+		await recordCacheWrite('https://media.example.com/track.mp3');
+		await recordCacheWrite('https://media.example.com/track.mp3');
 		assert.strictEqual(
 			lastBroadcastMessage, 'cache-thrash',
 			'Banner should fire once threshold is reached'
@@ -154,10 +154,10 @@ describe('cache-eviction: eviction failure detection', function () {
 			close() {}
 		};
 
-		await evictIfOverBudget();
-		await evictIfOverBudget();
-		await evictIfOverBudget();
-		await evictIfOverBudget();
+		await recordCacheWrite('https://media.example.com/track.mp3');
+		await recordCacheWrite('https://media.example.com/track.mp3');
+		await recordCacheWrite('https://media.example.com/track.mp3');
+		await recordCacheWrite('https://media.example.com/track.mp3');
 
 		assert.strictEqual(messageCount, 1, 'Banner should fire exactly once regardless of subsequent failures');
 	});
@@ -166,13 +166,13 @@ describe('cache-eviction: eviction failure detection', function () {
 
 // ── LRU timestamp tests ───────────────────────────────────────────────────────
 
-describe('cache-eviction: updateLRUTimestamp', function () {
+describe('cache-eviction: recordCacheHit', function () {
 
 	beforeEach(() => resetCaches());
 
 	it('records a timestamp for a single track URL', async function () {
 		const url = 'https://media.example.com/track-a.mp3';
-		await updateLRUTimestamp(url);
+		await recordCacheHit(url);
 
 		const timestamps = await readStoredTimestamps();
 		assert.ok(
@@ -187,7 +187,7 @@ describe('cache-eviction: updateLRUTimestamp', function () {
 		const urls = Array.from({ length: N }, (_, i) => `https://media.example.com/track-${i}.mp3`);
 
 		// Mirror the forEach(async …) pattern in preload.js
-		await Promise.all(urls.map(url => updateLRUTimestamp(url)));
+		await Promise.all(urls.map(url => recordCacheHit(url)));
 
 		const timestamps = await readStoredTimestamps();
 
@@ -210,12 +210,12 @@ describe('cache-eviction: updateLRUTimestamp', function () {
 	it('updates an existing timestamp on repeated calls', async function () {
 		const url = 'https://media.example.com/track-b.mp3';
 
-		await updateLRUTimestamp(url);
+		await recordCacheHit(url);
 		const { [url]: first } = await readStoredTimestamps();
 
 		// Force a small delay so Date.now() advances
 		await new Promise(resolve => setTimeout(resolve, 5));
-		await updateLRUTimestamp(url);
+		await recordCacheHit(url);
 		const { [url]: second } = await readStoredTimestamps();
 
 		assert.ok(second >= first, 'Second timestamp should be >= first');

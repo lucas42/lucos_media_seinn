@@ -1,6 +1,23 @@
 /**
- * LRU cache eviction for track caches.
+ * Cache eviction for track caches.
  *
+ * PUBLIC CONTRACT
+ * ───────────────
+ * This module exports exactly three symbols:
+ *
+ *   recordCacheHit(url)   — call on every cache read (updates access timestamp)
+ *   recordCacheWrite(url) — call on every cache write (updates access timestamp
+ *                           AND checks budget, evicting LRU entries if needed)
+ *   _resetDetectionStateForTest() — test-only; do not call in production code
+ *
+ * Any PR that exports additional symbols or changes either function's signature
+ * is an architectural change and needs separate review.
+ *
+ * The broadcast contract: the string 'cache-thrash' is posted on
+ * BroadcastChannel('lucos_status') when degraded-cache state is detected.
+ *
+ * INTERNALS
+ * ─────────
  * Maintains a lightweight timestamp store (in a dedicated cache entry) that
  * records { url -> lastAccessedAt } for every URL in tracks-v1.  After each
  * successful track write the total size of tracks-v1 is checked; if it
@@ -8,9 +25,7 @@
  * atomically from all three caches.
  */
 
-const TRACK_CACHE           = 'tracks-v1';
-const TRACK_METADATA_CACHE  = 'track-metadata-v1';
-const IMG_CACHE             = 'images-v1';
+import { TRACK_CACHE, TRACK_METADATA_CACHE, IMG_CACHE } from './cache-names.js';
 
 // Cache used solely for persisting the LRU timestamp map across SW restarts.
 const LRU_META_CACHE        = 'lru-metadata-v1';
@@ -38,9 +53,9 @@ async function writeTimestamps(timestamps) {
 	await lruCache.put(LRU_META_REQUEST, response);
 }
 
-// Mutex to serialise concurrent updateLRUTimestamp() calls.
+// Mutex to serialise concurrent recordCacheHit() / recordCacheWrite() calls.
 // preloadTracks uses forEach(async …) so multiple fetchTrack calls can finish
-// at around the same time and each calls updateLRUTimestamp().  Without the
+// at around the same time and each calls recordCacheWrite().  Without the
 // lock, concurrent read-modify-write cycles race: two calls read the same
 // snapshot, each adds its URL, and the second write overwrites the first,
 // silently losing the earlier update.  Chaining onto a shared promise ensures
@@ -49,19 +64,19 @@ let timestampLock = Promise.resolve();
 
 /**
  * Records (or updates) the access timestamp for a given track URL.
- * Call this on every cache write and every cache hit.
+ * Call this on every cache hit.
  *
  * Returns a promise that resolves once the update has been written.
  * Concurrent calls are serialised — no lost updates.
  */
-export function updateLRUTimestamp(trackUrl) {
+export function recordCacheHit(trackUrl) {
 	timestampLock = timestampLock
 		.then(async () => {
 			const timestamps = await readTimestamps();
 			timestamps[trackUrl] = Date.now();
 			await writeTimestamps(timestamps);
 		})
-		.catch(err => console.error('updateLRUTimestamp failed:', err));
+		.catch(err => console.error('recordCacheHit failed:', err));
 	return timestampLock;
 }
 
@@ -74,7 +89,7 @@ export function updateLRUTimestamp(trackUrl) {
  * Note: the Cache Storage API does not expose sizes directly, so we must
  * read each response body via arrayBuffer() to measure it.  This is
  * memory-intensive for a large cache — but it's unavoidable.  To keep
- * the cost contained, evictIfOverBudget() calls this once upfront and
+ * the cost contained, _evictIfOverBudget() calls this once upfront and
  * then adjusts the total cumulatively rather than re-measuring after each
  * eviction.
  *
@@ -183,9 +198,9 @@ function recordEvictionFailure() { failureDetector.record(); }
 
 // ─── Eviction ─────────────────────────────────────────────────────────────────
 
-// Mutex to serialise concurrent evictIfOverBudget() calls.
+// Mutex to serialise concurrent recordCacheWrite() calls on the eviction path.
 // preloadTracks uses forEach(async …), so multiple fetchTrack calls can finish
-// at around the same time and each call evictIfOverBudget().  Without the lock,
+// at around the same time and each calls recordCacheWrite().  Without the lock,
 // each call independently reads the cache size, each independently decides
 // eviction is needed, and the combined effect is over-eviction.  Chaining onto
 // a shared promise ensures only one eviction pass runs at a time.
@@ -282,8 +297,8 @@ async function evictTrack(trackUrl, timestamps) {
 }
 
 /**
- * Inner implementation of evictIfOverBudget — called exclusively through the
- * exported wrapper which serialises concurrent calls via evictionLock.
+ * Inner implementation of the eviction pass — called exclusively through
+ * recordCacheWrite() which serialises concurrent calls via evictionLock.
  *
  * Checks whether the total size of tracks-v1 exceeds CACHE_BUDGET_BYTES.
  * If it does, removes LRU entries one at a time until we're back under budget.
@@ -339,18 +354,21 @@ async function _evictIfOverBudget() {
 }
 
 /**
- * Serialised wrapper around _evictIfOverBudget.
+ * Records (or updates) the access timestamp for a given track URL, then
+ * checks whether the cache is over budget and evicts LRU entries if needed.
+ * Call this on every successful cache write.
  *
- * preloadTracks fires multiple concurrent fetchTrack calls via forEach(async …).
- * Without serialisation, each call could independently measure the cache as
- * over-budget and evict a track, causing more evictions than necessary.  This
- * wrapper chains each call onto a shared promise so only one eviction pass runs
- * at a time.
- *
- * This is called after every successful track write.
+ * Callers do not need to call recordCacheHit separately — it is called
+ * internally.  Concurrent calls are serialised on both the timestamp and
+ * eviction paths to prevent lost updates and over-eviction.
  */
-export function evictIfOverBudget() {
+export function recordCacheWrite(trackUrl) {
+	const afterHit = recordCacheHit(trackUrl);   // returns updated timestampLock
+	// Chain eviction onto the eviction lock AND onto the timestamp write for this
+	// call, so _evictIfOverBudget() cannot start reading timestamps until after
+	// the recordCacheHit write for this URL has landed.
 	evictionLock = evictionLock
+		.then(() => afterHit)                    // wait for timestamp write to complete
 		.then(() => _evictIfOverBudget())
 		.catch(err => {
 			console.error('Cache eviction failed:', err);
@@ -368,4 +386,5 @@ export function _resetDetectionStateForTest() {
 	thrashDetector.reset();
 	failureDetector.reset();
 	evictionLock = Promise.resolve();
+	timestampLock = Promise.resolve();
 }

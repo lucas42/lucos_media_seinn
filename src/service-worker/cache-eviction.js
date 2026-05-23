@@ -369,10 +369,23 @@ export function recordCacheWrite(trackUrl) {
 	// the recordCacheHit write for this URL has landed.
 	evictionLock = evictionLock
 		.then(() => afterHit)                    // wait for timestamp write to complete
-		.then(() => _evictIfOverBudget())
-		.catch(err => {
-			console.error('Cache eviction failed:', err);
-			recordEvictionFailure();
+		.then(() => {
+			// Run the eviction pass under timestampLock so concurrent
+			// recordCacheHit() calls queue behind it rather than interleaving.
+			// _evictIfOverBudget() does multiple read-modify-writes of the
+			// timestamp store (orphan prune + per-eviction delete); without
+			// holding this lock, a concurrent recordCacheHit() can write a new
+			// entry between those reads and writes, and the subsequent
+			// writeTimestamps() from evictTrack() silently overwrites it with the
+			// stale local snapshot — the lost-update that caused the 0.24% LRU
+			// desync observed in production on 2026-05-22.
+			timestampLock = timestampLock
+				.then(() => _evictIfOverBudget())
+				.catch(err => {
+					console.error('Cache eviction failed:', err);
+					recordEvictionFailure();
+				});
+			return timestampLock;
 		});
 	return evictionLock;
 }

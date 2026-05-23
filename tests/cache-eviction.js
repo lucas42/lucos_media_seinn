@@ -19,12 +19,21 @@ globalThis.Request = class Request {
 globalThis.Response = class Response {
 	// size option allows tests to control how large getCacheSizeWithMap() thinks
 	// a response is (it calls arrayBuffer() and reads .byteLength).
-	constructor(body, { size = 0 } = {}) { this._body = body; this._size = size; }
+	// faultyArrayBuffer option simulates a response whose body cannot be read —
+	// used to test the getCacheSizeWithMap try-catch hardening added for #469.
+	constructor(body, { size = 0, faultyArrayBuffer = false } = {}) {
+		this._body = body;
+		this._size = size;
+		this._faultyArrayBuffer = faultyArrayBuffer;
+	}
 	text()  { return Promise.resolve(this._body); }
 	json()  { return Promise.resolve(JSON.parse(this._body)); }
 	// arrayBuffer() is called by getCacheSizeWithMap; return object with byteLength
 	// so tests can control the reported size without allocating gigabytes of RAM.
-	arrayBuffer() { return Promise.resolve({ byteLength: this._size }); }
+	arrayBuffer() {
+		if (this._faultyArrayBuffer) return Promise.reject(new TypeError('Failed to fetch'));
+		return Promise.resolve({ byteLength: this._size });
+	}
 };
 
 // ── In-memory Cache Storage mock ─────────────────────────────────────────────
@@ -44,10 +53,14 @@ function makeCache() {
 			const text = await response.text();
 			// Preserve the size hint so getCacheSizeWithMap() sees the right byteLength.
 			const sizeBytes = response._size ?? 0;
+			// Preserve the faultyArrayBuffer flag so tests can simulate unreadable entries.
+			const faultyArrayBuffer = response._faultyArrayBuffer ?? false;
 			store.set(key, {
 				text:        () => Promise.resolve(text),
 				json:        () => Promise.resolve(JSON.parse(text)),
-				arrayBuffer: () => Promise.resolve({ byteLength: sizeBytes }),
+				arrayBuffer: faultyArrayBuffer
+					? () => Promise.reject(new TypeError('Failed to fetch'))
+					: () => Promise.resolve({ byteLength: sizeBytes }),
 			});
 		},
 		keys:   async () => [...store.keys()].map(k => ({ url: k })),
@@ -289,6 +302,78 @@ describe('cache-eviction: cross-lock race (recordCacheHit vs _evictIfOverBudget)
 		assert.ok(
 			Object.prototype.hasOwnProperty.call(timestamps, newUrl),
 			'recordCacheHit entry for newUrl must survive a concurrent eviction pass'
+		);
+	});
+
+});
+
+// ── getCacheSizeWithMap hardening tests ──────────────────────────────────────
+//
+// Validates the try-catch added around arrayBuffer() in getCacheSizeWithMap()
+// (issue #469).  An unreadable entry must not abort the entire eviction pass;
+// the pass should continue and succeed for the remaining healthy entries.
+
+describe('cache-eviction: getCacheSizeWithMap tolerates unreadable entries', function () {
+
+	beforeEach(() => {
+		resetCaches();
+		lastBroadcastMessage = null;
+		globalThis.BroadcastChannel = class BroadcastChannel {
+			constructor() {}
+			postMessage(msg) { lastBroadcastMessage = msg; }
+			close() {}
+		};
+		_resetDetectionStateForTest();
+	});
+
+	it('does not fire the eviction-failure banner when only one entry is unreadable', async function () {
+		const healthyUrl = 'https://media.example.com/healthy.mp3';
+		const faultyUrl  = 'https://media.example.com/faulty.mp3';
+
+		// Put both entries in tracks-v1: one normal (over-budget), one unreadable.
+		const OVER_BUDGET = 800 * 1024 * 1024;
+		const trackCache  = await caches.open('tracks-v1');
+		await trackCache.put(new Request(healthyUrl), new Response('{}', { size: OVER_BUDGET }));
+		await trackCache.put(new Request(faultyUrl),  new Response('{}', { faultyArrayBuffer: true }));
+
+		// Seed LRU with both URLs so _evictIfOverBudget() has candidates.
+		await recordCacheHit(healthyUrl);
+		await recordCacheHit(faultyUrl);
+
+		// Trigger an eviction pass.  Without the try-catch this would throw and
+		// increment the failure counter; with the try-catch it must succeed.
+		await recordCacheWrite(healthyUrl);
+
+		assert.strictEqual(
+			lastBroadcastMessage, null,
+			'Eviction-failure banner must not fire — unreadable entry should be skipped, not thrown'
+		);
+	});
+
+	it('still evicts healthy entries even when a faulty entry is present', async function () {
+		const healthyUrl = 'https://media.example.com/healthy-evict.mp3';
+		const faultyUrl  = 'https://media.example.com/faulty-evict.mp3';
+
+		// healthy entry is large enough to trigger eviction; faulty entry has no
+		// measurable size (unreadable), so it is conservatively excluded from the total.
+		const OVER_BUDGET = 800 * 1024 * 1024;
+		const trackCache  = await caches.open('tracks-v1');
+		await trackCache.put(new Request(healthyUrl), new Response('{}', { size: OVER_BUDGET }));
+		await trackCache.put(new Request(faultyUrl),  new Response('{}', { faultyArrayBuffer: true }));
+
+		// Seed LRU: healthy is older (lower timestamp) → first candidate for eviction.
+		await recordCacheHit(healthyUrl);
+		await new Promise(resolve => setTimeout(resolve, 5));
+		await recordCacheHit(faultyUrl);
+
+		await recordCacheWrite(healthyUrl);
+
+		// The healthy entry should have been evicted to bring total back under budget.
+		const keys = await (await caches.open('tracks-v1')).keys();
+		const remaining = keys.map(k => k.url);
+		assert.ok(
+			!remaining.includes(healthyUrl),
+			'Healthy over-budget entry should have been evicted'
 		);
 	});
 

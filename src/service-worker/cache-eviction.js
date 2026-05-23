@@ -103,9 +103,18 @@ async function getCacheSizeWithMap(cacheName) {
 	for (const request of requests) {
 		const response = await cache.match(request);
 		if (response) {
-			const buffer = await response.arrayBuffer();
-			sizes.set(request.url, buffer.byteLength);
-			total += buffer.byteLength;
+			try {
+				const buffer = await response.arrayBuffer();
+				sizes.set(request.url, buffer.byteLength);
+				total += buffer.byteLength;
+			} catch (err) {
+				// A single unreadable entry must not abort the entire eviction pass.
+				// The most likely cause is a transient storage-layer error (observed
+				// in production on 2026-05-22 under extreme cache pressure — see
+				// lucos_media_seinn#469).  Skip the entry and log so that it's
+				// observable in a live SW console if it recurs.
+				console.warn(`getCacheSizeWithMap: skipping unreadable entry ${request.url} — ${err.message}`);
+			}
 		}
 	}
 	return { total, sizes };

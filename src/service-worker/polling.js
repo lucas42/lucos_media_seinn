@@ -182,7 +182,7 @@ async function enactAction(action) {
 				}
 				break;
 			default:
-				console.error("Unsupported method for v3 endpoint", url.method, url.pathname);
+				console.error("Unsupported method for v3 endpoint", action.method, url.pathname);
 		}
 	} else if (url.pathname.startsWith("/offline/")) {
 		const pathparts = url.pathname.split('/');
@@ -218,7 +218,7 @@ async function enactAction(action) {
 				}
 				break;
 			default:
-				console.error("Unsupported method for offline endpoint", url.method, url.pathname);
+				console.error("Unsupported method for offline endpoint", action.method, url.pathname);
 		}
 	} else {
 		console.error("Service Worker handling deprecated call to v2 media_manager endpoint", url.pathname);

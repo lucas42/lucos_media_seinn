@@ -17,11 +17,14 @@ globalThis.Request = class Request {
 };
 
 globalThis.Response = class Response {
-	constructor(body) { this._body = body; }
+	// size option allows tests to control how large getCacheSizeWithMap() thinks
+	// a response is (it calls arrayBuffer() and reads .byteLength).
+	constructor(body, { size = 0 } = {}) { this._body = body; this._size = size; }
 	text()  { return Promise.resolve(this._body); }
 	json()  { return Promise.resolve(JSON.parse(this._body)); }
-	// arrayBuffer() is called by getCacheSizeWithMap; return empty buffer.
-	arrayBuffer() { return Promise.resolve(new ArrayBuffer(0)); }
+	// arrayBuffer() is called by getCacheSizeWithMap; return object with byteLength
+	// so tests can control the reported size without allocating gigabytes of RAM.
+	arrayBuffer() { return Promise.resolve({ byteLength: this._size }); }
 };
 
 // ── In-memory Cache Storage mock ─────────────────────────────────────────────
@@ -39,10 +42,12 @@ function makeCache() {
 			const key = typeof request === 'string' ? request : request.url;
 			// Read and re-wrap so the stored response can be read multiple times.
 			const text = await response.text();
+			// Preserve the size hint so getCacheSizeWithMap() sees the right byteLength.
+			const sizeBytes = response._size ?? 0;
 			store.set(key, {
 				text:        () => Promise.resolve(text),
 				json:        () => Promise.resolve(JSON.parse(text)),
-				arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+				arrayBuffer: () => Promise.resolve({ byteLength: sizeBytes }),
 			});
 		},
 		keys:   async () => [...store.keys()].map(k => ({ url: k })),
@@ -219,6 +224,72 @@ describe('cache-eviction: recordCacheHit', function () {
 		const { [url]: second } = await readStoredTimestamps();
 
 		assert.ok(second >= first, 'Second timestamp should be >= first');
+	});
+
+});
+
+// ── Cross-lock race tests ─────────────────────────────────────────────────────
+//
+// Validates that the unified-lock fix (issue #472) prevents recordCacheHit()
+// entries from being silently overwritten by a concurrent eviction pass.
+//
+// Before the fix, _evictIfOverBudget() ran under evictionLock only while
+// recordCacheHit() ran under timestampLock only.  A recordCacheHit() that
+// interleaved between _evictIfOverBudget()'s readTimestamps() and the
+// subsequent writeTimestamps() inside evictTrack() would be silently dropped —
+// confirmed in production on 2026-05-22 (LRU map shrank 14 → 2 while
+// tracks-v1 grew 815 → 823 in the same window).
+//
+// After the fix, _evictIfOverBudget() also holds timestampLock for its entire
+// duration, so concurrent recordCacheHit() calls queue behind it.
+
+describe('cache-eviction: cross-lock race (recordCacheHit vs _evictIfOverBudget)', function () {
+
+	beforeEach(() => {
+		resetCaches();
+		lastBroadcastMessage = null;
+		globalThis.BroadcastChannel = class BroadcastChannel {
+			constructor() {}
+			postMessage(msg) { lastBroadcastMessage = msg; }
+			close() {}
+		};
+		_resetDetectionStateForTest();
+	});
+
+	it('does not lose a concurrent recordCacheHit entry during an eviction pass', async function () {
+		const existingUrl = 'https://media.example.com/existing.mp3';
+		const newUrl      = 'https://media.example.com/concurrent.mp3';
+
+		// Seed: put a large track in tracks-v1 so that getCacheSizeWithMap()
+		// reports a total above CACHE_BUDGET_BYTES (750 MB), triggering eviction.
+		// The size option is read by the updated makeCache() put() so no real
+		// memory allocation happens — only .byteLength is used by the eviction code.
+		//
+		// Both URLs must be in tracks-v1: _evictIfOverBudget() prunes LRU entries
+		// for URLs *not* in the cache (orphan-prune), which would remove newUrl
+		// before eviction even starts, masking the cross-lock race under test.
+		const OVER_BUDGET = 800 * 1024 * 1024;  // 800 MB
+		const trackCache  = await caches.open('tracks-v1');
+		await trackCache.put(new Request(existingUrl), new Response('{}', { size: OVER_BUDGET }));
+		await trackCache.put(new Request(newUrl), new Response('{}', { size: 0 }));
+
+		// Seed the LRU store with a timestamp for the existing track.
+		await recordCacheHit(existingUrl);
+
+		// Fire both concurrently: an eviction-triggering write and a recordCacheHit
+		// for a brand-new URL.  Before the fix the new entry would be overwritten
+		// by evictTrack()'s stale-snapshot writeTimestamps(); after the fix the
+		// eviction holds timestampLock so the recordCacheHit() queues behind it.
+		await Promise.all([
+			recordCacheWrite(existingUrl),
+			recordCacheHit(newUrl),
+		]);
+
+		const timestamps = await readStoredTimestamps();
+		assert.ok(
+			Object.prototype.hasOwnProperty.call(timestamps, newUrl),
+			'recordCacheHit entry for newUrl must survive a concurrent eviction pass'
+		);
 	});
 
 });

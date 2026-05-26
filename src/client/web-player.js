@@ -2,6 +2,7 @@ import { listenExisting, send } from 'lucos_pubsub';
 import { getBuffer, preBufferTracks } from './buffers.js';
 import { del, post, put } from '../utils/manager.js';
 import localDevice from '../utils/local-device.js';
+import { makeSlidingWindowDetector } from '../utils/thrash-detection.js';
 
 
 const audioContext = new AudioContext();
@@ -9,6 +10,17 @@ let globalGain = audioContext.createGain();
 globalGain.connect(audioContext.destination);
 let currentAudio;
 let sessionErrorCount = 0;
+
+// Detector for playback-error thrash: fires the cache-thrash banner when
+// getBuffer / decodeAudioData failures accumulate faster than normal track
+// changes can explain.  Normal cadence ≈ 1 track every 3 min → 6 errors/min
+// is unambiguously pathological while remaining safe against a single bad track.
+const playbackErrorDetector = makeSlidingWindowDetector({
+	windowMs:  60_000,
+	threshold: 6,
+	label:     'Playback-error thrash detected',
+	unit:      'errors',
+});
 
 /**
  * Media Session API only works when there's an audio/video element playing on the page; an AudioContext isn't enough on its own.
@@ -98,6 +110,7 @@ async function playTrack(track, volume) {
 		dummyaudio.pause();
 		console.error("Skipping track", error.message);
 		sessionErrorCount++;
+		playbackErrorDetector.record();
 		/**
 		 * Send a structured JSON envelope to the media-manager error endpoint.
 		 * Schema:
@@ -167,3 +180,20 @@ function init() {
 }
 
 export default { getTimeElapsed, getCurrentUuid, isPlaying, init };
+
+/**
+ * Resets playback-error detection state.  Exported for test isolation only —
+ * do not call in production code.
+ */
+export function _resetPlaybackDetectorForTest() {
+	playbackErrorDetector.reset();
+}
+
+/**
+ * Records a single playback error directly.  Exported for test isolation only
+ * — avoids the need to trigger a full async managerData → playTrack cycle just
+ * to feed events into the detector.  Do not call in production code.
+ */
+export function _triggerPlaybackErrorForTest() {
+	playbackErrorDetector.record();
+}

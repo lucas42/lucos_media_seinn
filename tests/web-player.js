@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { describe, it, before } from 'mocha';
+import { describe, it, before, beforeEach } from 'mocha';
 
 /**
  * Override the AudioContext stub with one that supports the web-player code paths.
@@ -42,10 +42,15 @@ global.AudioContext = class {
 	}
 };
 
-// Ensure navigator.userAgent is accessible as a global (JSDOM sets window.navigator
-// but not global.navigator in all Node versions).
+// Ensure navigator is accessible as a global with the fields needed by both
+// web-player.js (userAgent) and notifyCacheDegraded (storage.estimate).
 if (!global.navigator) {
 	global.navigator = { userAgent: 'TestBrowser/1.0' };
+}
+if (!global.navigator.storage) {
+	global.navigator.storage = {
+		estimate: async () => ({ quota: 1_000_000, usage: 500_000 }),
+	};
 }
 
 describe("web-player error reporting", function () {
@@ -138,5 +143,74 @@ describe("web-player error reporting", function () {
 				done(err);
 			}
 		}).catch(done);
+	});
+});
+
+// ── Playback-error thrash detection tests ─────────────────────────────────────
+//
+// Validates the sliding-window detector wired into the playTrack catch block
+// (issue #482).  Uses the exported test helpers to drive the detector directly
+// rather than going through the full async managerData → playTrack cycle.
+
+describe("web-player: playback-error thrash detection", function () {
+	this.timeout(5000);
+
+	let lastBroadcastMessage;
+	let _resetPlaybackDetectorForTest;
+	let _triggerPlaybackErrorForTest;
+
+	before(async () => {
+		// Grab the test helpers from the already-imported web-player module.
+		const mod = await import('../src/client/web-player.js');
+		_resetPlaybackDetectorForTest = mod._resetPlaybackDetectorForTest;
+		_triggerPlaybackErrorForTest  = mod._triggerPlaybackErrorForTest;
+	});
+
+	beforeEach(() => {
+		lastBroadcastMessage = null;
+		// notifyCacheDegraded() in thrash-detection.js uses new BroadcastChannel(...)
+		// at notification time (not at import time), so setting the global here is sufficient.
+		globalThis.BroadcastChannel = class BroadcastChannel {
+			constructor() {}
+			postMessage(msg) { lastBroadcastMessage = msg; }
+			close() {}
+		};
+		_resetPlaybackDetectorForTest();
+	});
+
+	it('does not fire the banner on a single isolated playback error', async function () {
+		_triggerPlaybackErrorForTest();
+		// Allow the async notifyCacheDegraded chain to settle (it won't fire here).
+		await new Promise(resolve => setTimeout(resolve, 20));
+		assert.strictEqual(
+			lastBroadcastMessage, null,
+			'A single error must not trigger the cache-thrash banner'
+		);
+	});
+
+	it('fires the cache-thrash banner when 6 errors occur within 60 s', async function () {
+		for (let i = 0; i < 6; i++) _triggerPlaybackErrorForTest();
+		// notifyCacheDegraded is async (awaits navigator.storage.estimate) —
+		// give the microtask queue time to flush before asserting.
+		await new Promise(resolve => setTimeout(resolve, 20));
+		assert.strictEqual(
+			lastBroadcastMessage, 'cache-thrash',
+			'Banner must fire once the 6-error threshold is crossed'
+		);
+	});
+
+	it('fires the banner exactly once even if errors keep accumulating', async function () {
+		let broadcastCount = 0;
+		globalThis.BroadcastChannel = class BroadcastChannel {
+			constructor() {}
+			postMessage() { broadcastCount++; }
+			close() {}
+		};
+		for (let i = 0; i < 12; i++) _triggerPlaybackErrorForTest();
+		await new Promise(resolve => setTimeout(resolve, 20));
+		assert.strictEqual(
+			broadcastCount, 1,
+			'Banner should fire exactly once regardless of continued errors'
+		);
 	});
 });

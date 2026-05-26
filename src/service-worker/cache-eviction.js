@@ -26,6 +26,7 @@
  */
 
 import { TRACK_CACHE, TRACK_METADATA_CACHE, IMG_CACHE } from './cache-names.js';
+import { makeSlidingWindowDetector, notifyCacheDegraded } from '../utils/thrash-detection.js';
 
 // Cache used solely for persisting the LRU timestamp map across SW restarts.
 const LRU_META_CACHE        = 'lru-metadata-v1';
@@ -122,7 +123,7 @@ async function getCacheSizeWithMap(cacheName) {
 
 // ─── Thrash detection ─────────────────────────────────────────────────────────
 
-// Thresholds for the two degradation detectors.
+// Thresholds for the two eviction-based degradation detectors.
 // Normal steady-state cadence is ~1 successful eviction per track play; 20 in
 // 60 s is only reachable when the cache is perpetually over-budget.  Failed
 // eviction passes are effectively zero in steady state, so the threshold is
@@ -131,60 +132,6 @@ const THRASH_WINDOW_MS           = 60 * 1000;  // sliding window for successful 
 const THRASH_THRESHOLD           = 20;          // successful evictions within the window
 const EVICTION_FAILURE_WINDOW_MS = 60 * 1000;  // sliding window for failed evictions
 const EVICTION_FAILURE_THRESHOLD = 2;           // failures within the window
-
-/**
- * Posts storage diagnostics to the console and notifies the page via
- * BroadcastChannel.  Shared by both the thrash detector (successful-eviction
- * path) and the failure detector (failed-eviction path) — the banner copy and
- * reload action are correct for either root cause.
- *
- * @param {string} message - Diagnostic string describing the event.
- */
-async function notifyCacheDegraded(message) {
-	try {
-		const estimate = await navigator.storage.estimate();
-		console.warn(message, `Storage: quota=${estimate.quota}, usage=${estimate.usage}`);
-	} catch (err) {
-		console.warn(message, `(storage estimate unavailable: ${err.message})`);
-	}
-	const channel = new BroadcastChannel('lucos_status');
-	channel.postMessage('cache-thrash');
-	channel.close();
-}
-
-/**
- * Creates a sliding-window threshold detector that fires a cache-degraded
- * notification exactly once when `threshold` events occur within `windowMs`.
- *
- * @param {{ windowMs: number, threshold: number, label: string, unit: string }} opts
- * @returns {{ record: Function, reset: Function }}
- *   `record()` — call on each event occurrence.
- *   `reset()` — clears all state; exported for test isolation only.
- */
-function makeSlidingWindowDetector({ windowMs, threshold, label, unit }) {
-	const times = [];
-	let detected = false;
-
-	function record() {
-		const now = Date.now();
-		times.push(now);
-		const cutoff = now - windowMs;
-		while (times.length > 0 && times[0] < cutoff) times.shift();
-		if (!detected && times.length >= threshold) {
-			detected = true;
-			notifyCacheDegraded(
-				`${label}: ${times.length} ${unit} in the last ${windowMs / 1000}s.`
-			).catch(err => console.error(`${label} notification failed:`, err));
-		}
-	}
-
-	function reset() {
-		times.length = 0;
-		detected = false;
-	}
-
-	return { record, reset };
-}
 
 // Detector for runaway successful evictions (the 2026-05-19 thrash pattern).
 const thrashDetector = makeSlidingWindowDetector({

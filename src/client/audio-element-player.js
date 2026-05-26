@@ -1,6 +1,16 @@
 import { listenExisting } from 'lucos_pubsub';
 import { del, post } from '../utils/manager.js';
 import localDevice from '../utils/local-device.js';
+import { makeSlidingWindowDetector } from '../utils/thrash-detection.js';
+
+// Mirror of the detector in web-player.js — present for symmetry so that if
+// the audio-element player is ever re-activated, it will also raise the banner.
+const playbackErrorDetector = makeSlidingWindowDetector({
+	windowMs:  60_000,
+	threshold: 6,
+	label:     'Playback-error thrash detected',
+	unit:      'errors',
+});
 
 let currentAudio;
 
@@ -41,6 +51,7 @@ async function playTrack(track) {
 			currentAudio = null;
 		} else {
 			console.error("Skipping track", error.message);
+			playbackErrorDetector.record();
 			await del(`v3/playlist/${playlist}/${track.uuid}?action=error`, error.message);
 		}
 	}

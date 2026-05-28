@@ -37,7 +37,7 @@
     "mocha": "^11.7.6",
     "restful-queue": "^1.0.103",
     "uuid": "^14.0.0",
-    "webpack-cli": "^7.0.2"
+    "webpack-cli": "^7.0.3"
   },
   "overrides": {
     "ip-address": ">=10.1.1",

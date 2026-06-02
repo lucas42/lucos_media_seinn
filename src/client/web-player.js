@@ -22,6 +22,10 @@ const playbackErrorDetector = makeSlidingWindowDetector({
 	unit:      'errors',
 });
 
+// UUID of the track that was stalled when the circuit breaker fired.
+// Cleared to null after the user resumes (so the manager can advance past it).
+let stalledTrackUuid = null;
+
 /**
  * Media Session API only works when there's an audio/video element playing on the page; an AudioContext isn't enough on its own.
  * Therefore, create a dummy audio element to make the browser think there's music playing
@@ -111,6 +115,15 @@ async function playTrack(track, volume) {
 		console.error("Skipping track", error.message);
 		sessionErrorCount++;
 		playbackErrorDetector.record();
+
+		// Circuit breaker: once the threshold fires, stop signalling the manager
+		// to advance.  Without the del(action=error) call the playlist stays frozen
+		// on the current item — the loop cannot continue until the user resumes.
+		if (playbackErrorDetector.isDetected()) {
+			stalledTrackUuid = track.uuid;
+			return;
+		}
+
 		/**
 		 * Send a structured JSON envelope to the media-manager error endpoint.
 		 * Schema:
@@ -175,8 +188,31 @@ function isPlaying() {
 	return !!currentAudio;
 }
 
+/**
+ * Resets the circuit breaker and reports the stalled track as an error so
+ * the manager advances past it and playback can restart from the next track.
+ * Called both from the BroadcastChannel 'playback-resume' listener in init()
+ * and from _simulateResumeForTest().
+ */
+function handlePlaybackResume() {
+	const uuid = stalledTrackUuid;
+	stalledTrackUuid = null;
+	playbackErrorDetector.reset();
+	if (uuid) {
+		del(`v3/playlist/null/${uuid}?action=error`)
+			.catch(err => console.error('Resume: error reporting stalled track:', err));
+	}
+}
+
 function init() {
 	listenExisting("managerData", updateCurrentAudio, true);
+
+	// Listen for the user clicking "Resume" on the cache-thrash banner.
+	const resumeChannel = new BroadcastChannel('lucos_status');
+	resumeChannel.addEventListener('message', (event) => {
+		if (event.data !== 'playback-resume') return;
+		handlePlaybackResume();
+	});
 }
 
 export default { getTimeElapsed, getCurrentUuid, isPlaying, init };
@@ -187,6 +223,7 @@ export default { getTimeElapsed, getCurrentUuid, isPlaying, init };
  */
 export function _resetPlaybackDetectorForTest() {
 	playbackErrorDetector.reset();
+	stalledTrackUuid = null;
 }
 
 /**
@@ -196,4 +233,23 @@ export function _resetPlaybackDetectorForTest() {
  */
 export function _triggerPlaybackErrorForTest() {
 	playbackErrorDetector.record();
+}
+
+/**
+ * Returns the UUID of the stalled track (non-null only when the circuit
+ * breaker has fired and the user hasn't resumed yet).  Exported for test
+ * isolation only — do not call in production code.
+ */
+export function _getStalledTrackUuidForTest() {
+	return stalledTrackUuid;
+}
+
+/**
+ * Directly invokes the resume logic (the same code path triggered by the
+ * 'playback-resume' BroadcastChannel message in init()).  Exported for test
+ * isolation only — avoids the need to thread a real BroadcastChannel through
+ * the test environment.  Do not call in production code.
+ */
+export function _simulateResumeForTest() {
+	handlePlaybackResume();
 }

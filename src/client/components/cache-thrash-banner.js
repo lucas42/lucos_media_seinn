@@ -1,10 +1,13 @@
 /**
- * Banner displayed when the service worker cache enters a thrash state —
- * more evictions per unit time than normal play cadence can explain.
+ * Banner displayed when the service worker cache enters a thrash state, or
+ * when the client-side playback circuit breaker halts the auto-advance loop
+ * after repeated errors.
  *
- * The banner prompts the user to reload so the SW re-registers with a clean
- * CacheStorage state.  The "Reload" button unregisters all SW registrations
- * before reloading, ensuring stale cached data is cleared.
+ * The banner prompts the user to either:
+ *   - "Resume" — clears the circuit breaker and signals the manager to advance
+ *     past the stalled track so playback can restart.
+ *   - "Reload" — unregisters all SW registrations before reloading, ensuring
+ *     stale cached data is cleared.
  *
  * Accessibility notes:
  * - role="alert" is on a <div> inside a closed shadow root.  Chrome's
@@ -13,7 +16,7 @@
  *   known issue with ARIA live regions inside shadow roots; aria-live on the
  *   host element is belt-and-suspenders coverage for other ATs (set in
  *   connectedCallback, not the constructor, per Custom Elements V1).
- * - Focus is moved to the Reload button in connectedCallback so keyboard
+ * - Focus is moved to the Resume button in connectedCallback so keyboard
  *   users can act immediately.
  */
 class CacheThrashBanner extends HTMLElement {
@@ -68,7 +71,7 @@ class CacheThrashBanner extends HTMLElement {
 		container.setAttribute('role', 'alert');
 
 		const message = document.createElement('p');
-		message.textContent = "Music isn't playing — reload to fix it";
+		message.textContent = "Music stopped due to repeated errors — resume to try again or reload to reset";
 		container.append(message);
 
 		const actions = document.createElement('div');
@@ -87,16 +90,21 @@ class CacheThrashBanner extends HTMLElement {
 		});
 		actions.append(reloadButton);
 
-		const dismissButton = document.createElement('button');
-		dismissButton.textContent = 'Dismiss';
-		dismissButton.setAttribute('aria-label', 'Dismiss this notification');
-		dismissButton.addEventListener('click', () => this.remove());
-		actions.append(dismissButton);
+		const resumeButton = document.createElement('button');
+		resumeButton.textContent = 'Resume';
+		resumeButton.setAttribute('aria-label', 'Resume playback');
+		resumeButton.addEventListener('click', () => {
+			const channel = new BroadcastChannel('lucos_status');
+			channel.postMessage('playback-resume');
+			channel.close();
+			this.remove();
+		});
+		actions.append(resumeButton);
 
 		container.append(actions);
 		shadow.append(container);
 
-		this._reloadButton = reloadButton;
+		this._resumeButton = resumeButton;
 	}
 
 	connectedCallback() {
@@ -107,8 +115,8 @@ class CacheThrashBanner extends HTMLElement {
 		// created via document.createElement).
 		this.setAttribute('aria-live', 'assertive');
 		this.setAttribute('aria-atomic', 'true');
-		// Move focus to the Reload button so keyboard users can act immediately.
-		this._reloadButton.focus();
+		// Move focus to the Resume button so keyboard users can act immediately.
+		this._resumeButton.focus();
 	}
 }
 

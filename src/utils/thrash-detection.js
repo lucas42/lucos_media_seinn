@@ -37,9 +37,10 @@ export async function notifyCacheDegraded(message) {
  * notification exactly once when `threshold` events occur within `windowMs`.
  *
  * @param {{ windowMs: number, threshold: number, label: string, unit: string }} opts
- * @returns {{ record: Function, reset: Function }}
+ * @returns {{ record: Function, reset: Function, isDetected: Function }}
  *   `record()` — call on each event occurrence.
  *   `reset()` — clears all state; exported for test isolation only.
+ *   `isDetected()` — returns true once the threshold has been crossed.
  */
 export function makeSlidingWindowDetector({ windowMs, threshold, label, unit }) {
 	const times = [];
@@ -63,5 +64,9 @@ export function makeSlidingWindowDetector({ windowMs, threshold, label, unit }) 
 		detected = false;
 	}
 
-	return { record, reset };
+	function isDetected() {
+		return detected;
+	}
+
+	return { record, reset, isDetected };
 }

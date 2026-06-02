@@ -98,6 +98,7 @@ let lastBroadcastMessage = null;
 globalThis.BroadcastChannel = class BroadcastChannel {
 	constructor() {}
 	postMessage(msg) { lastBroadcastMessage = msg; }
+	addEventListener() {}
 	close() {}
 };
 
@@ -139,6 +140,7 @@ describe('cache-eviction: eviction failure detection', function () {
 		globalThis.BroadcastChannel = class BroadcastChannel {
 			constructor() {}
 			postMessage(msg) { lastBroadcastMessage = msg; }
+			addEventListener() {}
 			close() {}
 		};
 		_resetDetectionStateForTest();
@@ -264,6 +266,7 @@ describe('cache-eviction: cross-lock race (recordCacheHit vs _evictIfOverBudget)
 		globalThis.BroadcastChannel = class BroadcastChannel {
 			constructor() {}
 			postMessage(msg) { lastBroadcastMessage = msg; }
+			addEventListener() {}
 			close() {}
 		};
 		_resetDetectionStateForTest();
@@ -321,6 +324,7 @@ describe('cache-eviction: getCacheSizeWithMap tolerates unreadable entries', fun
 		globalThis.BroadcastChannel = class BroadcastChannel {
 			constructor() {}
 			postMessage(msg) { lastBroadcastMessage = msg; }
+			addEventListener() {}
 			close() {}
 		};
 		_resetDetectionStateForTest();

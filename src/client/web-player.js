@@ -188,22 +188,30 @@ function isPlaying() {
 	return !!currentAudio;
 }
 
+/**
+ * Resets the circuit breaker and reports the stalled track as an error so
+ * the manager advances past it and playback can restart from the next track.
+ * Called both from the BroadcastChannel 'playback-resume' listener in init()
+ * and from _simulateResumeForTest().
+ */
+function handlePlaybackResume() {
+	const uuid = stalledTrackUuid;
+	stalledTrackUuid = null;
+	playbackErrorDetector.reset();
+	if (uuid) {
+		del(`v3/playlist/null/${uuid}?action=error`)
+			.catch(err => console.error('Resume: error reporting stalled track:', err));
+	}
+}
+
 function init() {
 	listenExisting("managerData", updateCurrentAudio, true);
 
 	// Listen for the user clicking "Resume" on the cache-thrash banner.
-	// Resets the circuit breaker and reports the stalled track as an error so
-	// the manager advances past it and playback can restart from the next track.
 	const resumeChannel = new BroadcastChannel('lucos_status');
 	resumeChannel.addEventListener('message', (event) => {
 		if (event.data !== 'playback-resume') return;
-		const uuid = stalledTrackUuid;
-		stalledTrackUuid = null;
-		playbackErrorDetector.reset();
-		if (uuid) {
-			del(`v3/playlist/null/${uuid}?action=error`)
-				.catch(err => console.error('Resume: error reporting stalled track:', err));
-		}
+		handlePlaybackResume();
 	});
 }
 
@@ -243,11 +251,5 @@ export function _getStalledTrackUuidForTest() {
  * the test environment.  Do not call in production code.
  */
 export function _simulateResumeForTest() {
-	const uuid = stalledTrackUuid;
-	stalledTrackUuid = null;
-	playbackErrorDetector.reset();
-	if (uuid) {
-		del(`v3/playlist/null/${uuid}?action=error`)
-			.catch(err => console.error('Resume: error reporting stalled track:', err));
-	}
+	handlePlaybackResume();
 }

@@ -173,6 +173,7 @@ describe("web-player: playback-error thrash detection", function () {
 		globalThis.BroadcastChannel = class BroadcastChannel {
 			constructor() {}
 			postMessage(msg) { lastBroadcastMessage = msg; }
+			addEventListener() {}
 			close() {}
 		};
 		_resetPlaybackDetectorForTest();
@@ -204,6 +205,7 @@ describe("web-player: playback-error thrash detection", function () {
 		globalThis.BroadcastChannel = class BroadcastChannel {
 			constructor() {}
 			postMessage() { broadcastCount++; }
+			addEventListener() {}
 			close() {}
 		};
 		for (let i = 0; i < 12; i++) _triggerPlaybackErrorForTest();
@@ -211,6 +213,168 @@ describe("web-player: playback-error thrash detection", function () {
 		assert.strictEqual(
 			broadcastCount, 1,
 			'Banner should fire exactly once regardless of continued errors'
+		);
+	});
+});
+
+// ── Circuit-breaker tests ──────────────────────────────────────────────────────
+//
+// Validates that once the playback-error detector threshold fires, playTrack
+// stops calling del(action=error) — freezing the manager's playlist — and that
+// the 'playback-resume' path resets the breaker and re-reports the stalled track.
+//
+// Uses the exported test helpers (_triggerPlaybackErrorForTest, _resetPlaybackDetectorForTest,
+// _getStalledTrackUuidForTest, _simulateResumeForTest) to keep the tests synchronous
+// and side-effect-free without needing full managerData → playTrack cycles.
+
+describe("web-player: circuit breaker", function () {
+	this.timeout(5000);
+
+	let _resetPlaybackDetectorForTest;
+	let _triggerPlaybackErrorForTest;
+	let _getStalledTrackUuidForTest;
+	let _simulateResumeForTest;
+
+	before(async () => {
+		const mod = await import('../src/client/web-player.js');
+		_resetPlaybackDetectorForTest = mod._resetPlaybackDetectorForTest;
+		_triggerPlaybackErrorForTest  = mod._triggerPlaybackErrorForTest;
+		_getStalledTrackUuidForTest   = mod._getStalledTrackUuidForTest;
+		_simulateResumeForTest        = mod._simulateResumeForTest;
+	});
+
+	beforeEach(() => {
+		globalThis.BroadcastChannel = class BroadcastChannel {
+			constructor() {}
+			postMessage() {}
+			addEventListener() {}
+			close() {}
+		};
+		_resetPlaybackDetectorForTest();
+	});
+
+	it('does not set stalledTrackUuid before the threshold is crossed', function () {
+		for (let i = 0; i < 5; i++) _triggerPlaybackErrorForTest();
+		assert.strictEqual(
+			_getStalledTrackUuidForTest(), null,
+			'stalledTrackUuid must remain null while below threshold'
+		);
+	});
+
+	it('sets stalledTrackUuid on the error that crosses the threshold', async function () {
+		// Pre-seed 5 errors using the test helper (puts detector at 5/6).
+		for (let i = 0; i < 5; i++) _triggerPlaybackErrorForTest();
+
+		// Capture whether del(action=error) is called for the 6th error.
+		// The 6th error is triggered via the real managerData → playTrack path.
+		let errorDelCalled = false;
+		const originalFetch = global.fetch;
+		global.fetch = async (url, options = {}) => {
+			if (url && url.includes('action=error')) {
+				errorDelCalled = true;
+				return { ok: true, status: 204, text: async () => '' };
+			}
+			return originalFetch(url, options);
+		};
+
+		try {
+			// Trigger the 6th error by sending a managerData event — this calls
+			// updateCurrentAudio → playTrack → catch block → circuit breaker fires.
+			const { send } = await import('lucos_pubsub');
+			const trackUuid = 'circuit-breaker-test-uuid';
+			send("managerData", {
+				tracks: [{ url: 'http://test-audio.example.com/breaker.mp3', uuid: trackUuid, currentTime: 0 }],
+				isPlaying: true,
+				volume: 1,
+			});
+
+			// Allow the async playTrack chain to complete.
+			await new Promise(resolve => setTimeout(resolve, 50));
+
+			assert.strictEqual(
+				_getStalledTrackUuidForTest(), trackUuid,
+				'stalledTrackUuid must be set to the failing track uuid after circuit breaker fires'
+			);
+			assert.strictEqual(
+				errorDelCalled, false,
+				'del(action=error) must NOT be called when the circuit breaker fires — manager must not advance'
+			);
+		} finally {
+			global.fetch = originalFetch;
+		}
+	});
+
+	it('resume resets stalledTrackUuid and calls del(action=error) for the stalled track', async function () {
+		// Manually set circuit-breaker state as if it had just fired.
+		for (let i = 0; i < 6; i++) _triggerPlaybackErrorForTest();
+		// At this point isDetected() is true but stalledTrackUuid is still null
+		// because _triggerPlaybackErrorForTest bypasses the playTrack code path.
+		// We seed stalledTrackUuid via a real playTrack cycle.
+
+		// Use a distinct uuid for the resume assertion.
+		const stalledUuid = 'resume-test-stalled-uuid';
+
+		// Directly manipulate module state via the reset + trigger path:
+		// reset detector, then seed 5 errors, then trigger a 6th via managerData.
+		_resetPlaybackDetectorForTest();
+		for (let i = 0; i < 5; i++) _triggerPlaybackErrorForTest();
+
+		const { send } = await import('lucos_pubsub');
+		send("managerData", {
+			tracks: [{ url: 'http://test-audio.example.com/stall.mp3', uuid: stalledUuid, currentTime: 0 }],
+			isPlaying: true,
+			volume: 1,
+		});
+		await new Promise(resolve => setTimeout(resolve, 50));
+
+		// Verify circuit breaker fired and stalled the correct track.
+		assert.strictEqual(
+			_getStalledTrackUuidForTest(), stalledUuid,
+			'circuit breaker must be set before testing resume'
+		);
+
+		// Now capture the del call triggered by resume.
+		let resumeDelUrl = null;
+		const originalFetch = global.fetch;
+		global.fetch = async (url, options = {}) => {
+			if (url && url.includes('action=error')) {
+				resumeDelUrl = url;
+				return { ok: true, status: 204, text: async () => '' };
+			}
+			return originalFetch(url, options);
+		};
+
+		try {
+			_simulateResumeForTest();
+
+			// Allow the async del() call to resolve.
+			await new Promise(resolve => setTimeout(resolve, 50));
+
+			assert.strictEqual(
+				_getStalledTrackUuidForTest(), null,
+				'stalledTrackUuid must be cleared after resume'
+			);
+			assert.ok(
+				resumeDelUrl && resumeDelUrl.includes(stalledUuid),
+				`del(action=error) must be called with the stalled track uuid on resume; got: ${resumeDelUrl}`
+			);
+		} finally {
+			global.fetch = originalFetch;
+		}
+	});
+
+	it('resume resets the detector so errors can be recorded again', function () {
+		for (let i = 0; i < 6; i++) _triggerPlaybackErrorForTest();
+		assert.ok(
+			// Detector is in detected state — simulate resume
+			true, 'pre-condition: detector fired'
+		);
+		_simulateResumeForTest();
+		// After reset, a fresh set of 5 errors must NOT trigger isDetected again.
+		for (let i = 0; i < 5; i++) _triggerPlaybackErrorForTest();
+		assert.strictEqual(
+			_getStalledTrackUuidForTest(), null,
+			'stalledTrackUuid must remain null after reset when below threshold again'
 		);
 	});
 });

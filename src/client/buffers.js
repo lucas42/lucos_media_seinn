@@ -26,7 +26,14 @@ export function getBuffer(url) {
 	}
 	if (!(url in buffers)) {
 		buffers[url] = {};
-		buffers[url].buffer = bufferTrack(url);
+		const promise = bufferTrack(url);
+		// Don't cache rejected promises: if the fetch/decode fails, evict the
+		// entry so the next call starts a fresh attempt rather than returning the
+		// same stale rejection indefinitely.
+		promise.catch(() => {
+			delete buffers[url];
+		});
+		buffers[url].buffer = promise;
 	}
 	return buffers[url].buffer;
 }
@@ -38,12 +45,19 @@ export function getBuffer(url) {
  */
 export function preBufferTracks(tracks, count) {
 	tracks.slice(0, count).forEach(track => {
-		getBuffer(track.url).catch(() => {
-			// If something fails whilst pre-buffering, clear the cached buffer
-			// so that it'll try again from scratch when playing
-			delete buffers[track.url];
-		});
+		// Attach a catch handler to suppress unhandled-rejection warnings.
+		// Cache eviction on failure is handled inside getBuffer itself.
+		getBuffer(track.url).catch(() => {});
 	});
+}
+
+/**
+ * Resets all cached buffers — intended for use in tests only.
+ */
+export function _resetBuffersForTest() {
+	for (const key of Object.keys(buffers)) {
+		delete buffers[key];
+	}
 }
 
 export function getState(url) {

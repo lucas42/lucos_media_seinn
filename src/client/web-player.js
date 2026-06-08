@@ -128,19 +128,37 @@ async function playTrack(track, volume) {
 		 * Send a structured JSON envelope to the media-manager error endpoint.
 		 * Schema:
 		 *   errorMessage  — the raw error string from the Web Audio / fetch pipeline
-		 *   context.audioContextState  — 'running' | 'suspended' | 'closed'
-		 *   context.pageVisible        — whether the page was visible at the time of failure
-		 *   context.sessionErrorCount  — how many tracks have errored this session (1-indexed, includes this one)
-		 *   context.userAgent          — browser user-agent string
+		 *   errorName     — error.name (e.g. 'EncodingError', 'NotSupportedError', 'TypeError')
+		 *   context.audioContextState    — 'running' | 'suspended' | 'closed' (state of the
+		 *                                   AudioContext that ran decodeAudioData, when available)
+		 *   context.pageVisible          — whether the page was visible at the time of failure
+		 *   context.sessionErrorCount    — how many tracks have errored this session (1-indexed,
+		 *                                   includes this one)
+		 *   context.userAgent            — browser user-agent string
+		 *   context.responseStatus       — HTTP status of the failed fetch response (when available)
+		 *   context.responseContentType  — Content-Type of the failed fetch response (when available)
+		 *   context.responseByteLength   — byte length of the fetched ArrayBuffer (when available)
 		 * The manager logs the full envelope to stdout and uses errorMessage as lastErrorMessage.
+		 * Response fields are omitted when the error occurred before a response was received.
 		 */
 		const errorPayload = JSON.stringify({
 			errorMessage: error.message,
+			errorName: error.name,
 			context: {
-				audioContextState: audioContext.state,
+				// Use the decode context's state if buffers.js attached it; fall back to
+				// web-player.js's own context for errors that originate outside buffers.js.
+				audioContextState: error.decodeContextState ?? audioContext.state,
 				pageVisible: document.visibilityState === 'visible',
 				sessionErrorCount,
 				userAgent: navigator.userAgent,
+				// Response diagnostics — only present when buffers.js obtained a response.
+				...(error.responseStatus !== undefined && {
+					responseStatus:      error.responseStatus,
+					responseContentType: error.responseContentType,
+				}),
+				...(error.responseByteLength !== undefined && {
+					responseByteLength: error.responseByteLength,
+				}),
 			},
 		});
 		await del(`v3/playlist/${playlist}/${track.uuid}?action=error`, errorPayload);

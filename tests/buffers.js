@@ -45,6 +45,7 @@ describe('buffers: rejected-promise cache eviction', function () {
 			return {
 				ok: true,
 				status: 200,
+				headers: { get: (name) => name === 'content-type' ? 'audio/mpeg' : null },
 				arrayBuffer: async () => new ArrayBuffer(8),
 			};
 		};
@@ -76,6 +77,46 @@ describe('buffers: rejected-promise cache eviction', function () {
 		assert.strictEqual(
 			fetchCallCount, 2,
 			'fetch should have been called twice — once per attempt, not cached after rejection'
+		);
+	});
+
+	it('attaches decode-context and response diagnostics to the rejected error', async function () {
+		const url = 'http://media.example.com/diagnostics.mp3';
+		let capturedError = null;
+
+		try {
+			await getBuffer(url);
+		} catch (err) {
+			capturedError = err;
+		}
+
+		// Allow the internal eviction .catch() to fire.
+		await new Promise(resolve => setTimeout(resolve, 10));
+
+		assert.ok(capturedError, 'getBuffer should have rejected');
+
+		// decodeContextState — the AudioContext state at the time of the decode failure
+		assert.ok(
+			'decodeContextState' in capturedError,
+			'error should have decodeContextState attached by buffers.js',
+		);
+		assert.strictEqual(
+			typeof capturedError.decodeContextState, 'string',
+			'decodeContextState should be a string',
+		);
+
+		// Response fields — fetch mock returns HTTP 200 with Content-Type audio/mpeg and 8-byte body
+		assert.strictEqual(
+			capturedError.responseStatus, 200,
+			'error should have responseStatus from the mock response',
+		);
+		assert.strictEqual(
+			capturedError.responseContentType, 'audio/mpeg',
+			'error should have responseContentType extracted from response headers',
+		);
+		assert.strictEqual(
+			capturedError.responseByteLength, 8,
+			'error should have responseByteLength matching the 8-byte mock ArrayBuffer',
 		);
 	});
 });

@@ -127,6 +127,10 @@ describe("web-player error reporting", function () {
 				assert.equal(typeof payload.errorMessage, 'string', 'errorMessage should be a string');
 				assert.ok(payload.errorMessage.length > 0, 'errorMessage should not be empty');
 
+				// errorName should be the DOMException / Error name
+				assert.equal(typeof payload.errorName, 'string', 'errorName should be a string');
+				assert.ok(payload.errorName.length > 0, 'errorName should not be empty');
+
 				// context fields
 				assert.ok(payload.context, 'payload should have a context object');
 				assert.ok('audioContextState' in payload.context, 'context should include audioContextState');
@@ -137,6 +141,13 @@ describe("web-player error reporting", function () {
 				// sessionErrorCount should be a positive integer
 				assert.equal(typeof payload.context.sessionErrorCount, 'number');
 				assert.ok(payload.context.sessionErrorCount >= 1, 'sessionErrorCount should be at least 1');
+
+				// response diagnostics — present because our fetch stub returns a valid response
+				assert.ok('responseStatus' in payload.context, 'context should include responseStatus');
+				assert.equal(typeof payload.context.responseStatus, 'number', 'responseStatus should be a number');
+				assert.ok('responseContentType' in payload.context, 'context should include responseContentType');
+				assert.ok('responseByteLength' in payload.context, 'context should include responseByteLength');
+				assert.equal(typeof payload.context.responseByteLength, 'number', 'responseByteLength should be a number');
 
 				done();
 			} catch (err) {

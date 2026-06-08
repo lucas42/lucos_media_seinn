@@ -16,13 +16,30 @@ export function getBuffer(url) {
 	}
 	async function bufferTrack() {
 		setState("fetching");
-		const rawtrack = await fetch(url, { headers: await getMediaHeaders() });
-		setState("buffering");
-		const arrayBuffer = await rawtrack.arrayBuffer();
-		setState("decoding");
-		const buffer = await audioContext.decodeAudioData(arrayBuffer);
-		setState("ready");
-		return buffer;
+		let rawtrack;
+		let arrayBuffer;
+		try {
+			rawtrack = await fetch(url, { headers: await getMediaHeaders() });
+			setState("buffering");
+			arrayBuffer = await rawtrack.arrayBuffer();
+			setState("decoding");
+			const buffer = await audioContext.decodeAudioData(arrayBuffer);
+			setState("ready");
+			return buffer;
+		} catch (err) {
+			// Attach diagnostics so the caller (web-player.js) can include them in
+			// the playback-error envelope without re-deriving values that only exist
+			// in this scope.
+			err.decodeContextState = audioContext.state;
+			if (rawtrack != null) {
+				err.responseStatus      = rawtrack.status;
+				err.responseContentType = rawtrack.headers?.get('content-type') ?? null;
+			}
+			if (arrayBuffer != null) {
+				err.responseByteLength = arrayBuffer.byteLength;
+			}
+			throw err;
+		}
 	}
 	if (!(url in buffers)) {
 		buffers[url] = {};

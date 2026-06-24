@@ -1,215 +1,400 @@
 import assert from 'assert';
 import { describe, it, beforeEach, afterEach } from 'mocha';
-import { isAuthenticated, middleware } from '../src/server/auth.js';
+import {
+	parseCookies,
+	hasMediaManagerAccess,
+	verifySessionToken,
+	middleware,
+	csrfMiddleware,
+	_setVerifier,
+} from '../src/server/auth.js';
 
-// ---------------------------------------------------------------------------
-// Test helpers
-// ---------------------------------------------------------------------------
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Build a minimal Express-like request object.
- *
- * @param {object} opts
- * @param {string}  opts.cookieStr  Raw Cookie header value (default: '')
- * @param {string}  opts.queryToken Token supplied as ?token= query param
- * @param {string}  opts.host       Host header (default: 'media.l42.eu')
- * @param {string}  opts.path       originalUrl (default: '/')
- */
-function makeReq({ cookieStr = '', queryToken, host = 'media.l42.eu', path = '/' } = {}) {
-	const query = {};
-	if (queryToken !== undefined) query.token = queryToken;
+function makeReq({ cookie, method = 'GET', originalUrl = '/', protocol = 'https', origin, referer } = {}) {
 	return {
-		headers: { cookie: cookieStr, host },
-		query,
-		originalUrl: path,
+		headers: {
+			host: 'ceol.l42.eu',
+			...(cookie !== undefined && { cookie }),
+			...(origin !== undefined && { origin }),
+			...(referer !== undefined && { referer }),
+		},
+		method,
+		originalUrl,
+		protocol,
 	};
 }
 
-/**
- * Build a minimal Express-like response object that records calls to
- * redirect() and cookie() for later assertion.
- */
 function makeRes() {
 	const res = {
+		auth_agent: undefined,
+		statusCode: 200,
 		redirectCalls: [],
-		cookieCalls: [],
+		renderCalls: [],
+		jsonCalls: [],
 	};
 	res.redirect = (status, url) => res.redirectCalls.push({ status, url });
-	res.cookie = (name, value) => res.cookieCalls.push({ name, value });
+	res.status = (code) => { res.statusCode = code; return res; };
+	res.render = (name, data) => { res.renderCalls.push({ name, data }); return res; };
+	res.json = (data) => { res.jsonCalls.push(data); return res; };
 	return res;
 }
 
-// ---------------------------------------------------------------------------
-// isAuthenticated() unit tests
-// ---------------------------------------------------------------------------
+// Sentinel verifier — throws if called unexpectedly (prevents tests accidentally
+// hitting the real JWKS endpoint).
+const sentinelVerifier = () => {
+	throw Object.assign(new Error('Test: real verifier should not be called'), { code: 'TEST_SENTINEL' });
+};
 
-describe('isAuthenticated', function () {
-	let originalFetch;
-	let originalConsoleError;
+// ─── parseCookies ─────────────────────────────────────────────────────────────
 
-	beforeEach(function () {
-		originalFetch = global.fetch;
-		originalConsoleError = console.error;
-		// Suppress expected "Failed to auth" noise from error-path tests
-		console.error = () => {};
+describe('parseCookies', function () {
+	it('returns empty object for undefined header', function () {
+		assert.deepStrictEqual(parseCookies(undefined), {});
 	});
 
-	afterEach(function () {
-		global.fetch = originalFetch;
-		console.error = originalConsoleError;
+	it('returns empty object for empty string', function () {
+		assert.deepStrictEqual(parseCookies(''), {});
 	});
 
-	it('returns false immediately for a missing token without calling the auth server', async function () {
-		let fetchCalled = false;
-		global.fetch = () => { fetchCalled = true; };
-
-		assert.strictEqual(await isAuthenticated(undefined), false);
-		assert.strictEqual(await isAuthenticated(null), false);
-		assert.strictEqual(await isAuthenticated(''), false);
-		assert.strictEqual(fetchCalled, false, 'fetch should not be called for missing tokens');
+	it('parses a single cookie', function () {
+		assert.deepStrictEqual(parseCookies('foo=bar'), { foo: 'bar' });
 	});
 
-	it('returns true and calls the auth server for a valid token', async function () {
-		const callLog = [];
-		global.fetch = async (url) => {
-			callLog.push(url);
-			return {
-				status: 200,
-				json: async () => ({ user: 'alice' }),
-			};
-		};
-
-		assert.strictEqual(await isAuthenticated('valid-token-seinn-a'), true);
-		assert.strictEqual(callLog.length, 1);
-		assert.strictEqual(callLog[0], 'https://auth.l42.eu/data?token=valid-token-seinn-a');
+	it('parses multiple cookies', function () {
+		assert.deepStrictEqual(parseCookies('foo=bar; baz=qux'), { foo: 'bar', baz: 'qux' });
 	});
 
-	it('returns false when the auth server responds with a non-200 status', async function () {
-		global.fetch = async () => ({ status: 401 });
-		assert.strictEqual(await isAuthenticated('rejected-token-seinn-a'), false);
-	});
-
-	it('returns false when the auth server request throws', async function () {
-		global.fetch = async () => { throw new Error('Network error'); };
-		assert.strictEqual(await isAuthenticated('error-token-seinn-a'), false);
-	});
-});
-
-// ---------------------------------------------------------------------------
-// middleware() integration tests
-// ---------------------------------------------------------------------------
-
-describe('middleware', function () {
-	let originalFetch;
-	let originalConsoleError;
-
-	beforeEach(function () {
-		originalFetch = global.fetch;
-		originalConsoleError = console.error;
-		// Suppress expected "Failed to auth" noise from error-path tests
-		console.error = () => {};
-	});
-
-	afterEach(function () {
-		global.fetch = originalFetch;
-		console.error = originalConsoleError;
-	});
-
-	it('calls next() and sets res.auth_agent for a request with a valid session cookie', async function () {
-		global.fetch = async () => ({
-			status: 200,
-			json: async () => ({ user: 'alice' }),
-		});
-		const req = makeReq({ cookieStr: 'auth_token=cookie-token-seinn-b' });
-		const res = makeRes();
-		let nextCalled = false;
-
-		await middleware(req, res, () => { nextCalled = true; });
-
-		assert.strictEqual(nextCalled, true, 'next() should be called for an authenticated request');
-		assert.strictEqual(res.redirectCalls.length, 0, 'should not redirect an authenticated request');
-		assert.deepStrictEqual(res.auth_agent, { user: 'alice' }, 'res.auth_agent should be set to the agent data');
-	});
-
-	it('redirects a request with a missing cookie to the auth login page', async function () {
-		const req = makeReq({ cookieStr: '' });
-		const res = makeRes();
-		let nextCalled = false;
-
-		await middleware(req, res, () => { nextCalled = true; });
-
-		assert.strictEqual(nextCalled, false, 'next() must not be called for an unauthenticated request');
-		assert.strictEqual(res.redirectCalls.length, 1, 'should redirect exactly once');
-		assert.strictEqual(res.redirectCalls[0].status, 302);
-		assert.ok(
-			res.redirectCalls[0].url.startsWith('https://auth.l42.eu/authenticate'),
-			'redirect should point to auth.l42.eu/authenticate'
+	it('preserves = within cookie value (e.g. base64 JWT padding)', function () {
+		assert.deepStrictEqual(
+			parseCookies('aithne_session=abc.def.ghi=='),
+			{ aithne_session: 'abc.def.ghi==' }
 		);
 	});
 
-	it('encodes the correct redirect_uri in the login redirect URL', async function () {
-		const req = makeReq({ cookieStr: '', host: 'media.l42.eu', path: '/my-playlist' });
+	it('only splits on the first = in a pair', function () {
+		assert.deepStrictEqual(parseCookies('k=a=b=c'), { k: 'a=b=c' });
+	});
+
+	it('extracts aithne_session from a multi-cookie header', function () {
+		const result = parseCookies('other=value; aithne_session=jwt.tok.en==; another=x');
+		assert.strictEqual(result.aithne_session, 'jwt.tok.en==');
+		assert.strictEqual(result.other, 'value');
+		assert.strictEqual(result.another, 'x');
+	});
+});
+
+// ─── hasMediaManagerAccess ────────────────────────────────────────────────────
+
+describe('hasMediaManagerAccess', function () {
+	let origEnv;
+
+	beforeEach(function () {
+		origEnv = process.env.ENVIRONMENT;
+	});
+
+	afterEach(function () {
+		if (origEnv === undefined) {
+			delete process.env.ENVIRONMENT;
+		} else {
+			process.env.ENVIRONMENT = origEnv;
+		}
+	});
+
+	it('media-manager:use grants access', function () {
+		assert.strictEqual(hasMediaManagerAccess(['media-manager:use']), true);
+	});
+
+	it('media-manager:use alongside other scopes grants access', function () {
+		assert.strictEqual(hasMediaManagerAccess(['eolas:read', 'media-manager:use', 'webhook']), true);
+	});
+
+	it('empty scopes denies access', function () {
+		assert.strictEqual(hasMediaManagerAccess([]), false);
+	});
+
+	it('unrelated scopes deny access', function () {
+		assert.strictEqual(hasMediaManagerAccess(['eolas:read', 'notes:use']), false);
+	});
+
+	it('render-ui grants access in development', function () {
+		process.env.ENVIRONMENT = 'development';
+		assert.strictEqual(hasMediaManagerAccess(['render-ui']), true);
+	});
+
+	it('render-ui is denied in production', function () {
+		process.env.ENVIRONMENT = 'production';
+		assert.strictEqual(hasMediaManagerAccess(['render-ui']), false);
+	});
+});
+
+// ─── verifySessionToken ───────────────────────────────────────────────────────
+
+describe('verifySessionToken', function () {
+	afterEach(function () {
+		_setVerifier(sentinelVerifier);
+	});
+
+	it('no cookie header → not authenticated, not authorized', async function () {
+		const result = await verifySessionToken(undefined);
+		assert.strictEqual(result.authenticated, false);
+		assert.strictEqual(result.authorized, false);
+	});
+
+	it('cookie header without aithne_session → not authenticated', async function () {
+		const result = await verifySessionToken('other=value');
+		assert.strictEqual(result.authenticated, false);
+		assert.strictEqual(result.authorized, false);
+	});
+
+	it('valid JWT with media-manager:use → authenticated and authorized', async function () {
+		const fakePayload = { sub: 'user:1', principal_class: 'human', scopes: ['media-manager:use'], exp: 9999999999 };
+		_setVerifier(async () => ({ payload: fakePayload }));
+		const result = await verifySessionToken('aithne_session=valid.jwt.token');
+		assert.strictEqual(result.authenticated, true);
+		assert.strictEqual(result.authorized, true);
+		assert.deepStrictEqual(result.payload, fakePayload);
+	});
+
+	it('valid JWT missing media-manager:use → authenticated but not authorized', async function () {
+		const fakePayload = { sub: 'user:2', principal_class: 'human', scopes: ['eolas:read'], exp: 9999999999 };
+		_setVerifier(async () => ({ payload: fakePayload }));
+		const result = await verifySessionToken('aithne_session=valid.jwt.no-scope');
+		assert.strictEqual(result.authenticated, true);
+		assert.strictEqual(result.authorized, false);
+		assert.deepStrictEqual(result.payload, fakePayload);
+	});
+
+	it('valid JWT with empty scopes → authenticated but not authorized', async function () {
+		const fakePayload = { sub: 'user:3', scopes: [], exp: 9999999999 };
+		_setVerifier(async () => ({ payload: fakePayload }));
+		const result = await verifySessionToken('aithne_session=valid.jwt.empty-scopes');
+		assert.strictEqual(result.authenticated, true);
+		assert.strictEqual(result.authorized, false);
+	});
+
+	it('expired JWT → not authenticated, not authorized', async function () {
+		_setVerifier(async () => {
+			throw Object.assign(new Error('JWTExpired'), { code: 'ERR_JWT_EXPIRED' });
+		});
+		const result = await verifySessionToken('aithne_session=expired.jwt.token');
+		assert.strictEqual(result.authenticated, false);
+		assert.strictEqual(result.authorized, false);
+	});
+
+	it('tampered JWT → not authenticated, not authorized', async function () {
+		_setVerifier(async () => {
+			throw Object.assign(new Error('JWSSignatureVerificationFailed'), { code: 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED' });
+		});
+		const result = await verifySessionToken('aithne_session=tampered.jwt.token');
+		assert.strictEqual(result.authenticated, false);
+		assert.strictEqual(result.authorized, false);
+	});
+});
+
+// ─── middleware ───────────────────────────────────────────────────────────────
+
+describe('middleware', function () {
+	let origConsoleWarn;
+
+	beforeEach(function () {
+		origConsoleWarn = console.warn;
+		console.warn = () => {};
+	});
+
+	afterEach(function () {
+		_setVerifier(sentinelVerifier);
+		console.warn = origConsoleWarn;
+	});
+
+	// Branch 1: valid token + media-manager:use scope → proceed
+	it('valid JWT with media-manager:use → calls next() and sets res.auth_agent', async function () {
+		const fakePayload = { sub: 'user:1', principal_class: 'human', scopes: ['media-manager:use'], exp: 9999999999 };
+		_setVerifier(async () => ({ payload: fakePayload }));
+		const req = makeReq({ cookie: 'aithne_session=valid.jwt.token' });
+		const res = makeRes();
+		let nextCalled = false;
+
+		await middleware(req, res, () => { nextCalled = true; });
+
+		assert.strictEqual(nextCalled, true, 'next() should be called for an authorised request');
+		assert.strictEqual(res.redirectCalls.length, 0, 'should not redirect an authorised request');
+		assert.strictEqual(res.renderCalls.length, 0, 'should not render for an authorised request');
+		assert.deepStrictEqual(res.auth_agent, fakePayload);
+	});
+
+	// Branch 2: valid token, missing scope → render styled 403, no redirect
+	it('valid JWT missing media-manager:use → renders error page with 403, does not redirect', async function () {
+		const fakePayload = { sub: 'user:2', principal_class: 'human', scopes: ['eolas:read'], exp: 9999999999 };
+		_setVerifier(async () => ({ payload: fakePayload }));
+		const req = makeReq({ cookie: 'aithne_session=valid.jwt.no-scope' });
+		const res = makeRes();
+		let nextCalled = false;
+
+		await middleware(req, res, () => { nextCalled = true; });
+
+		assert.strictEqual(nextCalled, false, 'next() must not be called when scope is missing');
+		assert.strictEqual(res.redirectCalls.length, 0, 'should not redirect when scope is missing');
+		assert.strictEqual(res.statusCode, 403);
+		assert.strictEqual(res.renderCalls.length, 1);
+		assert.strictEqual(res.renderCalls[0].name, 'error');
+		assert.ok(typeof res.renderCalls[0].data.message === 'string' && res.renderCalls[0].data.message.length > 0,
+			'render data should include a non-empty message');
+	});
+
+	// Branch 3: no/expired/invalid token → redirect to aithne login
+	it('no cookie → redirects to aithne login', async function () {
+		const req = makeReq();
+		const res = makeRes();
+		let nextCalled = false;
+
+		await middleware(req, res, () => { nextCalled = true; });
+
+		assert.strictEqual(nextCalled, false);
+		assert.strictEqual(res.renderCalls.length, 0);
+		assert.strictEqual(res.redirectCalls.length, 1);
+		const { status, url } = res.redirectCalls[0];
+		assert.strictEqual(status, 302);
+		assert.ok(url.includes('/auth/login?next='), `redirect URL should contain /auth/login?next=, got: ${url}`);
+	});
+
+	it('unauthenticated redirect encodes the server-side URL into next param', async function () {
+		const req = makeReq({ protocol: 'https', originalUrl: '/v3/?filter=active' });
 		const res = makeRes();
 
 		await middleware(req, res, () => {});
 
 		assert.strictEqual(res.redirectCalls.length, 1);
-		const { status, url } = res.redirectCalls[0];
-		assert.strictEqual(status, 302);
-
-		const parsed = new URL(url);
-		assert.strictEqual(parsed.origin + parsed.pathname, 'https://auth.l42.eu/authenticate');
-
-		const redirectUri = decodeURIComponent(parsed.searchParams.get('redirect_uri'));
-		assert.ok(redirectUri.includes('media.l42.eu'), 'redirect_uri should contain the request host');
-		assert.ok(redirectUri.includes('/my-playlist'), 'redirect_uri should contain the request path');
+		const { url } = res.redirectCalls[0];
+		const returnUrl = decodeURIComponent(new URL(url).searchParams.get('next'));
+		assert.ok(returnUrl.startsWith('https://'), `returnUrl should start with https://, got: ${returnUrl}`);
+		assert.ok(returnUrl.includes('/v3/?filter=active'), `returnUrl should contain the path, got: ${returnUrl}`);
 	});
 
-	it('redirects a request with an invalid session cookie to the auth login page', async function () {
-		global.fetch = async () => ({ status: 403 });
-		const req = makeReq({ cookieStr: 'auth_token=invalid-token-seinn-b' });
+	it('expired JWT → redirects to login', async function () {
+		_setVerifier(async () => {
+			throw Object.assign(new Error('JWTExpired'), { code: 'ERR_JWT_EXPIRED' });
+		});
+		const req = makeReq({ cookie: 'aithne_session=expired.jwt.token' });
 		const res = makeRes();
 		let nextCalled = false;
 
 		await middleware(req, res, () => { nextCalled = true; });
 
-		assert.strictEqual(nextCalled, false, 'next() must not be called for a rejected token');
+		assert.strictEqual(nextCalled, false);
 		assert.strictEqual(res.redirectCalls.length, 1);
-		assert.strictEqual(res.redirectCalls[0].status, 302);
-		assert.ok(res.redirectCalls[0].url.startsWith('https://auth.l42.eu/authenticate'));
+		assert.strictEqual(res.renderCalls.length, 0);
 	});
 
-	it('persists a query-param token as a cookie for subsequent requests', async function () {
-		global.fetch = async () => ({
-			status: 200,
-			json: async () => ({ user: 'bob' }),
+	it('tampered JWT → redirects to login', async function () {
+		_setVerifier(async () => {
+			throw Object.assign(new Error('JWSSignatureVerificationFailed'), { code: 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED' });
 		});
-		// Token in query string only — not already in cookie
-		const req = makeReq({ cookieStr: '', queryToken: 'query-token-seinn-b' });
+		const req = makeReq({ cookie: 'aithne_session=tampered.jwt.token' });
 		const res = makeRes();
 		let nextCalled = false;
 
 		await middleware(req, res, () => { nextCalled = true; });
 
-		assert.strictEqual(nextCalled, true);
-		assert.strictEqual(res.cookieCalls.length, 1, 'auth_token cookie should be set');
-		assert.strictEqual(res.cookieCalls[0].name, 'auth_token');
-		assert.strictEqual(res.cookieCalls[0].value, 'query-token-seinn-b');
+		assert.strictEqual(nextCalled, false);
+		assert.strictEqual(res.redirectCalls.length, 1);
+	});
+});
+
+// ─── csrfMiddleware ───────────────────────────────────────────────────────────
+
+describe('csrfMiddleware', function () {
+	let origEnv;
+
+	beforeEach(function () {
+		origEnv = process.env.ENVIRONMENT;
 	});
 
-	it('does not reset the cookie when the token already matches what is in the cookie', async function () {
-		global.fetch = async () => ({
-			status: 200,
-			json: async () => ({ user: 'carol' }),
-		});
-		// Token in both cookie and query — already present, should not be re-set
-		const req = makeReq({ cookieStr: 'auth_token=same-token-seinn-b', queryToken: 'same-token-seinn-b' });
+	afterEach(function () {
+		if (origEnv === undefined) {
+			delete process.env.ENVIRONMENT;
+		} else {
+			process.env.ENVIRONMENT = origEnv;
+		}
+	});
+
+	it('GET request → passes through (no CSRF risk)', function () {
+		const req = makeReq({ method: 'GET' });
 		const res = makeRes();
 		let nextCalled = false;
-
-		await middleware(req, res, () => { nextCalled = true; });
-
+		csrfMiddleware(req, res, () => { nextCalled = true; });
 		assert.strictEqual(nextCalled, true);
-		assert.strictEqual(res.cookieCalls.length, 0, 'cookie should not be re-set when it already matches');
+		assert.strictEqual(res.statusCode, 200, 'should not set error status');
+	});
+
+	it('POST with *.l42.eu Origin → allowed', function () {
+		const req = makeReq({ method: 'POST', origin: 'https://ceol.l42.eu' });
+		const res = makeRes();
+		let nextCalled = false;
+		csrfMiddleware(req, res, () => { nextCalled = true; });
+		assert.strictEqual(nextCalled, true);
+	});
+
+	it('POST with other l42.eu subdomain Origin → allowed', function () {
+		const req = makeReq({ method: 'POST', origin: 'https://other.l42.eu' });
+		const res = makeRes();
+		let nextCalled = false;
+		csrfMiddleware(req, res, () => { nextCalled = true; });
+		assert.strictEqual(nextCalled, true);
+	});
+
+	it('POST with evil.com Origin → rejected with 403', function () {
+		process.env.ENVIRONMENT = 'production';
+		const req = makeReq({ method: 'POST', origin: 'https://evil.com' });
+		const res = makeRes();
+		let nextCalled = false;
+		csrfMiddleware(req, res, () => { nextCalled = true; });
+		assert.strictEqual(nextCalled, false);
+		assert.strictEqual(res.statusCode, 403);
+	});
+
+	it('POST with l42.eu Referer (no Origin header) → allowed', function () {
+		const req = makeReq({ method: 'POST', referer: 'https://ceol.l42.eu/' });
+		const res = makeRes();
+		let nextCalled = false;
+		csrfMiddleware(req, res, () => { nextCalled = true; });
+		assert.strictEqual(nextCalled, true);
+	});
+
+	it('POST with evil.com Referer (no Origin header) → rejected with 403', function () {
+		process.env.ENVIRONMENT = 'production';
+		const req = makeReq({ method: 'POST', referer: 'https://evil.com/phishing' });
+		const res = makeRes();
+		let nextCalled = false;
+		csrfMiddleware(req, res, () => { nextCalled = true; });
+		assert.strictEqual(nextCalled, false);
+		assert.strictEqual(res.statusCode, 403);
+	});
+
+	it('POST with no Origin and no Referer → allowed (same-origin request)', function () {
+		const req = makeReq({ method: 'POST' });
+		const res = makeRes();
+		let nextCalled = false;
+		csrfMiddleware(req, res, () => { nextCalled = true; });
+		assert.strictEqual(nextCalled, true);
+	});
+
+	it('POST with localhost Origin in development → allowed', function () {
+		process.env.ENVIRONMENT = 'development';
+		const req = makeReq({ method: 'POST', origin: 'http://localhost:8009' });
+		const res = makeRes();
+		let nextCalled = false;
+		csrfMiddleware(req, res, () => { nextCalled = true; });
+		assert.strictEqual(nextCalled, true);
+	});
+
+	it('POST with localhost Origin in production → rejected with 403', function () {
+		process.env.ENVIRONMENT = 'production';
+		const req = makeReq({ method: 'POST', origin: 'http://localhost:8009' });
+		const res = makeRes();
+		let nextCalled = false;
+		csrfMiddleware(req, res, () => { nextCalled = true; });
+		assert.strictEqual(nextCalled, false);
+		assert.strictEqual(res.statusCode, 403);
 	});
 });

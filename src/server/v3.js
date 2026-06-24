@@ -1,7 +1,7 @@
 import express from 'express';
 import * as manager from '../utils/manager.js';
 import fs from 'node:fs/promises';
-import { middleware as authMiddleware } from './auth.js';
+import { middleware as authMiddleware, csrfMiddleware } from './auth.js';
 import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
@@ -66,6 +66,7 @@ router.get('/_info', async (req,res) => {
 });
 router.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 20 }));
 router.use((req, res, next) => router.auth(req, res, next));
+router.use(csrfMiddleware);
 router.get('/', async (req, res) => {
 	try {
 		const data = await manager.get("v3/poll").then(resp => resp.json());

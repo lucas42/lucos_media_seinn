@@ -10,6 +10,7 @@ services:
       - KEY_LUCOS_PRIVATE
       - ENVIRONMENT
       - PORT
+      - AITHNE_ORIGIN
     image: lucas42/lucos_media_seinn:${VERSION:-latest}
     restart: always
     healthcheck:

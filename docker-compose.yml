@@ -10,6 +10,11 @@ services:
       - KEY_LUCOS_PRIVATE
       - ENVIRONMENT
       - PORT
+      - APP_ORIGIN
+      - AITHNE_ORIGIN
+      - AITHNE_JWKS_URL
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     image: lucas42/lucos_media_seinn:${VERSION:-latest}
     restart: always
     healthcheck:

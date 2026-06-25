@@ -15,6 +15,12 @@ async function handleRequest(request) {
 	const url = new URL(request.url);
 	const params = new URLSearchParams(url.search);
 	if (params.has("device")) localDevice.setUuid(params.get("device"));
+	// Cross-origin /auth/* requests (e.g. the aithne session-keepalive remint fired by
+	// lucos_navbar) must reach the network directly -- never routed through app logic or
+	// the offline write queue.  Must come before the POST/PUT/DELETE branch.
+	if (url.origin !== self.location.origin && url.pathname.startsWith("/auth/")) {
+		return fetch(request);
+	}
 	if (["POST", "PUT", "DELETE"].includes(request.method)) {
 		await modifyPollData(request.clone());
 

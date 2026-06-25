@@ -181,6 +181,14 @@ async function enactAction(action) {
 					console.error("Unknown DELETE request to endpoint", url.pathname);
 				}
 				break;
+			case 'POST':
+				// POST requests to /v3/playlist/ are instrumentation pings (e.g. ?action=started,
+				// see lucas42/lucos#126).  They carry no state the SW needs to apply to pollData,
+				// so offline replay is a silent no-op.
+				if (pathparts[2] !== 'playlist') {
+					console.error("Unsupported POST request to v3 endpoint", url.pathname);
+				}
+				break;
 			default:
 				console.error("Unsupported method for v3 endpoint", action.method, url.pathname);
 		}

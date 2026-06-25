@@ -1,0 +1,60 @@
+import localDevice from '../utils/local-device.js';
+
+/**
+ * Creates the SW fetch handler with injected dependencies for testability.
+ * The live SW wires in the real implementations in index.js; tests pass stubs.
+ *
+ * @param {object} deps
+ * @param {Function} deps.queueAndAttemptRequest - from restful-queue
+ * @param {Function} deps.getPoll               - from ./polling.js
+ * @param {Function} deps.modifyPollData        - from ./polling.js
+ * @param {Function} deps.recordCacheHit        - from ./cache-eviction.js
+ * @returns {Function} async handleRequest(request)
+ */
+export function createHandleRequest({ queueAndAttemptRequest, getPoll, modifyPollData, recordCacheHit }) {
+	return async function handleRequest(request) {
+		const url = new URL(request.url);
+		const params = new URLSearchParams(url.search);
+		if (params.has("device")) localDevice.setUuid(params.get("device"));
+		// Cross-origin /auth/* requests (e.g. the aithne session-keepalive remint fired by
+		// lucos_navbar) must reach the network directly -- never routed through app logic or
+		// the offline write queue.  Must come before the POST/PUT/DELETE branch.
+		if (url.origin !== self.location.origin && url.pathname.startsWith("/auth/")) {
+			return await fetch(request);
+		}
+		if (["POST", "PUT", "DELETE"].includes(request.method)) {
+			await modifyPollData(request.clone());
+
+			// Offline requests shouldn't be sent to the server, so return a response now.
+			if (url.pathname.startsWith("/offline/")) {
+				return new Response(new Blob(), {status: 201, statusText: "Actioned"});
+			}
+			return queueAndAttemptRequest(request);
+		}
+		if (url.pathname === "/_info") {
+			return await fetch(request);
+		}
+		if (url.hostname === "am.l42.eu") {
+			// am.l42.eu serves time-sensitive endpoints (e.g. /now for clock sync).
+			// Always go straight to the network — never serve from cache, as cached
+			// responses would be stale and give wrong results.
+			// Note: am.l42.eu does NOT serve audio tracks; track caching is handled
+			// separately by preload.js using the track URLs from the poll response.
+			return await fetch(request);
+		}
+		if (url.pathname === "/v3/poll") {
+			const hashcode = parseInt(params.get("hashcode"));
+			return await getPoll(hashcode);
+		}
+		const cachedResponse = await caches.match(request);
+		if (cachedResponse) {
+			// Update the LRU timestamp whenever a track is served from cache, so
+			// that frequently accessed tracks stay warm and are less likely to be
+			// evicted from tracks-v1 by the eviction logic in cache-eviction.js.
+			recordCacheHit(request.url).catch(() => {}); // fire-and-forget; don't block response
+			return cachedResponse;
+		}
+		console.warn("Request not in cache", url.pathname, url.method, url.origin, url.search);
+		return await fetch(request);
+	};
+}

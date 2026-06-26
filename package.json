@@ -37,6 +37,7 @@
     "lucos_pubsub": "^1.0.41",
     "mocha": "^11.7.6",
     "restful-queue": "^1.0.103",
+    "terser-webpack-plugin": "^5.3.1",
     "uuid": "^14.0.1",
     "webpack-cli": "^7.0.3"
   },

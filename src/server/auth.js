@@ -125,7 +125,7 @@ export async function middleware(req, res, next) {
 		console.warn('JWT missing required media-manager:use scope:', result.payload?.sub);
 		res.status(403);
 		return res.render('error', {
-			message: "You don't have permission to access the Media Player. Contact the administrator to request access.",
+			message: "This action requires the `media-manager:use` scope. Contact the administrator to request access.",
 		});
 	}
 

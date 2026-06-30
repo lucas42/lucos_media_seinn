@@ -95,7 +95,7 @@ export async function verifySessionToken(cookieHeader) {
 		if (error.code?.startsWith('ERR_JWKS_') || error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
 			console.warn('JWKS infrastructure error (aithne unreachable or key mismatch):', error.message);
 		} else {
-			console.error('JWT verification failed:', error.message);
+			console.warn('JWT verification failed:', error.message);
 		}
 		return { authenticated: false, authorized: false };
 	}

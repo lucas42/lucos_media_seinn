@@ -134,7 +134,7 @@ describe('hasMediaManagerAccess', function () {
 // ─── isJWKSInfraError ─────────────────────────────────────────────────────────
 
 describe('isJWKSInfraError', function () {
-	it('matches ERR_JWKS_* codes', function () {
+	it('matches ERR_JWKS_TIMEOUT', function () {
 		assert.strictEqual(isJWKSInfraError({ code: 'ERR_JWKS_TIMEOUT' }), true);
 	});
 
@@ -144,6 +144,12 @@ describe('isJWKSInfraError', function () {
 
 	it('matches ENOTFOUND', function () {
 		assert.strictEqual(isJWKSInfraError({ code: 'ENOTFOUND' }), true);
+	});
+
+	it('does not match ERR_JWKS_NO_MATCHING_KEY (unknown kid, not an infra failure)', function () {
+		// jose already did its own reload-and-retry before surfacing this —
+		// aithne responded fine, the kid just genuinely isn't in the key set.
+		assert.strictEqual(isJWKSInfraError({ code: 'ERR_JWKS_NO_MATCHING_KEY' }), false);
 	});
 
 	it('does not match unrelated JWT error codes', function () {

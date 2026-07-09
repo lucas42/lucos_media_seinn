@@ -29,7 +29,7 @@ export function isJWKSInfraError(error) {
 
 /**
  * Wrap a jose remote JWKS getter (as returned by createRemoteJWKSet) with
- * serve-stale behaviour, per aithne'"'"'s docs/local-verification-contract.md §1.
+ * serve-stale behaviour, per aithne's docs/local-verification-contract.md §1.
  *
  * createRemoteJWKSet does NOT serve stale keys by default: a failed re-fetch
  * (5-minute cache expiry, or an unrecognised kid triggering a re-fetch)
@@ -65,8 +65,8 @@ export function createServeStaleJWKS(remoteJWKS) {
 
 // JWKS key set with automatic caching, kid-based rotation support, and
 // serve-stale fallback on fetch failure (see createServeStaleJWKS above).
-// jose'"'"'s createRemoteJWKSet fetches on first use, caches for 5 minutes,
-// and re-fetches when a token'"'"'s kid is not found in the cache.
+// jose's createRemoteJWKSet fetches on first use, caches for 5 minutes,
+// and re-fetches when a token's kid is not found in the cache.
 const JWKS = createServeStaleJWKS(createRemoteJWKSet(AITHNE_JWKS_URL));
 
 // Internal verify function — replaced in tests via _setVerifier.
@@ -141,7 +141,7 @@ export async function verifySessionToken(cookieHeader) {
 		// from JWT validation failures (bad signature, expired token, wrong audience).
 		// JWKS errors indicate a service incident; JWT errors are expected noise.
 		// Reaching here for a JWKS infra error means serve-stale (above) also failed:
-		// either there was no last-known-good key set yet, or the kid genuinely isn'"'"'t in it.
+		// either there was no last-known-good key set yet, or the kid genuinely isn't in it.
 		// Note: jose propagates raw Node network errors (ECONNREFUSED, ENOTFOUND) unwrapped
 		// with no ERR_JWKS_* code — these must be caught explicitly as infra failures too.
 		if (isJWKSInfraError(error)) {

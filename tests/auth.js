@@ -1,10 +1,8 @@
 import assert from 'assert';
-import { describe, it, beforeEach, afterEach } from 'mocha';
+import { describe, it } from 'mocha';
 import {
-	verifySessionToken,
-	middleware,
+	createAuthMiddleware,
 	csrfMiddleware,
-	_setVerifier,
 } from '../src/server/auth.js';
 
 // parseCookies, hasMediaManagerAccess (including the render-ui dev bypass),
@@ -46,25 +44,31 @@ function makeRes() {
 }
 
 // Sentinel verifier — throws if called unexpectedly (prevents tests accidentally
-// hitting the real JWKS endpoint).
+// hitting the real JWKS endpoint). Used as makeAuth()'s default so a test only
+// needs to supply a _verifyFn when it actually expects one to be called.
 const sentinelVerifier = () => {
 	throw Object.assign(new Error('Test: real verifier should not be called'), { code: 'TEST_SENTINEL' });
 };
 
+// Each call builds an independent client (construction-time-only _verifyFn
+// injection, lucas42/lucos_aithne_jsclient#7/lucas42/lucos#268) — there's no
+// shared module-level instance to reset between tests.
+function makeAuth(_verifyFn = sentinelVerifier) {
+	return createAuthMiddleware({ origin: 'https://aithne.l42.eu', _verifyFn });
+}
+
 // ─── verifySessionToken ───────────────────────────────────────────────────────
 
 describe('verifySessionToken', function () {
-	afterEach(function () {
-		_setVerifier(sentinelVerifier);
-	});
-
 	it('no cookie header → not authenticated, not authorized', async function () {
+		const { verifySessionToken } = makeAuth();
 		const result = await verifySessionToken(undefined);
 		assert.strictEqual(result.authenticated, false);
 		assert.strictEqual(result.authorized, false);
 	});
 
 	it('cookie header without aithne_session → not authenticated', async function () {
+		const { verifySessionToken } = makeAuth();
 		const result = await verifySessionToken('other=value');
 		assert.strictEqual(result.authenticated, false);
 		assert.strictEqual(result.authorized, false);
@@ -72,7 +76,7 @@ describe('verifySessionToken', function () {
 
 	it('valid JWT with media-manager:use → authenticated and authorized', async function () {
 		const fakePayload = { sub: 'user:1', principal_class: 'human', scopes: ['media-manager:use'], exp: 9999999999 };
-		_setVerifier(async () => ({ payload: fakePayload }));
+		const { verifySessionToken } = makeAuth(async () => ({ payload: fakePayload }));
 		const result = await verifySessionToken('aithne_session=valid.jwt.token');
 		assert.strictEqual(result.authenticated, true);
 		assert.strictEqual(result.authorized, true);
@@ -81,7 +85,7 @@ describe('verifySessionToken', function () {
 
 	it('valid JWT missing media-manager:use → authenticated but not authorized', async function () {
 		const fakePayload = { sub: 'user:2', principal_class: 'human', scopes: ['eolas:read'], exp: 9999999999 };
-		_setVerifier(async () => ({ payload: fakePayload }));
+		const { verifySessionToken } = makeAuth(async () => ({ payload: fakePayload }));
 		const result = await verifySessionToken('aithne_session=valid.jwt.no-scope');
 		assert.strictEqual(result.authenticated, true);
 		assert.strictEqual(result.authorized, false);
@@ -90,14 +94,14 @@ describe('verifySessionToken', function () {
 
 	it('valid JWT with empty scopes → authenticated but not authorized', async function () {
 		const fakePayload = { sub: 'user:3', scopes: [], exp: 9999999999 };
-		_setVerifier(async () => ({ payload: fakePayload }));
+		const { verifySessionToken } = makeAuth(async () => ({ payload: fakePayload }));
 		const result = await verifySessionToken('aithne_session=valid.jwt.empty-scopes');
 		assert.strictEqual(result.authenticated, true);
 		assert.strictEqual(result.authorized, false);
 	});
 
 	it('expired JWT → not authenticated, not authorized', async function () {
-		_setVerifier(async () => {
+		const { verifySessionToken } = makeAuth(async () => {
 			throw Object.assign(new Error('JWTExpired'), { code: 'ERR_JWT_EXPIRED' });
 		});
 		const result = await verifySessionToken('aithne_session=expired.jwt.token');
@@ -106,7 +110,7 @@ describe('verifySessionToken', function () {
 	});
 
 	it('tampered JWT → not authenticated, not authorized', async function () {
-		_setVerifier(async () => {
+		const { verifySessionToken } = makeAuth(async () => {
 			throw Object.assign(new Error('JWSSignatureVerificationFailed'), { code: 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED' });
 		});
 		const result = await verifySessionToken('aithne_session=tampered.jwt.token');
@@ -118,7 +122,7 @@ describe('verifySessionToken', function () {
 		// lucos_aithne_jsclient classifies this as outcome: 'unavailable'. Problem 2
 		// (a local "sign-in unavailable" page) was abandoned (lucas42/lucos#260), so
 		// this consumer treats it identically to any other failed verification.
-		_setVerifier(async () => {
+		const { verifySessionToken } = makeAuth(async () => {
 			throw Object.assign(new Error('fetch failed'), { code: 'ERR_JWKS_TIMEOUT' });
 		});
 		const result = await verifySessionToken('aithne_session=some.jwt.token');
@@ -138,14 +142,13 @@ describe('middleware', function () {
 	});
 
 	afterEach(function () {
-		_setVerifier(sentinelVerifier);
 		console.warn = origConsoleWarn;
 	});
 
 	// Branch 1: valid token + media-manager:use scope → proceed
 	it('valid JWT with media-manager:use → calls next() and sets res.auth_agent', async function () {
 		const fakePayload = { sub: 'user:1', principal_class: 'human', scopes: ['media-manager:use'], exp: 9999999999 };
-		_setVerifier(async () => ({ payload: fakePayload }));
+		const { middleware } = makeAuth(async () => ({ payload: fakePayload }));
 		const req = makeReq({ cookie: 'aithne_session=valid.jwt.token' });
 		const res = makeRes();
 		let nextCalled = false;
@@ -161,7 +164,7 @@ describe('middleware', function () {
 	// Branch 2: valid token, missing scope → render styled 403, no redirect
 	it('valid JWT missing media-manager:use → renders error page with 403, does not redirect', async function () {
 		const fakePayload = { sub: 'user:2', principal_class: 'human', scopes: ['eolas:read'], exp: 9999999999 };
-		_setVerifier(async () => ({ payload: fakePayload }));
+		const { middleware } = makeAuth(async () => ({ payload: fakePayload }));
 		const req = makeReq({ cookie: 'aithne_session=valid.jwt.no-scope' });
 		const res = makeRes();
 		let nextCalled = false;
@@ -179,6 +182,7 @@ describe('middleware', function () {
 
 	// Branch 3: no/expired/invalid token → redirect to aithne login
 	it('no cookie → redirects to aithne login', async function () {
+		const { middleware } = makeAuth();
 		const req = makeReq();
 		const res = makeRes();
 		let nextCalled = false;
@@ -194,6 +198,7 @@ describe('middleware', function () {
 	});
 
 	it('unauthenticated redirect encodes the server-side URL into next param', async function () {
+		const { middleware } = makeAuth();
 		const req = makeReq({ protocol: 'https', originalUrl: '/v3/?filter=active' });
 		const res = makeRes();
 
@@ -207,7 +212,7 @@ describe('middleware', function () {
 	});
 
 	it('expired JWT → redirects to login', async function () {
-		_setVerifier(async () => {
+		const { middleware } = makeAuth(async () => {
 			throw Object.assign(new Error('JWTExpired'), { code: 'ERR_JWT_EXPIRED' });
 		});
 		const req = makeReq({ cookie: 'aithne_session=expired.jwt.token' });
@@ -222,7 +227,7 @@ describe('middleware', function () {
 	});
 
 	it('tampered JWT → redirects to login', async function () {
-		_setVerifier(async () => {
+		const { middleware } = makeAuth(async () => {
 			throw Object.assign(new Error('JWSSignatureVerificationFailed'), { code: 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED' });
 		});
 		const req = makeReq({ cookie: 'aithne_session=tampered.jwt.token' });
@@ -236,7 +241,7 @@ describe('middleware', function () {
 	});
 
 	it('JWKS infra failure → redirects to login (no local unavailable page)', async function () {
-		_setVerifier(async () => {
+		const { middleware } = makeAuth(async () => {
 			throw Object.assign(new Error('fetch failed'), { code: 'ERR_JWKS_TIMEOUT' });
 		});
 		const req = makeReq({ cookie: 'aithne_session=some.jwt.token' });

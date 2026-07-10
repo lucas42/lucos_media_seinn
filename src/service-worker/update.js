@@ -11,3 +11,9 @@ self.addEventListener("message", function serviceWorkerMessage(event) {
 			break;
 	}
 });
+
+// Claim existing tabs immediately, so controllerchange fires and the
+// reload-on-update flow in load-service-worker.js actually completes.
+self.addEventListener('activate', event => {
+	event.waitUntil(self.clients.claim());
+});

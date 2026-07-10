@@ -1,16 +1,18 @@
 import assert from 'assert';
-import { describe, it, before, beforeEach, afterEach } from 'mocha';
-import { generateKeyPair, exportJWK, SignJWT, jwtVerify, createLocalJWKSet } from 'jose';
+import { describe, it, beforeEach, afterEach } from 'mocha';
 import {
-	parseCookies,
-	hasMediaManagerAccess,
 	verifySessionToken,
 	middleware,
 	csrfMiddleware,
 	_setVerifier,
-	isJWKSInfraError,
-	createServeStaleJWKS,
 } from '../src/server/auth.js';
+
+// parseCookies, hasMediaManagerAccess (including the render-ui dev bypass),
+// isJWKSInfraError, createServeStaleJWKS and loginUrl's returnUrl validation
+// are all owned and unit-tested by lucos_aithne_jsclient itself (ADR-0001) —
+// this suite only exercises this app's own presentation on top of
+// Classification.outcome (verifySessionToken/middleware), plus csrfMiddleware,
+// which stays consumer-owned.
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -48,219 +50,6 @@ function makeRes() {
 const sentinelVerifier = () => {
 	throw Object.assign(new Error('Test: real verifier should not be called'), { code: 'TEST_SENTINEL' });
 };
-
-// ─── parseCookies ─────────────────────────────────────────────────────────────
-
-describe('parseCookies', function () {
-	it('returns empty object for undefined header', function () {
-		assert.deepStrictEqual(parseCookies(undefined), {});
-	});
-
-	it('returns empty object for empty string', function () {
-		assert.deepStrictEqual(parseCookies(''), {});
-	});
-
-	it('parses a single cookie', function () {
-		assert.deepStrictEqual(parseCookies('foo=bar'), { foo: 'bar' });
-	});
-
-	it('parses multiple cookies', function () {
-		assert.deepStrictEqual(parseCookies('foo=bar; baz=qux'), { foo: 'bar', baz: 'qux' });
-	});
-
-	it('preserves = within cookie value (e.g. base64 JWT padding)', function () {
-		assert.deepStrictEqual(
-			parseCookies('aithne_session=abc.def.ghi=='),
-			{ aithne_session: 'abc.def.ghi==' }
-		);
-	});
-
-	it('only splits on the first = in a pair', function () {
-		assert.deepStrictEqual(parseCookies('k=a=b=c'), { k: 'a=b=c' });
-	});
-
-	it('extracts aithne_session from a multi-cookie header', function () {
-		const result = parseCookies('other=value; aithne_session=jwt.tok.en==; another=x');
-		assert.strictEqual(result.aithne_session, 'jwt.tok.en==');
-		assert.strictEqual(result.other, 'value');
-		assert.strictEqual(result.another, 'x');
-	});
-});
-
-// ─── hasMediaManagerAccess ────────────────────────────────────────────────────
-
-describe('hasMediaManagerAccess', function () {
-	let origEnv;
-
-	beforeEach(function () {
-		origEnv = process.env.ENVIRONMENT;
-	});
-
-	afterEach(function () {
-		if (origEnv === undefined) {
-			delete process.env.ENVIRONMENT;
-		} else {
-			process.env.ENVIRONMENT = origEnv;
-		}
-	});
-
-	it('media-manager:use grants access', function () {
-		assert.strictEqual(hasMediaManagerAccess(['media-manager:use']), true);
-	});
-
-	it('media-manager:use alongside other scopes grants access', function () {
-		assert.strictEqual(hasMediaManagerAccess(['eolas:read', 'media-manager:use', 'webhook']), true);
-	});
-
-	it('empty scopes denies access', function () {
-		assert.strictEqual(hasMediaManagerAccess([]), false);
-	});
-
-	it('unrelated scopes deny access', function () {
-		assert.strictEqual(hasMediaManagerAccess(['eolas:read', 'notes:use']), false);
-	});
-
-	it('render-ui grants access in development', function () {
-		process.env.ENVIRONMENT = 'development';
-		assert.strictEqual(hasMediaManagerAccess(['render-ui']), true);
-	});
-
-	it('render-ui is denied in production', function () {
-		process.env.ENVIRONMENT = 'production';
-		assert.strictEqual(hasMediaManagerAccess(['render-ui']), false);
-	});
-});
-
-// ─── isJWKSInfraError ─────────────────────────────────────────────────────────
-
-describe('isJWKSInfraError', function () {
-	it('matches ERR_JWKS_TIMEOUT', function () {
-		assert.strictEqual(isJWKSInfraError({ code: 'ERR_JWKS_TIMEOUT' }), true);
-	});
-
-	it('matches ECONNREFUSED', function () {
-		assert.strictEqual(isJWKSInfraError({ code: 'ECONNREFUSED' }), true);
-	});
-
-	it('matches ENOTFOUND', function () {
-		assert.strictEqual(isJWKSInfraError({ code: 'ENOTFOUND' }), true);
-	});
-
-	it('does not match ERR_JWKS_NO_MATCHING_KEY (unknown kid, not an infra failure)', function () {
-		// jose already did its own reload-and-retry before surfacing this —
-		// aithne responded fine, the kid just genuinely isn't in the key set.
-		assert.strictEqual(isJWKSInfraError({ code: 'ERR_JWKS_NO_MATCHING_KEY' }), false);
-	});
-
-	it('does not match unrelated JWT error codes', function () {
-		assert.strictEqual(isJWKSInfraError({ code: 'ERR_JWT_EXPIRED' }), false);
-	});
-
-	it('does not match an error with no code', function () {
-		assert.strictEqual(isJWKSInfraError({}), false);
-	});
-});
-
-// ─── createServeStaleJWKS ─────────────────────────────────────────────────────
-//
-// Exercises the wrapper against a fake "remote JWKS getter" shaped like jose's
-// createRemoteJWKSet output (a callable function with a .jwks() property),
-// using real EC keys and jwtVerify so the fallback path is genuinely proven
-// end-to-end rather than just asserting on call counts.
-
-describe('createServeStaleJWKS', function () {
-	let privateKey, goodJWK;
-
-	before(async function () {
-		const keyPair = await generateKeyPair('ES256');
-		privateKey = keyPair.privateKey;
-		goodJWK = { ...(await exportJWK(keyPair.publicKey)), kid: 'test-kid', alg: 'ES256', use: 'sig' };
-	});
-
-	function makeToken(kid = 'test-kid') {
-		return new SignJWT({})
-			.setProtectedHeader({ alg: 'ES256', kid })
-			.setIssuedAt()
-			.setExpirationTime('1h')
-			.sign(privateKey);
-	}
-
-	// A fake remote getter: `impl` is the per-call behaviour (return a key or
-	// throw), `snapshot` is what .jwks() reports as the currently-fetched set.
-	function fakeRemoteJWKS(impl, snapshot) {
-		const fn = (protectedHeader, token) => impl(protectedHeader, token);
-		fn.jwks = () => snapshot;
-		return fn;
-	}
-
-	const jwksInfraError = () => Object.assign(new Error('fetch failed'), { code: 'ERR_JWKS_TIMEOUT' });
-
-	it('resolves normally on a successful remote fetch', async function () {
-		const jwks = { keys: [goodJWK] };
-		const remote = fakeRemoteJWKS(
-			(protectedHeader, token) => createLocalJWKSet(jwks)(protectedHeader, token),
-			jwks
-		);
-		const wrapped = createServeStaleJWKS(remote);
-		const token = await makeToken();
-		const { payload } = await jwtVerify(token, wrapped);
-		assert.ok(payload);
-	});
-
-	it('falls back to the last-known-good key set on a JWKS infra error', async function () {
-		const jwks = { keys: [goodJWK] };
-		let callCount = 0;
-		const remote = fakeRemoteJWKS((protectedHeader, token) => {
-			callCount++;
-			if (callCount === 1) return createLocalJWKSet(jwks)(protectedHeader, token);
-			throw jwksInfraError();
-		}, jwks);
-		const wrapped = createServeStaleJWKS(remote);
-		const token = await makeToken();
-
-		// First call succeeds and captures the snapshot.
-		await jwtVerify(token, wrapped);
-		// Second call: remote throws an infra error; wrapper should serve stale.
-		const { payload } = await jwtVerify(token, wrapped);
-		assert.ok(payload);
-		assert.strictEqual(callCount, 2);
-	});
-
-	it('rethrows the infra error when there is no last-known-good key set yet', async function () {
-		const remote = fakeRemoteJWKS(() => { throw jwksInfraError(); }, undefined);
-		const wrapped = createServeStaleJWKS(remote);
-		const token = await makeToken();
-		await assert.rejects(() => jwtVerify(token, wrapped));
-	});
-
-	it('still rejects a token whose kid is unknown even to the last-known-good set', async function () {
-		const jwks = { keys: [goodJWK] };
-		let callCount = 0;
-		const remote = fakeRemoteJWKS((protectedHeader, token) => {
-			callCount++;
-			if (callCount === 1) return createLocalJWKSet(jwks)(protectedHeader, token);
-			throw jwksInfraError();
-		}, jwks);
-		const wrapped = createServeStaleJWKS(remote);
-
-		// Capture the snapshot with a successful call first.
-		await jwtVerify(await makeToken(), wrapped);
-
-		// A different kid, absent from the last-known-good set.
-		const unknownKidToken = await makeToken('unknown-kid');
-		await assert.rejects(() => jwtVerify(unknownKidToken, wrapped));
-	});
-
-	it('propagates non-infra errors without attempting a fallback', async function () {
-		const jwks = { keys: [goodJWK] };
-		const remote = fakeRemoteJWKS(() => {
-			throw Object.assign(new Error('boom'), { code: 'ERR_SOMETHING_ELSE' });
-		}, jwks);
-		const wrapped = createServeStaleJWKS(remote);
-		const token = await makeToken();
-		await assert.rejects(() => jwtVerify(token, wrapped));
-	});
-});
 
 // ─── verifySessionToken ───────────────────────────────────────────────────────
 
@@ -321,6 +110,18 @@ describe('verifySessionToken', function () {
 			throw Object.assign(new Error('JWSSignatureVerificationFailed'), { code: 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED' });
 		});
 		const result = await verifySessionToken('aithne_session=tampered.jwt.token');
+		assert.strictEqual(result.authenticated, false);
+		assert.strictEqual(result.authorized, false);
+	});
+
+	it('JWKS infra failure → not authenticated, not authorized (no local unavailable page)', async function () {
+		// lucos_aithne_jsclient classifies this as outcome: 'unavailable'. Problem 2
+		// (a local "sign-in unavailable" page) was abandoned (lucas42/lucos#260), so
+		// this consumer treats it identically to any other failed verification.
+		_setVerifier(async () => {
+			throw Object.assign(new Error('fetch failed'), { code: 'ERR_JWKS_TIMEOUT' });
+		});
+		const result = await verifySessionToken('aithne_session=some.jwt.token');
 		assert.strictEqual(result.authenticated, false);
 		assert.strictEqual(result.authorized, false);
 	});
@@ -431,6 +232,21 @@ describe('middleware', function () {
 		await middleware(req, res, () => { nextCalled = true; });
 
 		assert.strictEqual(nextCalled, false);
+		assert.strictEqual(res.redirectCalls.length, 1);
+	});
+
+	it('JWKS infra failure → redirects to login (no local unavailable page)', async function () {
+		_setVerifier(async () => {
+			throw Object.assign(new Error('fetch failed'), { code: 'ERR_JWKS_TIMEOUT' });
+		});
+		const req = makeReq({ cookie: 'aithne_session=some.jwt.token' });
+		const res = makeRes();
+		let nextCalled = false;
+
+		await middleware(req, res, () => { nextCalled = true; });
+
+		assert.strictEqual(nextCalled, false);
+		assert.strictEqual(res.renderCalls.length, 0);
 		assert.strictEqual(res.redirectCalls.length, 1);
 	});
 });

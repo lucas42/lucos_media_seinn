@@ -35,7 +35,7 @@
     "jsdom": "^30.0.1",
     "lucos_navbar": "^2.3.2",
     "lucos_pubsub": "^1.0.41",
-    "mocha": "^11.8.0",
+    "mocha": "^12.0.0",
     "restful-queue": "^1.0.103",
     "minimizer-webpack-plugin": "^5.8.0",
     "uuid": "^14.0.2",

@@ -84,9 +84,32 @@ describe("Web Component createElement safety", function () {
 	}
 });
 
+/**
+ * jsdom >= 30.1 caches selector-matching state (e.g. for `:focus` rules in shadow styles) and only
+ * clears it on a focus change, so removed elements stay reachable.  Cycling focus on a throwaway input
+ * makes jsdom drop that state.  Real browsers don't need this.
+ */
+function releaseJsdomSelectorCache() {
+	const input = document.createElement("input");
+	document.body.appendChild(input);
+	input.focus();
+	input.blur();
+	input.remove();
+}
+
 describe("Web Component Garbage Collection Test", function () {
 	const gcLimitInSeconds = 3;
 	this.timeout((1 + gcLimitInSeconds)*1000); // Allow enough time for module import and Garbage Collection
+
+	// jsdom >= 30.1 also retains the first element attached to the document, so attach a throwaway one first
+	before(async () => {
+		const tag = componentTags[0];
+		await import(pathToFileURL(path.resolve(componentsDir, `${tag}.js`)).href);
+		const element = new (customElements.get(tag))();
+		document.body.appendChild(element);
+		document.body.removeChild(element);
+		releaseJsdomSelectorCache();
+	});
 
 	for (const tag of componentTags) {
 		it(`Should allow <${tag}> to be garbage collected`, done => {
@@ -108,6 +131,7 @@ describe("Web Component Garbage Collection Test", function () {
 				let element = new constructor();
 				document.body.appendChild(element);
 				document.body.removeChild(element);
+				releaseJsdomSelectorCache();
 
 				registry.register(element, tag);
 	

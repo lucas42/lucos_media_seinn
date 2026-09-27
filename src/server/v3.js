@@ -3,6 +3,7 @@ import * as manager from '../utils/manager.js';
 import fs from 'node:fs/promises';
 import { csrfMiddleware } from './auth.js';
 import rateLimit from 'express-rate-limit';
+import { classifyStall, getProbeTimeline } from './probe-timing.js';
 
 const mediaManager = process.env.MEDIA_MANAGER_URL || (() => { throw "MEDIA_MANAGER_URL Environment Variable not set" })();
 const apiKey = process.env.KEY_LUCOS_MEDIA_MANAGER || (() => { throw "KEY_LUCOS_MEDIA_MANAGER Environment Variable not set" })();
@@ -57,17 +58,19 @@ export default function createV3Router(authMiddleware) {
 			title: "Play Music",
 			show_on_homepage: true,
 		};
-		const probeStart = Date.now();
+		const probeStart = performance.now();
 		try {
-			const pollResp = await manager.get("v3/poll", { signal: AbortSignal.timeout(800) });
+			const pollResp = await manager.get("v3/poll?probe=1", { signal: AbortSignal.timeout(800) });
 			if (!pollResp.ok) throw new Error(`Error from media-manager: ${pollResp.statusText}`);
 			await pollResp.json();
 			info.checks["media-manager"].ok = true;
 		} catch (error) {
-			const probeMs = Date.now() - probeStart;
-			console.warn(`media-manager probe failed after ${probeMs}ms (target: ${mediaManager}): ${error.message}`);
+			const probeMs = Math.round(performance.now() - probeStart);
+			const timeline = getProbeTimeline();
+			const { phase, detail } = classifyStall(timeline, probeStart);
+			console.warn(`media-manager probe failed after ${probeMs}ms (target: ${mediaManager}): ${error.message}`, timeline);
 			info.checks["media-manager"].ok = false;
-			info.checks["media-manager"].debug = error.message;
+			info.checks["media-manager"].debug = `${error.message} after ${probeMs}ms (target: ${mediaManager}, stalled in: ${phase}${detail ? ` (${detail})` : ''})`;
 		}
 		res.json(info);
 	});

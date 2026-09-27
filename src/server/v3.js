@@ -67,7 +67,7 @@ export default function createV3Router(authMiddleware) {
 			const probeMs = Date.now() - probeStart;
 			console.warn(`media-manager probe failed after ${probeMs}ms (target: ${mediaManager}): ${error.message}`);
 			info.checks["media-manager"].ok = false;
-			info.checks["media-manager"].debug = error.message;
+			info.checks["media-manager"].debug = `${error.message} (after ${probeMs}ms, target: ${mediaManager})`;
 		}
 		res.json(info);
 	});
